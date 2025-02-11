@@ -1,18 +1,15 @@
 pipeline {
     agent any
-
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from your repository
-                git 'https://github.com/MontahaJaballah/SkillMate.git'
+                git branch: 'main', url: 'https://github.com/MontahaJaballah/SkillMate.git'
             }
         }
-        
+
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Check if package.json exists and then run npm install
                     if (fileExists('package.json')) {
                         echo 'package.json found, installing dependencies...'
                         sh 'npm install'
@@ -25,17 +22,13 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                script {
-                    // Placeholder for running tests
-                    echo 'Running tests (this can be expanded later)...'
-                    // Example: sh 'npm test'
-                }
+                echo 'Running tests... (expand with your actual test commands)'
             }
         }
 
         stage('Cleanup') {
             steps {
-                echo 'Cleaning up workspace (if needed)...'
+                echo 'Cleaning up...'
             }
         }
     }
