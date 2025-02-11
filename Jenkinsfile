@@ -1,40 +1,42 @@
 pipeline {
     agent any
-    
+
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from GitHub repository
-                git branch: 'main', url: 'https://github.com/MontahaJaballah/SkillMate.git'
+                // Checkout the code from your repository
+                git 'https://github.com/MontahaJaballah/SkillMate.git'
             }
         }
         
         stage('Install Dependencies') {
             steps {
-                // Install dependencies, for example, using npm
-                sh 'npm install'
+                script {
+                    // Check if package.json exists and then run npm install
+                    if (fileExists('package.json')) {
+                        echo 'package.json found, installing dependencies...'
+                        sh 'npm install'
+                    } else {
+                        echo 'package.json not found!'
+                    }
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                // Run your tests (example with npm)
-                sh 'npm test'
+                script {
+                    // Placeholder for running tests
+                    echo 'Running tests (this can be expanded later)...'
+                    // Example: sh 'npm test'
+                }
             }
         }
 
-        stage('Deploy') {
+        stage('Cleanup') {
             steps {
-                // Deploy your application (you can adjust this according to your project)
-                echo 'Deploying application...'
+                echo 'Cleaning up workspace (if needed)...'
             }
-        }
-    }
-
-    post {
-        always {
-            // Clean up after the build
-            echo 'Cleaning up...'
         }
     }
 }
