@@ -1,0 +1,18 @@
+# Node.js dependencies
+node_modules/
+.env
+package-lock.json
+
+# React build files
+/build/
+
+# Logs
+logs/
+*.log
+
+# VS Code settings
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
