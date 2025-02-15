@@ -1,0 +1,19 @@
+Stash your changes (this will temporarily save them):
+
+git stash
+
+Pull the latest changes:
+
+git pull origin develop
+
+Reapply your stashed changes:
+
+git stash pop
+--------------------------
+Then You merge 
+--------------------------
+git push origin develop 
+
+----In case we want to revert commit ----------------
+git revert <commit-hash>
+--------------------------
