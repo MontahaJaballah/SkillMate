@@ -4,4 +4,6 @@ const userController = require('../controllers/userController');
 
 // Define your routes here
 
+router.post('/update/:id', userController.update);
+
 module.exports = router;
