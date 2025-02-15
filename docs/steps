@@ -16,4 +16,5 @@ git push origin develop
 
 ----In case we want to revert commit ----------------
 git revert <commit-hash>
+git push origin your-branch
 --------------------------
