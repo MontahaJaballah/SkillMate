@@ -4,8 +4,8 @@ const userController = require('../controllers/userController');
 
 // Define your routes here
 router.post("/adduser", userController.add);
-router.delete('/:id', userController.remove);
+router.delete('/deleteuser/:id', userController.remove);
 
-router.post('/update/:id', userController.update);
+router.post('/updateuser/:id', userController.update);
 
 module.exports = router;
