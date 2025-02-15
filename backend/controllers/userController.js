@@ -39,7 +39,4 @@ async function remove(req, res) {
 
 module.exports = {add};
 module.exports = {remove};
-
-
-
 module.exports = {update};
