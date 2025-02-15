@@ -15,4 +15,6 @@ router.post('/update/:id', userController.update);
 
 router.post('/update/:id', userController.update);
 
+router.post('/update/:id', userController.update);
+
 module.exports = router;
