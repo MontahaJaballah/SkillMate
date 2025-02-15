@@ -18,3 +18,4 @@ git push origin develop
 git revert <commit-hash>
 git push origin your-branch
 --------------------------
+delete : http://localhost:5000/api/users/67b0867b3851e3f40c0d8191
