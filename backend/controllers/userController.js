@@ -13,5 +13,18 @@ async function remove(req, res) {
     }
 }
 
+async function update(req, res) {
+    try {
+        const updatedUser = await Users.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updatedUser) {
+            return res.status(404).send({ error: "User not found" });
+        }
+        res.status(200).send(updatedUser);
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
 
-module.exports = {};
+
+
+module.exports = {remove,update};
