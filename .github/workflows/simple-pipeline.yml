@@ -20,22 +20,58 @@ jobs:
         with:
           node-version: '20'
 
-      # Step 3: Install Backend Dependencies
+      # Step 3: Check for .env files (Security)
+      - name: Check for .env files
+        run: |
+          if git ls-files --others --exclude-standard | grep '.env'; then
+            echo "❌ ERROR: .env file detected! Remove it before proceeding."
+            exit 1
+          else
+            echo "✅ No .env files found. Good job!"
+          fi
+
+      # Step 4: Cache Backend Dependencies
+      - name: Cache Backend Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./backend/node_modules
+          key: backend-node-modules-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: backend-node-modules-
+
+      # Step 5: Install Backend Dependencies
       - name: Install Backend Dependencies
         working-directory: ./backend
         run: npm install
 
-      # Step 4: Build Backend
+      # Step 6: Run Security Audit on Backend
+      - name: Run Security Audit on Backend
+        working-directory: ./backend
+        run: npm audit --audit-level=high || true
+
+      # Step 7: Build Backend
       - name: Build Backend
         working-directory: ./backend
         run: npm run build
 
-      # Step 5: Install Frontend Dependencies
+      # Step 8: Cache Frontend Dependencies
+      - name: Cache Frontend Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./frontend/node_modules
+          key: frontend-node-modules-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: frontend-node-modules-
+
+      # Step 9: Install Frontend Dependencies
       - name: Install Frontend Dependencies
         working-directory: ./frontend
         run: npm install
 
-      # Step 6: Build Frontend
+      # Step 10: Run Security Audit on Frontend
+      - name: Run Security Audit on Frontend
+        working-directory: ./frontend
+        run: npm audit --audit-level=high || true
+
+      # Step 11: Build Frontend
       - name: Build Frontend
         working-directory: ./frontend
         run: npm run build
