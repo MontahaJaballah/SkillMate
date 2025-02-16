@@ -28,11 +28,6 @@ pipeline {
                     sh 'npm test'
                 }
             }
-            post {
-                always {
-                    archiveArtifacts artifacts: '**/test-results/**/*.xml', allowEmptyArchive: true
-                }
-            }
         }
-    }
+    }  // This closing brace was missing
 }
