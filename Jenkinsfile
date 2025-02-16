@@ -10,26 +10,29 @@ pipeline {
 
         stage('List Files (Debug)') {
             steps {
-                sh 'ls -la'  // Check if package.json exists
+                sh 'ls -la'  // Vérifier si package.json et backend existent
             }
         }
 
         stage('Install Dependencies') {
-    steps {
-        script {
-            sh 'cd backend && npm install'
+            steps {
+                dir('backend') {
+                    sh 'npm install'
+                }
+            }
         }
-    }
-}
 
         stage('Run Tests') {
-    steps {
-        script {
-            sh '''
-            cd backend
-            npm test
-            '''
+            steps {
+                dir('backend') {
+                    sh 'npm test'
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/test-results/**/*.xml', allowEmptyArchive: true
+                }
+            }
         }
     }
-}
 }
