@@ -74,7 +74,7 @@ jobs:
       # Step 11: Build Frontend
       - name: Build Frontend
         working-directory: ./frontend
-        run: npm run buil
+        run: npm run build
 
   # Send Discord notification on failure
   notify_failure:
