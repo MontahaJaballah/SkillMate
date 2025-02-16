@@ -23,9 +23,13 @@ pipeline {
 }
 
         stage('Run Tests') {
-            steps {
-                sh 'npm test' // Replace with your actual test command
-            }
+    steps {
+        script {
+            sh '''
+            cd backend
+            npm test
+            '''
         }
     }
+}
 }
