@@ -10,6 +10,26 @@ async function add(req, res) {
     }
 }
 
+async function getAll(req, res) {
+    try {
+        const users = await User.find();
+        res.status(200).send(users);
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
+
+async function getById(req, res) {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+        res.status(200).send(user);
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
 
 async function update(req, res) {
     try {
@@ -36,6 +56,5 @@ async function remove(req, res) {
     }
 }
 
-
-module.exports = {add,remove,update};
+module.exports = {add,remove,update,getAll,getById};
 

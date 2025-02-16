@@ -1,34 +1,37 @@
 pipeline {
     agent any
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/MontahaJaballah/SkillMate.git'
+                git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
+            }
+        }
+
+        stage('List Files (Debug)') {
+            steps {
+                sh 'ls -la'  // Vérifier si package.json et backend existent
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                script {
-                    if (fileExists('package.json')) {
-                        echo 'package.json found, installing dependencies...'
-                        sh 'npm install'
-                    } else {
-                        echo 'package.json not found!'
-                    }
+                dir('backend') {
+                    sh 'npm install'
                 }
             }
         }
 
         stage('Run Tests') {
             steps {
-                echo 'Running tests... (expand with your actual test commands)'
+                dir('backend') {
+                    sh 'npm test'
+                }
             }
-        }
-
-        stage('Cleanup') {
-            steps {
-                echo 'Cleaning up...'
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/test-results/**/*.xml', allowEmptyArchive: true
+                }
             }
         }
     }
