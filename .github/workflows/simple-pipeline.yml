@@ -1,0 +1,41 @@
+name: Full Stack Build Pipeline (MERN)
+
+on:
+  push:
+    branches:
+      - main  # Change if needed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Step 3: Install Backend Dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm install
+
+      # Step 4: Build Backend
+      - name: Build Backend
+        working-directory: ./backend
+        run: npm run build
+
+      # Step 5: Install Frontend Dependencies
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      # Step 6: Build Frontend
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: npm run build
