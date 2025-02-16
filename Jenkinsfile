@@ -15,10 +15,12 @@ pipeline {
         }
 
         stage('Install Dependencies') {
-            steps {
-                sh 'npm install' // Run inside the correct directory if needed
-            }
+    steps {
+        script {
+            sh 'cd backend && npm install'
         }
+    }
+}
 
         stage('Run Tests') {
             steps {
