@@ -1,35 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Login from './components/Login';
+import Signup from './components/Signup';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+    return (
+        <Router>
+            <div style={styles.container}>
+                <h1>Welcome to SkillMate 🎓</h1>
+                <div style={styles.buttonContainer}>
+                    <Link to="/login">
+                        <button style={styles.button}>Login</button>
+                    </Link>
+                    <Link to="/signup">
+                        <button style={styles.button}>Sign Up</button>
+                    </Link>
+                </div>
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                </Routes>
+            </div>
+        </Router>
+    );
+};
 
-export default App
+const styles = {
+    container: {
+        textAlign: 'center',
+        marginTop: '50px',
+    },
+    buttonContainer: {
+        margin: '20px 0',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '20px',
+    },
+    button: {
+        padding: '15px 30px',
+        fontSize: '18px',
+        cursor: 'pointer',
+        borderRadius: '8px',
+        border: 'none',
+        backgroundColor: '#007BFF',
+        color: 'white',
+        transition: 'background-color 0.3s',
+    },
+};
+
+export default App;
