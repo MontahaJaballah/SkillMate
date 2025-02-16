@@ -3,7 +3,7 @@ name: Full Stack Build Pipeline (MERN)
 on:
   push:
     branches:
-      - main  # Change if needed
+      - develop  # Change if needed
 
 jobs:
   build:
