@@ -84,4 +84,4 @@ jobs:
     steps:
       - name: Send Discord Notification
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{"content": "❌ CI/CD Pipeline Failed for '${{ github.repository }}'.\n\nCommit: '${{ github.sha }}'\nTriggered by: '${{ github.actor }}'\nLogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -X POST -H "Content-Type: application/json" -d '{"content": "@everyone ❌ CI/CD Pipeline Failed for '${{ github.repository }}'.\n\nCommit: '${{ github.sha }}'\nTriggered by: '${{ github.actor }}'\nLogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' ${{ secrets.DISCORD_WEBHOOK_URL }}
