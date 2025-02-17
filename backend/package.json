@@ -5,8 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "npx mocha",
-    "build": "echo 'No build needed for Node.js' && exit 0"
+    "test": "npx mocha"
   },
   "keywords": [],
   "author": "",
