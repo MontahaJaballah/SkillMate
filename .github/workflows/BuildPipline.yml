@@ -1,0 +1,87 @@
+name: Full Stack Build Pipeline (MERN)
+
+on:
+  push:
+    branches:
+      - develop  # Change if needed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Step 3: Check for .env files (Security)
+      - name: Check for .env files
+        run: |
+          if git ls-files --others --exclude-standard | grep '.env'; then
+            echo "❌ ERROR: .env file detected! Remove it before proceeding."
+            exit 1
+          else
+            echo "✅ No .env files found. Good job!"
+          fi
+
+      # Step 4: Cache Backend Dependencies
+      - name: Cache Backend Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./backend/node_modules
+          key: backend-node-modules-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: backend-node-modules-
+
+      # Step 5: Install Backend Dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm install
+
+      # Step 6: Run Security Audit on Backend
+      - name: Run Security Audit on Backend
+        working-directory: ./backend
+        run: npm audit --audit-level=high || true
+
+      # Step 7: Build Backend
+      - name: Build Backend
+        working-directory: ./backend
+        run: npm run build
+
+      # Step 8: Cache Frontend Dependencies
+      - name: Cache Frontend Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./frontend/node_modules
+          key: frontend-node-modules-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: frontend-node-modules-
+
+      # Step 9: Install Frontend Dependencies
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      # Step 10: Run Security Audit on Frontend
+      - name: Run Security Audit on Frontend
+        working-directory: ./frontend
+        run: npm audit --audit-level=high || true
+
+      # Step 11: Build Frontend
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+
+  # Send Discord notification on failure
+  notify_failure:
+    runs-on: ubuntu-latest
+    needs: build
+    if: failure()
+    steps:
+      - name: Send Discord Notification
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{"content": "@everyone ❌ CI/CD Pipeline Failed for '${{ github.repository }}'.\n\nCommit: '${{ github.sha }}'\nTriggered by: '${{ github.actor }}'\nLogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' ${{ secrets.DISCORD_WEBHOOK_URL }}
