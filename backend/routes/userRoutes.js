@@ -1,11 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const upload = require('../middleware/upload');
 
-// Define your routes here
-router.post("/adduser", userController.add);
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+const path = require('path');
+const uploadDir = path.join(__dirname, '../uploads/certifications');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Define routes with file upload middleware
+router.post("/adduser", upload.single('certificationFile'), userController.add);
 router.delete('/deleteuser/:id', userController.remove);
-router.post('/updateuser/:id', userController.update);
+router.post('/updateuser/:id', upload.single('certificationFile'), userController.update);
 router.get("/allusers", userController.getAll);
 router.get("/getuser/:id", userController.getById);
 
@@ -16,4 +25,10 @@ router.put("/unblockuser/:id", userController.unblockUser);
 
 router.get("/searchuser/:username", userController.searchByUsername);
 router.post("/login", userController.login);
+// Serve uploaded files
+router.get('/uploads/certifications/:filename', (req, res) => {
+    const filePath = path.join(__dirname, '../uploads/certifications', req.params.filename);
+    res.sendFile(filePath);
+});
+
 module.exports = router;
