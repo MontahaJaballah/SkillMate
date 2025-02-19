@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { sendBlockNotification } = require('../services/emailService');
 
 async function add(req, res) {
     try {
@@ -43,7 +44,6 @@ async function update(req, res) {
     }
 }
 
-
 async function remove(req, res) {
     try {
         const deletedUser = await User.findByIdAndDelete(req.params.id);
@@ -56,6 +56,66 @@ async function remove(req, res) {
     }
 }
 
+async function addSubAdmin(req, res) {
+    try {
+        const { username, email, password } = req.body;
+        const subAdmin = new User({
+            username,
+            email,
+            password,
+            role: 'admin'
+        });
+        await subAdmin.save();
+        res.status(201).json({ message: 'Sub-admin created successfully', subAdmin });
+    } catch (error) {
+        res.status(400).send({ error: error.toString() });
+    }
+}
+
+async function blockUser(req, res) {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        if (user.role === 'admin') {
+            return res.status(403).json({ error: 'Cannot block an admin user' });
+        }
+
+        user.isBlocked = true;
+        user.blockReason = req.body.reason;
+        await user.save();
+
+        if (req.body.sendEmail) {
+            console.log('📧 Sending block notification email to user:', user.email);
+            await sendBlockNotification(user.email, req.body.reason);
+        }
+
+        res.status(200).json({ 
+            message: 'User blocked successfully',
+            emailSent: req.body.sendEmail
+        });
+    } catch (error) {
+        console.error('❌ Error in blockUser:', error.message);
+        res.status(500).send({ error: error.toString() });
+    }
+}
+
+async function unblockUser(req, res) {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.isBlocked = false;
+        await user.save();
+        res.status(200).json({ message: 'User unblocked successfully' });
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
 
 async function login(req, res) {
     try {
@@ -92,5 +152,5 @@ async function searchByUsername(req, res) {
 
 
 
-module.exports = {add,remove,update,getAll,getById,login,searchByUsername};
+module.exports = {add,remove,update,getAll,getById,login,searchByUsername,addSubAdmin,blockUser,unblockUser};
 

@@ -22,8 +22,17 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
+        required: [true, 'Role is required'],
         enum: ['student', 'teacher', 'admin'],
         default: 'student'
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false
+    },
+    blockReason: {
+        type: String,
+        default: null
     },
     skillsInterested: [{
         type: mongoose.Schema.Types.ObjectId,
