@@ -1,16 +1,11 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
-const passport = require('passport');
 require('dotenv').config();
-require('./config/passport');
 
 const userRoutes = require('./routes/userRoutes');
-const authRoutes = require('./routes/authRoutes');
 const dbConfig = require('./config/db.json');
-require('dotenv').config();
 
 const app = express();
 
@@ -41,21 +36,16 @@ app.use(session({
     }
 }));
 
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
-
 // Set strictQuery to false to prepare for Mongoose 7
 mongoose.set('strictQuery', false);
 
 // Connect to MongoDB
 mongoose.connect(dbConfig.mongodb.url)
     .then(() => {
-        console.log('Successfully connected to MongoDB.');
+        console.log('Connected to MongoDB');
     })
     .catch((error) => {
         console.error('Error connecting to MongoDB:', error);
-        process.exit(1);
     });
 
 // Handle MongoDB connection events
@@ -72,7 +62,6 @@ mongoose.connection.on('disconnected', () => {
 });
 
 // Routes
-app.use('/', authRoutes);
 app.use('/api/users', userRoutes);
 
 // Serve uploaded files
@@ -81,6 +70,12 @@ app.use('/uploads', express.static('uploads'));
 // Basic route
 app.get('/', (req, res) => {
     res.send('Welcome to Skill Exchange API');
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
 });
 
 const PORT = process.env.PORT || 5000;
