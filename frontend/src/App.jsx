@@ -1,35 +1,20 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from "react";
+import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Layouts
+import Auth from "./layouts/Auth.jsx";
+import Client from "./layouts/Client.jsx";
 
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <BrowserRouter>
+      <Switch>
+        {/* Add routes with layouts */}
+        <Route path="/client" component={Client} />
+        <Route path="/auth" component={Auth} />
+        {/* Redirect to client layout by default */}
+        <Redirect from="/" to="/client" />
+      </Switch>
+    </BrowserRouter>
+  );
 }
-
-export default App
