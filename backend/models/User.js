@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema({
     },
     phoneNumber: {
         type: String,
+        validate: {
+            validator: function(v) {
+                return /^\+[1-9]\d{1,14}$/.test(v);
+            },
+            message: props => `${props.value} is not a valid phone number! Please use international format (e.g., +1234567890)`
+        },
         trim: true
     },
     role: {
@@ -41,6 +47,19 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Role is required'],
         enum: ['student', 'teacher', 'admin'],
         default: 'student'
+    },
+    status: {
+        type: String,
+        enum: ['active', 'deactivated'],
+        default: 'active'
+    },
+    verificationCode: {
+        type: String,
+        required: false
+    },
+    verificationCodeExpires: {
+        type: Date,
+        required: false
     },
     // Teacher specific fields
     teachingSubjects: [{
@@ -94,11 +113,6 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     }],
-
-
-    
 });
-
-
 
 module.exports = mongoose.model('User', userSchema);

@@ -11,20 +11,23 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Define routes with file upload middleware
+// All routes
 router.post("/adduser", upload.single('certificationFile'), userController.add);
+router.post("/login", userController.login);
 router.delete('/deleteuser/:id', userController.remove);
 router.post('/updateuser/:id', upload.single('certificationFile'), userController.update);
 router.get("/allusers", userController.getAll);
-router.get("/getuser/:id", userController.getById);
+router.get("/user/:id", userController.getById);
+router.post('/deactivate', userController.deactivate);
+router.post('/reactivate/send-code', userController.reactivateWithPhone);
+router.post('/reactivate/verify', userController.verifyAndReactivate);
 
 // Sub-admin and user blocking routes
 router.post("/addsubadmin", userController.addSubAdmin);
 router.put("/blockuser/:id", userController.blockUser);
 router.put("/unblockuser/:id", userController.unblockUser);
-
 router.get("/searchuser/:username", userController.searchByUsername);
-router.post("/login", userController.login);
+
 // Serve uploaded files
 router.get('/uploads/certifications/:filename', (req, res) => {
     const filePath = path.join(__dirname, '../uploads/certifications', req.params.filename);

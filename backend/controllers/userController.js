@@ -2,6 +2,19 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const { sendBlockNotification } = require('../services/emailService');
+const twilio = require('twilio');
+
+// Initialize Twilio client only if credentials are available
+let twilioClient = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    console.log('Initializing Twilio with:', {
+        accountSid: `${process.env.TWILIO_ACCOUNT_SID.substring(0, 6)}...`,
+        phoneNumber: process.env.TWILIO_PHONE_NUMBER
+    });
+    twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+} else {
+    console.log('Missing Twilio credentials');
+}
 
 async function add(req, res) {
     try {
@@ -247,26 +260,40 @@ async function unblockUser(req, res) {
 async function login(req, res) {
     try {
         const { email, password } = req.body;
-
-        // Find user by email
         const user = await User.findOne({ email });
+
         if (!user) {
-            return res.status(400).json({ message: "User not found" });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Compare the password (no encryption or hashing)
-        if (user.password !== password) {
-            return res.status(401).json({ message: "Invalid email or password" });
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Send response if login is successful
-        res.status(200).json({ message: "Login successful", user: { id: user._id, username: user.username, email: user.email, role: user.role } });
+        // Check if account is deactivated
+        if (user.status === 'deactivated') {
+            return res.status(403).json({ 
+                message: 'Account is deactivated. Please reactivate it using your phone number.',
+                deactivated: true,
+                userId: user._id 
+            });
+        }
 
+        // Send user data without sensitive information
+        const userData = {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            status: user.status
+        };
+
+        res.json({ user: userData });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 }
-
 
 async function searchByUsername(req, res) {
     try {
@@ -277,7 +304,184 @@ async function searchByUsername(req, res) {
     }
 }
 
+async function deactivate(req, res) {
+    try {
+        const { userId, phoneNumber } = req.body;
+        
+        if (!phoneNumber) {
+            return res.status(400).json({ message: 'Phone number is required for account deactivation' });
+        }
 
+        // Validate phone number format
+        if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
+            return res.status(400).json({ 
+                message: 'Invalid phone number format. Please use international format (e.g., +1234567890)'
+            });
+        }
 
-module.exports = {add,remove,update,getAll,getById,login,searchByUsername,addSubAdmin,blockUser,unblockUser};
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { 
+                phoneNumber: phoneNumber,
+                status: 'deactivated'
+            },
+            { new: true }
+        );
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
+        res.json({ message: 'Account deactivated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+async function reactivateWithPhone(req, res) {
+    try {
+        const { phoneNumber, userId } = req.body;
+        console.log('Attempting reactivation for:', { userId, phoneNumber });
+        
+        const user = await User.findById(userId);
+
+        if (!user) {
+            console.log('User not found:', userId);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.phoneNumber !== phoneNumber) {
+            console.log('Phone number mismatch:', {
+                provided: phoneNumber,
+                stored: user.phoneNumber
+            });
+            return res.status(400).json({ message: 'Phone number does not match our records' });
+        }
+
+        // Generate 6-digit verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Update user with verification code using findByIdAndUpdate
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                verificationCode: verificationCode,
+                verificationCodeExpires: verificationCodeExpires
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Send SMS with verification code
+        if (!twilioClient) {
+            return res.status(500).json({ message: 'SMS service not configured' });
+        }
+
+        try {
+            const message = await twilioClient.messages.create({
+                body: `Your SkillMate verification code is: ${verificationCode}. Valid for 10 minutes.`,
+                to: phoneNumber,
+                from: process.env.TWILIO_PHONE_NUMBER
+            });
+
+            console.log('SMS sent successfully:', {
+                to: phoneNumber,
+                messageId: message.sid,
+                status: message.status
+            });
+
+            // In development mode, also log the verification code
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Development mode - verification code:', verificationCode);
+            }
+
+            res.json({ message: 'Verification code sent successfully' });
+        } catch (twilioError) {
+            console.error('Twilio error:', twilioError);
+            
+            // In development mode, return the code even if SMS fails
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Development mode - verification code (SMS failed):', verificationCode);
+                return res.json({ 
+                    message: 'SMS failed but code generated (development mode)',
+                    verificationCode: verificationCode 
+                });
+            }
+            
+            res.status(500).json({ message: 'Failed to send verification code' });
+        }
+    } catch (error) {
+        console.warn('Reactivation error:', error);
+        res.status(500).json({ message: error.message });
+    }
+}
+
+async function verifyAndReactivate(req, res) {
+    try {
+        const { userId, verificationCode } = req.body;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.verificationCode || !user.verificationCodeExpires) {
+            return res.status(400).json({ message: 'No verification code requested' });
+        }
+
+        if (Date.now() > user.verificationCodeExpires) {
+            return res.status(400).json({ message: 'Verification code expired' });
+        }
+
+        if (user.verificationCode !== verificationCode) {
+            return res.status(400).json({ message: 'Invalid verification code' });
+        }
+
+        // Update user status using findByIdAndUpdate
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                status: 'active',
+                verificationCode: undefined,
+                verificationCodeExpires: undefined
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const userData = {
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            status: updatedUser.status
+        };
+
+        res.json({ user: userData, message: 'Account reactivated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+module.exports = {
+    add,
+    remove,
+    update,
+    getAll,
+    getById,
+    login,
+    searchByUsername,
+    addSubAdmin,
+    blockUser,
+    unblockUser,
+    deactivate,
+    reactivateWithPhone,
+    verifyAndReactivate
+};
