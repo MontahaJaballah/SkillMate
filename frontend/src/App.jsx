@@ -4,12 +4,13 @@ import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom";
 // Layouts
 import Auth from "./layouts/Auth.jsx";
 import Client from "./layouts/Client.jsx";
+import Admin from "./layouts/Admin.jsx";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Switch>
-        {/* Add routes with layouts */}
+        <Route path="/admin" component={Admin} />
         <Route path="/client" component={Client} />
         <Route path="/auth" component={Auth} />
         {/* Redirect to client layout by default */}
