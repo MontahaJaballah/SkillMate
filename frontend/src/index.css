@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75;
+  }
+}
+
+/* Ensure sidebar is always visible on desktop */
+@media (min-width: 768px) {
+  .md\:left-0 {
+    left: 0;
+  }
+  .md\:block {
+    display: block;
+  }
+  .md\:hidden {
+    display: none;
+  }
+  .md\:flex {
+    display: flex;
+  }
+}
+
+/* Custom scrollbar for sidebar */
+.md\:overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.md\:overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.md\:overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
+
+.md\:overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
