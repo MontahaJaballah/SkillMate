@@ -7,7 +7,6 @@
     "dev": "nodemon app.js",
     "test": "npx mocha",
     "build": "echo 'No build needed for Node.js' && exit 0"
-
   },
   "keywords": [],
   "author": "",
@@ -15,10 +14,11 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^6.9.2"
+    "mongoose": "^6.9.2",
+    "nodemailer": "^6.10.0"
   },
   "devDependencies": {
     "mocha": "^11.1.0",
