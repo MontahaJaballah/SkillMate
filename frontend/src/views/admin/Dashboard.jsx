@@ -2,7 +2,6 @@ import React from "react";
 import Chart from "chart.js";
 
 // components
-import CardStats from "../../components/Cards/CardStats.jsx";
 import CardBarChart from "../../components/Cards/CardBarChart.jsx";
 import CardLineChart from "../../components/Cards/CardLineChart.jsx";
 import CardPageVisits from "../../components/Cards/CardPageVisits.jsx";
@@ -12,11 +11,8 @@ import CardTable from "../../components/Cards/CardTable.jsx";
 export default function Dashboard() {
   return (
     <>
-      {/* Header */}
-
-
       {/* Content */}
-      <div className="px-4 md:px-10 mx-auto w-full -m-24">
+      <div className="px-4 md:px-10 mx-auto w-full">
         <div className="flex flex-wrap">
           <div className="w-full xl:w-8/12 mb-12 xl:mb-0 px-4">
             <CardLineChart />

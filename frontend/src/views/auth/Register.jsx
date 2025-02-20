@@ -123,9 +123,9 @@ export default function Register() {
                 </form>
               </div>
             </div>
-            <div className="flex flex-wrap mt-6">
+            <div className="flex flex-wrap mt-6 relative">
               <div className="w-full text-center">
-                <Link to="/auth/login" className="text-gray-300">
+                <Link to="/auth/login" className="text-blueGray-200">
                   <small>Already have an account? Sign in</small>
                 </Link>
               </div>
