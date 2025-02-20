@@ -9,7 +9,9 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: function() {
+            return !this.linkedinId; // Password only required if not using LinkedIn
+        },
         minlength: 6
     },
     email: {
@@ -20,11 +22,59 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
     },
+    firstName: {
+        type: String,
+        required: [true, 'First name is required'],
+        trim: true
+    },
+    lastName: {
+        type: String,
+        required: [true, 'Last name is required'],
+        trim: true
+    },
+    phoneNumber: {
+        type: String,
+        validate: {
+            validator: function(v) {
+                return /^\+[1-9]\d{1,14}$/.test(v);
+            },
+            message: props => `${props.value} is not a valid phone number! Please use international format (e.g., +1234567890)`
+        },
+        trim: true
+    },
     role: {
         type: String,
         required: [true, 'Role is required'],
         enum: ['student', 'teacher', 'admin'],
         default: 'student'
+    },
+    status: {
+        type: String,
+        enum: ['active', 'deactivated'],
+        default: 'active'
+    },
+    verificationCode: {
+        type: String,
+        required: false
+    },
+    verificationCodeExpires: {
+        type: Date,
+        required: false
+    },
+    // Teacher specific fields
+    teachingSubjects: [{
+        type: String,
+        enum: ['Music', 'Chess', "Rubik's Cube", 'IT', 'Gym', 'Cooking']
+    }],
+    certification: {
+        type: String,
+        // Required only if role is teacher
+        required: function() {
+            return this.role === 'teacher';
+        }
+    },
+    certificationFile: {
+        type: String, // This will store the file path
     },
     isBlocked: {
         type: Boolean,
@@ -46,9 +96,6 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Review'
     }],
-    certification: {
-        type: String
-    },
     profilePicture: {
         type: String,
         default: 'default-profile.jpg'
@@ -57,6 +104,7 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    linkedinId: String,
     createdAt: {
         type: Date,
         default: Date.now
@@ -65,11 +113,6 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     }],
-
-
-    
 });
-
-
 
 module.exports = mongoose.model('User', userSchema);
