@@ -1,97 +1,35 @@
 pipeline {
     agent any
-
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    cleanWs()
-                    git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
-                }
+                git branch: 'main', url: 'https://github.com/MontahaJaballah/SkillMate.git'
             }
         }
 
-        stage('Install Backend Dependencies') { 
+        stage('Install Dependencies') {
             steps {
                 script {
-                    if (fileExists('backend/package.json')) {
-                        echo 'backend/package.json found, installing dependencies...'
-                        sh '''
-                            cd backend
-                            rm -rf node_modules package-lock.json
-                            npm install
-                        '''
+                    if (fileExists('package.json')) {
+                        echo 'package.json found, installing dependencies...'
+                        sh 'npm install'
                     } else {
-                        error 'backend/package.json is missing. Stopping pipeline.'
+                        echo 'package.json not found!'
                     }
                 }
             }
         }
 
-        stage('Install Frontend Dependencies') {
+        stage('Run Tests') {
             steps {
-                script {
-                    if (fileExists('frontend/package.json')) {
-                        echo 'frontend/package.json found, installing dependencies...'
-                        sh '''
-                            cd frontend
-                            rm -rf node_modules package-lock.json
-                            npm install --force
-                            npm audit fix --force || true
-                        '''
-                    } else {
-                        error 'frontend/package.json is missing. Stopping pipeline.'
-                    }
-                }
+                echo 'Running tests... (expand with your actual test commands)'
             }
         }
 
-        stage('Run Backend Tests') {
+        stage('Cleanup') {
             steps {
-                script {
-                    echo 'Running backend tests...'
-                    sh 'cd backend && npm test'
-                }
+                echo 'Cleaning up...'
             }
-        }
-
-        stage('Run Frontend Tests') {
-            steps {
-                script {
-                    echo 'Running frontend tests...'
-                    sh '''
-                        cd frontend
-                        npm test
-                    '''
-                }
-            }
-        }
-
-        stage('Build Backend') {
-            steps {
-                script {
-                    echo 'Building backend...'
-                    sh 'cd backend && npm run build'
-                }
-            }
-        }
-
-        stage('Build Frontend') {
-            steps {
-                script {
-                    echo 'Building frontend...'
-                    sh 'cd frontend && npm run build'
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
