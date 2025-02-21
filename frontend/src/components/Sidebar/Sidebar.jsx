@@ -1,8 +1,9 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar() {
   const [collapseShow, setCollapseShow] = React.useState("hidden");
+  const location = useLocation();
   return (
     <>
       <nav className="md:left-0 md:block md:fixed md:top-0 md:bottom-0 md:overflow-y-auto md:flex-row md:flex-nowrap md:overflow-hidden shadow-xl bg-white flex flex-wrap items-center justify-between relative md:w-64 z-10 py-4 px-6">
@@ -61,32 +62,54 @@ export default function Sidebar() {
               </div>
             </div>
 
+            {/* Divider */}
+            <hr className="my-4 md:min-w-full" />
+            {/* Heading */}
+            <h6 className="md:min-w-full text-blueGray-500 text-xs uppercase font-bold block pt-1 pb-4 no-underline">
+              Admin Layout Pages
+            </h6>
+
             {/* Navigation */}
             <ul className="md:flex-col md:min-w-full flex flex-col list-none">
               <li className="items-center">
                 <Link
-                  className="text-blue-500 hover:text-blue-600 text-xs uppercase py-3 font-bold block"
+                  className={
+                    "text-xs uppercase py-3 font-bold block " +
+                    (location.pathname === "/admin/dashboard"
+                      ? "text-blue-500 hover:text-blue-600"
+                      : "text-gray-800 hover:text-gray-600")
+                  }
                   to="/admin/dashboard"
                 >
-                  <i className="fas fa-tv opacity-75 mr-2 text-sm"></i> Dashboard
+                  <i className={"fas fa-tv mr-2 text-sm " + (location.pathname === "/admin/dashboard" ? "opacity-75" : "opacity-50")}></i> Dashboard
                 </Link>
               </li>
 
               <li className="items-center">
                 <Link
-                  className="text-gray-800 hover:text-gray-600 text-xs uppercase py-3 font-bold block"
-                  to="/admin/settings"
-                >
-                  <i className="fas fa-tools opacity-75 mr-2 text-sm"></i> Settings
-                </Link>
-              </li>
-
-              <li className="items-center">
-                <Link
-                  className="text-gray-800 hover:text-gray-600 text-xs uppercase py-3 font-bold block"
+                  className={
+                    "text-xs uppercase py-3 font-bold block " +
+                    (location.pathname === "/admin/tables"
+                      ? "text-blue-500 hover:text-blue-600"
+                      : "text-gray-800 hover:text-gray-600")
+                  }
                   to="/admin/tables"
                 >
-                  <i className="fas fa-table opacity-75 mr-2 text-sm"></i> Tables
+                  <i className={"fas fa-table mr-2 text-sm " + (location.pathname === "/admin/tables" ? "opacity-75" : "opacity-50")}></i> Tables
+                </Link>
+              </li>
+
+              <li className="items-center">
+                <Link
+                  className={
+                    "text-xs uppercase py-3 font-bold block " +
+                    (location.pathname === "/admin/settings"
+                      ? "text-blue-500 hover:text-blue-600"
+                      : "text-gray-800 hover:text-gray-600")
+                  }
+                  to="/admin/settings"
+                >
+                  <i className={"fas fa-tools mr-2 text-sm " + (location.pathname === "/admin/settings" ? "opacity-75" : "opacity-50")}></i> Settings
                 </Link>
               </li>
             </ul>
