@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    cleanWs() // Ensures a clean workspace before checkout
+                    cleanWs() // Nettoie l'espace de travail avant le checkout
                     git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
                 }
             }
@@ -16,7 +16,11 @@ pipeline {
                 script {
                     if (fileExists('backend/package.json')) {
                         echo 'backend/package.json found, installing dependencies...'
-                        sh 'cd backend && npm install'
+                        sh '''
+                            cd backend
+                            rm -rf node_modules package-lock.json
+                            npm install
+                        '''
                     } else {
                         error 'backend/package.json is missing. Stopping pipeline.'
                     }
@@ -29,7 +33,12 @@ pipeline {
                 script {
                     if (fileExists('frontend/package.json')) {
                         echo 'frontend/package.json found, installing dependencies...'
-                        sh 'cd frontend && npm install'
+                        sh '''
+                            cd frontend
+                            rm -rf node_modules package-lock.json
+                            npm install
+                            npm install react-scripts --save-dev
+                        '''
                     } else {
                         error 'frontend/package.json is missing. Stopping pipeline.'
                     }
@@ -50,7 +59,11 @@ pipeline {
             steps {
                 script {
                     echo 'Running frontend tests...'
-                    sh 'cd frontend && npm test'
+                    sh '''
+                        cd frontend
+                        npm list react-scripts || npm install react-scripts --save-dev
+                        npm test
+                    '''
                 }
             }
         }
