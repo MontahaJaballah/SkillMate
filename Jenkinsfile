@@ -1,9 +1,5 @@
 pipeline {
     agent any
-    environment {
-        frontendDir = 'frontend'
-        backendDir = 'backend'
-    }
 
     stages {
         stage('Checkout') {
@@ -18,13 +14,13 @@ pipeline {
         stage('Install Backend Dependencies') { 
             steps {
                 script {
-                    if (fileExists("${backendDir}/package.json")) {
+                    if (fileExists('backend/package.json')) {
                         echo 'backend/package.json found, installing dependencies...'
-                        sh """
-                            cd ${backendDir}
+                        sh '''
+                            cd backend
                             rm -rf node_modules package-lock.json
                             npm install
-                        """
+                        '''
                     } else {
                         error 'backend/package.json is missing. Stopping pipeline.'
                     }
@@ -35,14 +31,14 @@ pipeline {
         stage('Install Frontend Dependencies') {
             steps {
                 script {
-                    if (fileExists("${frontendDir}/package.json")) {
+                    if (fileExists('frontend/package.json')) {
                         echo 'frontend/package.json found, installing dependencies...'
-                        sh """
-                            cd ${frontendDir}
+                        sh '''
+                            cd frontend
                             rm -rf node_modules package-lock.json
                             npm install --force
                             npm audit fix --force || true
-                        """
+                        '''
                     } else {
                         error 'frontend/package.json is missing. Stopping pipeline.'
                     }
@@ -54,7 +50,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running backend tests...'
-                    sh "cd ${backendDir} && npm test"
+                    sh 'cd backend && npm test'
                 }
             }
         }
@@ -63,10 +59,10 @@ pipeline {
             steps {
                 script {
                     echo 'Running frontend tests...'
-                    sh """
-                        cd ${frontendDir}
+                    sh '''
+                        cd frontend
                         npm test -- --watchAll=false --passWithNoTests
-                    """
+                    '''
                 }
             }
         }
@@ -75,7 +71,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building backend...'
-                    sh "cd ${backendDir} && npm run build"
+                    sh 'cd backend && npm run build'
                 }
             }
         }
@@ -84,7 +80,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building frontend...'
-                    sh "cd ${frontendDir} && npm run build"
+                    sh 'cd frontend && npm run build'
                 }
             }
         }
@@ -92,16 +88,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully! '
+            echo 'Pipeline executed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check the logs for details. '
-        }
-        always {
-            script {
-                echo 'Cleaning up workspace...'
-                cleanWs()
-            }
+            echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
