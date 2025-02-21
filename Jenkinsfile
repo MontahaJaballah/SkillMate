@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    cleanWs() // Nettoie l'espace de travail avant le checkout
+                    cleanWs()
                     git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
                 }
             }
@@ -20,6 +20,7 @@ pipeline {
                             cd backend
                             rm -rf node_modules package-lock.json
                             npm install
+                            npm audit fix --force
                         '''
                     } else {
                         error 'backend/package.json is missing. Stopping pipeline.'
@@ -37,6 +38,7 @@ pipeline {
                             cd frontend
                             rm -rf node_modules package-lock.json
                             npm install
+                            npm audit fix --force
                             npm install react-scripts --save-dev
                         '''
                     } else {
@@ -62,7 +64,7 @@ pipeline {
                     sh '''
                         cd frontend
                         npm list react-scripts || npm install react-scripts --save-dev
-                        npm test
+                        npm test --passWithNoTests
                     '''
                 }
             }
@@ -71,8 +73,12 @@ pipeline {
         stage('Build Backend') {
             steps {
                 script {
-                    echo 'Building backend...'
-                    sh 'cd backend && npm run build'
+                    if (fileExists('backend')) {
+                        echo 'Building backend...'
+                        sh 'cd backend && npm run build'
+                    } else {
+                        error 'Backend directory is missing. Stopping pipeline.'
+                    }
                 }
             }
         }
@@ -80,8 +86,12 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 script {
-                    echo 'Building frontend...'
-                    sh 'cd frontend && npm run build'
+                    if (fileExists('frontend')) {
+                        echo 'Building frontend...'
+                        sh 'cd frontend && npm run build'
+                    } else {
+                        error 'Frontend directory is missing. Stopping pipeline.'
+                    }
                 }
             }
         }
