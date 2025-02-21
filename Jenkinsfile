@@ -61,7 +61,7 @@ pipeline {
                     echo 'Running frontend tests...'
                     sh '''
                         cd frontend
-                        npm test -- --watchAll=false --passWithNoTests
+                        npm test
                     '''
                 }
             }
