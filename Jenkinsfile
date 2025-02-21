@@ -2,32 +2,37 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
+        stage('Install dependencies') {
             steps {
-                git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
-            }
-        }
-
-        stage('List Files (Debug)') {
-            steps {
-                sh 'ls -la'  // Vérifier si package.json et backend existent
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                dir('backend') {
+                script {
                     sh 'npm install'
                 }
             }
         }
 
-        stage('Run Tests') {
+        stage('Unit Test') {
             steps {
-                dir('backend') {
+                script {
                     sh 'npm test'
                 }
             }
         }
-    }  
+
+        stage('Build application') {
+            steps {
+                script {
+                    sh 'npm run build-dev'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
+        }
+    }
 }
