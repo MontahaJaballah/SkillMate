@@ -4,38 +4,71 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
+                script {
+                    cleanWs() // Ensures a clean workspace before checkout
+                    git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
+                }
             }
         }
 
-        stage('Install dependencies') {
+        stage('Install Backend Dependencies') { 
             steps {
                 script {
-                    if (fileExists('package.json')) {
-                        echo 'package.json found, installing dependencies...'
-                        sh 'npm install'
+                    if (fileExists('backend/package.json')) {
+                        echo 'backend/package.json found, installing dependencies...'
+                        sh 'cd backend && npm install'
                     } else {
-                        echo 'package.json not found!'
-                        error 'package.json is missing. Stopping pipeline.'
+                        error 'backend/package.json is missing. Stopping pipeline.'
                     }
                 }
             }
         }
 
-        stage('Unit Test') {
+        stage('Install Frontend Dependencies') {
             steps {
                 script {
-                    echo 'Running unit tests...'
-                    sh 'npm test'
+                    if (fileExists('frontend/package.json')) {
+                        echo 'frontend/package.json found, installing dependencies...'
+                        sh 'cd frontend && npm install'
+                    } else {
+                        error 'frontend/package.json is missing. Stopping pipeline.'
+                    }
                 }
             }
         }
 
-        stage('Build application') {
+        stage('Run Backend Tests') {
             steps {
                 script {
-                    echo 'Building the application...'
-                    sh 'npm run build-dev'
+                    echo 'Running backend tests...'
+                    sh 'cd backend && npm test'
+                }
+            }
+        }
+
+        stage('Run Frontend Tests') {
+            steps {
+                script {
+                    echo 'Running frontend tests...'
+                    sh 'cd frontend && npm test'
+                }
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                script {
+                    echo 'Building backend...'
+                    sh 'cd backend && npm run build'
+                }
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                script {
+                    echo 'Building frontend...'
+                    sh 'cd frontend && npm run build'
                 }
             }
         }
