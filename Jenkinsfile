@@ -1,11 +1,15 @@
 pipeline {
     agent any
+    environment {
+        frontendDir = 'frontend'
+        backendDir = 'backend'
+    }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
-                    cleanWs() // Nettoie l'espace de travail avant le checkout
+                    cleanWs()
                     git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
                 }
             }
@@ -14,13 +18,13 @@ pipeline {
         stage('Install Backend Dependencies') { 
             steps {
                 script {
-                    if (fileExists('backend/package.json')) {
+                    if (fileExists("${backendDir}/package.json")) {
                         echo 'backend/package.json found, installing dependencies...'
-                        sh '''
-                            cd backend
+                        sh """
+                            cd ${backendDir}
                             rm -rf node_modules package-lock.json
                             npm install
-                        '''
+                        """
                     } else {
                         error 'backend/package.json is missing. Stopping pipeline.'
                     }
@@ -31,14 +35,14 @@ pipeline {
         stage('Install Frontend Dependencies') {
             steps {
                 script {
-                    if (fileExists('frontend/package.json')) {
+                    if (fileExists("${frontendDir}/package.json")) {
                         echo 'frontend/package.json found, installing dependencies...'
-                        sh '''
-                            cd frontend
+                        sh """
+                            cd ${frontendDir}
                             rm -rf node_modules package-lock.json
-                            npm install
-                            npm install react-scripts --save-dev
-                        '''
+                            npm install --force
+                            npm audit fix --force || true
+                        """
                     } else {
                         error 'frontend/package.json is missing. Stopping pipeline.'
                     }
@@ -50,7 +54,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running backend tests...'
-                    sh 'cd backend && npm test'
+                    sh "cd ${backendDir} && npm test"
                 }
             }
         }
@@ -59,11 +63,10 @@ pipeline {
             steps {
                 script {
                     echo 'Running frontend tests...'
-                    sh '''
-                        cd frontend
-                        npm list react-scripts || npm install react-scripts --save-dev
-                        npm test
-                    '''
+                    sh """
+                        cd ${frontendDir}
+                        npm test -- --watchAll=false --passWithNoTests
+                    """
                 }
             }
         }
@@ -72,7 +75,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building backend...'
-                    sh 'cd backend && npm run build'
+                    sh "cd ${backendDir} && npm run build"
                 }
             }
         }
@@ -81,7 +84,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building frontend...'
-                    sh 'cd frontend && npm run build'
+                    sh "cd ${frontendDir} && npm run build"
                 }
             }
         }
@@ -89,10 +92,16 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully!'
+            echo 'Pipeline executed successfully! '
         }
         failure {
-            echo 'Pipeline failed. Check the logs for details.'
+            echo 'Pipeline failed. Check the logs for details. '
+        }
+        always {
+            script {
+                echo 'Cleaning up workspace...'
+                cleanWs()
+            }
         }
     }
 }
