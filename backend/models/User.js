@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         validate: {
             validator: function(v) {
-                return /^\+[1-9]\d{1,14}$/.test(v);
+                return !v || /^\+[1-9]\d{1,14}$/.test(v);
             },
             message: props => `${props.value} is not a valid phone number! Please use international format (e.g., +1234567890)`
         },
@@ -104,7 +104,21 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    linkedinId: String,
+    linkedinId: {
+        type: String,
+        sparse: true,
+        unique: true
+    },
+    photoURL: {
+        type: String,
+        default: ''
+    },
+    displayName: {
+        type: String,
+        get: function() {
+            return this.firstName + ' ' + this.lastName;
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now

@@ -1,8 +1,15 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
+const path = require('path');
 const { sendBlockNotification } = require('../services/emailService');
 const twilio = require('twilio');
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Initialize Twilio client only if credentials are available
 let twilioClient = null;
@@ -22,10 +29,26 @@ async function add(req, res) {
         
         const userData = { ...req.body };
         
-        // Handle file upload
-        if (req.file) {
-            console.log('File received:', req.file);
-            userData.certificationFile = req.file.path;
+        // Handle photo file upload
+        let photoURL = '';
+        if (req.files && req.files.photo) {
+            const photoFile = req.files.photo;
+            const fileName = `${Date.now()}-${photoFile.name}`;
+            const filePath = path.join(uploadDir, 'photos', fileName);
+            
+            await photoFile.mv(filePath);
+            photoURL = `/uploads/photos/${fileName}`;
+        }
+
+        // Handle certification file upload
+        let certificationFile = '';
+        if (req.files && req.files.certificationFile) {
+            const certFile = req.files.certificationFile;
+            const fileName = `${Date.now()}-${certFile.name}`;
+            const filePath = path.join(uploadDir, 'certifications', fileName);
+            
+            await certFile.mv(filePath);
+            certificationFile = `/uploads/certifications/${fileName}`;
         }
 
         // Parse teaching subjects if they're sent as a string
@@ -61,7 +84,8 @@ async function add(req, res) {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                role: user.role
+                role: user.role,
+                photoURL: user.photoURL
             }
         };
         console.log('Sending response:', userResponse);
@@ -126,16 +150,26 @@ async function update(req, res) {
     try {
         const userData = { ...req.body };
 
-        // Handle file upload
-        if (req.file) {
-            // Delete old file if it exists
-            const oldUser = await User.findById(req.params.id);
-            if (oldUser && oldUser.certificationFile) {
-                fs.unlink(oldUser.certificationFile, (err) => {
-                    if (err) console.error('Error deleting old file:', err);
-                });
-            }
-            userData.certificationFile = req.file.path;
+        // Handle photo file upload
+        let photoURL = '';
+        if (req.files && req.files.photo) {
+            const photoFile = req.files.photo;
+            const fileName = `${Date.now()}-${photoFile.name}`;
+            const filePath = path.join(uploadDir, 'photos', fileName);
+            
+            await photoFile.mv(filePath);
+            photoURL = `/uploads/photos/${fileName}`;
+        }
+
+        // Handle certification file upload
+        let certificationFile = '';
+        if (req.files && req.files.certificationFile) {
+            const certFile = req.files.certificationFile;
+            const fileName = `${Date.now()}-${certFile.name}`;
+            const filePath = path.join(uploadDir, 'certifications', fileName);
+            
+            await certFile.mv(filePath);
+            certificationFile = `/uploads/certifications/${fileName}`;
         }
 
         // Parse teaching subjects if they're sent as a string
@@ -286,7 +320,8 @@ async function login(req, res) {
             username: user.username,
             email: user.email,
             role: user.role,
-            status: user.status
+            status: user.status,
+            photoURL: user.photoURL
         };
 
         res.json({ user: userData });
@@ -461,7 +496,8 @@ async function verifyAndReactivate(req, res) {
             username: updatedUser.username,
             email: updatedUser.email,
             role: updatedUser.role,
-            status: updatedUser.status
+            status: updatedUser.status,
+            photoURL: updatedUser.photoURL
         };
 
         res.json({ user: userData, message: 'Account reactivated successfully' });

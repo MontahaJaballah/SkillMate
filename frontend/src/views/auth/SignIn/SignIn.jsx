@@ -48,11 +48,14 @@ const SignIn = () => {
     setShowp(!showP);
   };
 
+  const handleLinkedInLogin = () => {
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
   AOS.init();
 
   if (user) {
-    history.push("/");
-    return null;
+    return history.push("/");
   }
 
   return (
@@ -100,39 +103,42 @@ const SignIn = () => {
                       className="input w-full bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
                       required
                     />
-                    <span
-                      className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+                    <button
                       onClick={handleShowP}
+                      type="button"
+                      className="absolute top-1/2 -translate-y-1/2 right-3 text-xl"
                     >
-                      {showP ? <GoEye className="text-gray-500" /> : <GoEyeClosed className="text-gray-500" />}
-                    </span>
+                      {showP ? <GoEyeClosed /> : <GoEye />}
+                    </button>
                   </div>
-                  <label className="label">
-                    <a
-                      href="#"
-                      className="label-text-alt link link-hover dark:text-gray-400"
-                    >
-                      Forgot password?
-                    </a>
-                  </label>
                 </div>
-                <div className="form-control mt-6">
-                  <button
-                    type="submit"
-                    className="btn bg-main hover:bg-main/90 text-white border-none"
-                  >
+                <div className="form-control">
+                  <button className="btn btn-primary bg-main hover:bg-main border-none text-white">
                     Sign In
                   </button>
                 </div>
               </form>
-              <div className="mt-4 text-center">
-                <p className="dark:text-gray-300">
-                  Don't have an account?{" "}
-                  <Link to="/auth/signup" className="font-bold text-main hover:text-main/90">
-                    Sign Up
-                  </Link>
-                </p>
-              </div>
+              
+              {/* LinkedIn Sign In */}
+              <div className="divider">OR</div>
+              <button
+                onClick={handleLinkedInLogin}
+                className="btn btn-outline w-full border-main hover:bg-main hover:border-main text-main hover:text-white"
+              >
+                <img
+                  src="https://cdn-icons-png.flaticon.com/512/174/174857.png"
+                  alt="LinkedIn"
+                  className="w-5 h-5 mr-2"
+                />
+                Sign in with LinkedIn
+              </button>
+
+              <p className="text-center mt-4 dark:text-gray-200">
+                New to SkillMate?{" "}
+                <Link to="/auth/signup" className="text-main font-bold">
+                  Sign Up
+                </Link>
+              </p>
             </div>
           </div>
         </div>
