@@ -1,139 +1,69 @@
-import React from "react";
+import { FaFacebookF } from "react-icons/fa";
+import { BsTwitter, BsInstagram } from "react-icons/bs";
 
-export default function Footer() {
+const Footer = () => {
   return (
-    <>
-      <footer className="relative bg-gray-200 pt-8 pb-6">
-        <div
-          className="bottom-auto top-0 left-0 right-0 w-full absolute pointer-events-none overflow-hidden -mt-20 h-20"
-          style={{ transform: "translateZ(0)" }}
-        >
-          <svg
-            className="absolute bottom-0 overflow-hidden"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            version="1.1"
-            viewBox="0 0 2560 100"
-            x="0"
-            y="0"
-          >
-            <polygon
-              className="text-gray-200 fill-current"
-              points="2560 0 2560 100 0 100"
-            ></polygon>
-          </svg>
-        </div>
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap text-center lg:text-left">
-            <div className="w-full lg:w-6/12 px-4">
-              <h4 className="text-3xl font-semibold">SkillMate</h4>
-              <h5 className="text-lg mt-0 mb-2 text-gray-600">
-                Find your perfect skill match today! Connect with us on social media.
-              </h5>
-              <div className="mt-6 lg:mb-0 mb-6">
-                <button
-                  className="bg-white text-blue-400 shadow-lg font-normal h-10 w-10 items-center justify-center align-center rounded-full outline-none focus:outline-none mr-2 hover:shadow-xl transition-all duration-150"
-                  type="button"
-                >
-                  <i className="fab fa-twitter"></i>
-                </button>
-                <button
-                  className="bg-white text-blue-600 shadow-lg font-normal h-10 w-10 items-center justify-center align-center rounded-full outline-none focus:outline-none mr-2 hover:shadow-xl transition-all duration-150"
-                  type="button"
-                >
-                  <i className="fab fa-facebook-square"></i>
-                </button>
-                <button
-                  className="bg-white text-pink-400 shadow-lg font-normal h-10 w-10 items-center justify-center align-center rounded-full outline-none focus:outline-none mr-2 hover:shadow-xl transition-all duration-150"
-                  type="button"
-                >
-                  <i className="fab fa-instagram"></i>
-                </button>
-                <button
-                  className="bg-white text-gray-800 shadow-lg font-normal h-10 w-10 items-center justify-center align-center rounded-full outline-none focus:outline-none mr-2 hover:shadow-xl transition-all duration-150"
-                  type="button"
-                >
-                  <i className="fab fa-github"></i>
-                </button>
-              </div>
-            </div>
-            <div className="w-full lg:w-6/12 px-4">
-              <div className="flex flex-wrap items-top mb-6">
-                <div className="w-full lg:w-4/12 px-4 ml-auto">
-                  <span className="block uppercase text-gray-500 text-sm font-semibold mb-2">
-                    Useful Links
-                  </span>
-                  <ul className="list-unstyled">
-                    <li>
-                      <a
-                        className="text-gray-600 hover:text-gray-800 font-semibold block pb-2 text-sm"
-                        href="#"
-                      >
-                        About Us
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        className="text-gray-600 hover:text-gray-800 font-semibold block pb-2 text-sm"
-                        href="#"
-                      >
-                        Blog
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        className="text-gray-600 hover:text-gray-800 font-semibold block pb-2 text-sm"
-                        href="#"
-                      >
-                        Github
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-                <div className="w-full lg:w-4/12 px-4">
-                  <span className="block uppercase text-gray-500 text-sm font-semibold mb-2">
-                    Other Resources
-                  </span>
-                  <ul className="list-unstyled">
-                    <li>
-                      <a
-                        className="text-gray-600 hover:text-gray-800 font-semibold block pb-2 text-sm"
-                        href="#"
-                      >
-                        Terms & Conditions
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        className="text-gray-600 hover:text-gray-800 font-semibold block pb-2 text-sm"
-                        href="#"
-                      >
-                        Privacy Policy
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        className="text-gray-600 hover:text-gray-800 font-semibold block pb-2 text-sm"
-                        href="#"
-                      >
-                        Contact Us
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+    <div className="bg-[#FFF6EB] dark:bg-inherit">
+      <footer className="footer px-10 pt-6 container mx-auto justify-between">
+        <aside>
+          <img
+            src="https://i.ibb.co/ZHDJ3R6/Skill-Exchange-1.webp"
+            className="w-20"
+            alt=""
+          />
+          <p>
+            <span className="text-2xl font-bold text-main">Skill Exchange</span>
+            <br />
+            Providing reliable tech since 2009
+          </p>
+        </aside>
+        <nav>
+          <header className=" border-b-[4px] pb-1 mb-2  border-b-main">
+            Services
+          </header>
+          <a className="link hover:text-main font-medium link-hover">
+            Branding
+          </a>
+          <a className="link hover:text-main font-medium link-hover">Design</a>
+          <a className="link hover:text-main font-medium link-hover">
+            Marketing
+          </a>
+        </nav>
+
+        <nav>
+          <header className="border-b-[4px] pb-1 mb-2  border-b-main">
+            Legal
+          </header>
+          <a className="link hover:text-main font-medium link-hover">
+            Terms of use
+          </a>
+          <a className="link hover:text-main font-medium link-hover">
+            Privacy policy
+          </a>
+          <a className="link hover:text-main font-medium link-hover">
+            Cookie policy
+          </a>
+        </nav>
+        <nav>
+          <header className="text  font-semibold border-b-[4px] pb-1 mb-2  border-b-main">
+            Get In Touch
+          </header>
+          <div className="flex gap-4 text-main text-2xl">
+            <a>
+              <FaFacebookF></FaFacebookF>
+            </a>
+            <a>
+              <BsTwitter></BsTwitter>
+            </a>
+            <a>
+              <BsInstagram></BsInstagram>
+            </a>
           </div>
-          <hr className="my-6 border-gray-300" />
-          <div className="flex flex-wrap items-center md:justify-between justify-center">
-            <div className="w-full md:w-4/12 px-4 mx-auto text-center">
-              <div className="text-sm text-gray-500 font-semibold py-1">
-                Copyright {new Date().getFullYear()} SkillMate
-              </div>
-            </div>
-          </div>
-        </div>
+        </nav>
       </footer>
-    </>
+      <p className="text-sm font-medium pt-4 t text-center pb-10 text-main ">Copyright © 2023 - All right reserved by Skill-Exchange Ltd</p>
+    </div>
   );
-}
+};
+
+export default Footer;

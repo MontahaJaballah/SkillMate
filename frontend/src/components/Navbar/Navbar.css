@@ -1,0 +1,5 @@
+li :hover{
+    background: transparent !important;
+    animation-duration: 700ms !important;
+    color: #007456!important;
+}

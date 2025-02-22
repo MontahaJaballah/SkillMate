@@ -65,8 +65,9 @@ export default {
       colors: {
         sky: colors => ({
           ...colors.lightBlue
-        })
-      }
+        }),
+        main: "#007456",  // This color is used in the footer
+      },
     },
   },
   variants: [
@@ -83,7 +84,7 @@ export default {
     "visited",
     "disabled",
   ],
-  plugins: [],
+  plugins: [require("daisyui")],
   future: {
     removeDeprecatedGapUtilities: true,
     purgeLayersByDefault: true,
