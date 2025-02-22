@@ -1,27 +1,24 @@
 import React from "react";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Route, Switch, Redirect } from "react-router-dom";
+import Navbar from "../components/Navbar/Navbar";
 
-// Components
-import Navbar from "../components/Navbars/AuthNavbar.jsx";
-import FooterAdmin from "../components/Footers/FooterAdmin.jsx";
-// Views
-import Login from "../views/auth/Login.jsx";
-import Register from "../views/auth/Register.jsx";
+// Auth pages
+import SignIn from "../views/auth/SignIn/SignIn";
+import SignUp from "../views/auth/SignUp/SignUp";
 
 export default function Auth() {
   return (
     <>
-      <Navbar />
-      <main>
-        <section className="relative w-full h-full py-40 min-h-screen">
-          <div className="absolute top-0 w-full h-full bg-blueGray-800 bg-no-repeat bg-full"></div>
-          <Switch>
-            <Route path="/auth/login" exact component={Login} />
-            <Route path="/auth/register" exact component={Register} />
-            <Redirect from="/auth" to="/auth/login" />
-          </Switch>
-          <FooterAdmin absolute />
-        </section>
+      <main className="container mx-auto px-4 h-full">
+        <div className="flex content-center items-center justify-center h-full py-8">
+          <div className="w-full lg:w-5/12 md:w-8/12 sm:w-10/12">
+            <Switch>
+              <Route path="/auth/signin" exact component={SignIn} />
+              <Route path="/auth/signup" exact component={SignUp} />
+              <Redirect from="/auth" to="/auth/signin" />
+            </Switch>
+          </div>
+        </div>
       </main>
     </>
   );

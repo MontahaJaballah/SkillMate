@@ -6,15 +6,45 @@
   html {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
+
+  html.dark {
+    @apply bg-[#0f1729] text-white;
+  }
+
+  html.light {
+    @apply bg-white text-black;
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75;
+    @apply px-4 py-2 bg-main text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-main focus:ring-opacity-75;
   }
 }
 
-/* Ensure sidebar is always visible on desktop */
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-gray-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
+}
+
+/* Dark mode transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Media queries */
 @media (min-width: 768px) {
   .md\:left-0 {
     left: 0;
@@ -28,22 +58,4 @@
   .md\:flex {
     display: flex;
   }
-}
-
-/* Custom scrollbar for sidebar */
-.md\:overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
-
-.md\:overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.md\:overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 2px;
-}
-
-.md\:overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #555;
 }

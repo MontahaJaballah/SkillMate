@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
-import { FcGoogle } from "react-icons/fc";
-import { Link, useNavigate } from "react-router-dom";
-import useAuth from "../../Hook/useAuth";
+import { Link, useHistory } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import toast from "react-hot-toast";
+import useAuth from "../../../hooks/useAuth";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 const SignUp = () => {
-  const { signWithGoogle, signUpUser, updateUserProfile } = useAuth();
+  const { signUpUser, updateUserProfile, user } = useAuth();
   const [showP, setShowp] = useState(false);
-  const navigate = useNavigate();
-
-  const handleShowP = () => {
-    setShowp(!showP);
-  };
+  const history = useHistory();
 
   const notify = () =>
     toast.success("Sign Up Successful.", {
@@ -55,7 +52,7 @@ const SignUp = () => {
       .then(() => {
         updateUserProfile(name, photo).then(() => {
           notify();
-          navigate("/");
+          history.push("/");
         });
       })
       .catch((error) => {
@@ -65,105 +62,111 @@ const SignUp = () => {
       });
   };
 
-  const handleGoogleSignUp = () => {
-    signWithGoogle()
-      .then(() => {
-        notify();
-        navigate("/");
-      })
-      .catch((error) => {
-        if (error) {
-          toast.error("Sign up failed");
-        }
-      });
+  const handleShowP = () => {
+    setShowp(!showP);
   };
 
+  AOS.init();
+
+  if (user) {
+    history.push("/");
+    return null;
+  }
+
   return (
-    <div className="dark:bg-[#0f1729]">
+    <div className="dark:bg-[#0f1729] min-h-screen">
       <Helmet>
-        <title>Skill Exchange | Sign Up</title>
+        <title>SkillMate | Sign Up</title>
       </Helmet>
       <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white dark:bg-[#0f1729] p-8 rounded-lg shadow-lg w-96">
-          <h2 className="text-2xl font-semibold mb-6 text-center dark:text-white">Sign Up</h2>
-          <form onSubmit={handleSignUp}>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-white text-sm font-bold mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-main"
-                placeholder="Your name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-white text-sm font-bold mb-2">
-                Photo URL
-              </label>
-              <input
-                type="text"
-                name="photo"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-main"
-                placeholder="Photo URL"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-white text-sm font-bold mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-main"
-                placeholder="Your email"
-              />
-            </div>
-            <div className="mb-6 relative">
-              <label className="block text-gray-700 dark:text-white text-sm font-bold mb-2">
-                Password
-              </label>
-              <input
-                type={showP ? "text" : "password"}
-                name="password"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-main"
-                placeholder="Your password"
-              />
-              <div
-                onClick={handleShowP}
-                className="absolute right-3 top-10 cursor-pointer"
-              >
-                {showP ? <GoEyeClosed></GoEyeClosed> : <GoEye></GoEye>}
+        <div
+          data-aos="zoom-in"
+          data-aos-offset="200"
+          data-aos-duration="600"
+          data-aos-mirror="true"
+          data-aos-once="false"
+          data-aos-anchor-placement="top"
+          className="hero-content flex-col md:w-auto w-[99vw] md:my-auto my-10 md:shadow-[0_0_10px_1px_#D1D1D1] dark:shadow-[0_0_50px_#122827] md:px-10 bg-white dark:bg-gray-900 bg-opacity-70 rounded-xl p-8"
+        >
+          <h1 className="text-5xl font-bold text-main pt-4 pb-6">Sign Up now!</h1>
+          <div className="card w-96">
+            <div className="card-body p-0">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text dark:text-gray-200">Name</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    className="input bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
+                    placeholder="Your name"
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text dark:text-gray-200">Photo URL</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="photo"
+                    required
+                    className="input bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
+                    placeholder="Photo URL"
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text dark:text-gray-200">Email</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    className="input bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
+                    placeholder="Your email"
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text dark:text-gray-200">Password</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showP ? "text" : "password"}
+                      name="password"
+                      required
+                      className="input w-full bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
+                      placeholder="Your password"
+                    />
+                    <span
+                      onClick={handleShowP}
+                      className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer"
+                    >
+                      {showP ? <GoEyeClosed className="text-gray-500" /> : <GoEye className="text-gray-500" />}
+                    </span>
+                  </div>
+                </div>
+                <div className="form-control mt-6">
+                  <button
+                    type="submit"
+                    className="btn bg-main hover:bg-main/90 text-white border-none"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </form>
+              <div className="mt-4 text-center">
+                <p className="dark:text-gray-300">
+                  Already have an account?{" "}
+                  <Link to="/auth/signin" className="font-bold text-main hover:text-main/90">
+                    Sign In
+                  </Link>
+                </p>
               </div>
             </div>
-            <button
-              type="submit"
-              className="w-full bg-main text-white py-2 rounded-lg hover:bg-opacity-90 transition duration-300"
-            >
-              Sign Up
-            </button>
-          </form>
-          <div className="mt-4 text-center">
-            <p className="text-gray-600 dark:text-white">Or sign up with</p>
-            <button
-              onClick={handleGoogleSignUp}
-              className="mt-2 w-full border border-gray-300 py-2 rounded-lg flex items-center justify-center hover:bg-gray-50 transition duration-300"
-            >
-              <FcGoogle className="text-2xl mr-2" />
-              <span className="dark:text-white">Google</span>
-            </button>
           </div>
-          <p className="mt-4 text-center text-gray-600 dark:text-white">
-            Already have an account?{" "}
-            <Link to="/signin" className="text-main hover:underline">
-              Sign In
-            </Link>
-          </p>
         </div>
       </div>
     </div>
