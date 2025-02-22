@@ -2,11 +2,11 @@ import React from "react";
 import { Switch, Route, Redirect } from "react-router-dom";
 
 // Components
-import Navbar from "../components/Navbars/ClientNavbar.jsx";
+import Navbar from "../components/Navbar/Navbar.jsx";
 import Footer from "../components/Footers/Footer.jsx";
 
 // Views
-import Landing from "../views/Landing.jsx";
+import Landing from "../views/client/Landing.jsx";
 import Profile from "../views/Profile.jsx";
 
 export default function Client() {
