@@ -1,11 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
+      colors: {
+        main: "#007456",
+      },
       minHeight: {
         "screen-75": "75vh",
       },
@@ -62,35 +66,22 @@ export default {
       backgroundSize: {
         full: "100%",
       },
-      colors: {
-        sky: colors => ({
-          ...colors.lightBlue
-        }),
-        main: "#007456",  // This color is used in the footer
-      },
     },
   },
-  variants: [
-    "responsive",
-    "group-hover",
-    "focus-within",
-    "first",
-    "last",
-    "odd",
-    "even",
-    "hover",
-    "focus",
-    "active",
-    "visited",
-    "disabled",
-  ],
   plugins: [require("daisyui")],
-  future: {
-    removeDeprecatedGapUtilities: true,
-    purgeLayersByDefault: true,
+  daisyui: {
+    themes: [
+      "light",
+      "dark",
+      {
+        night: {
+          ...require("daisyui/src/theming/themes")["night"],
+          "base-100": "#0f1729",
+          neutral: "#ffffff",
+          "base-content": "#ffffff",
+        },
+      },
+    ],
+    logs: false
   },
-  corePlugins: {
-    // Disable deprecated features
-    colorAdjust: false
-  }
-}
+};
