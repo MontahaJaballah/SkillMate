@@ -11,6 +11,7 @@ import Admin from "./layouts/Admin.jsx";
 // Views
 import SignIn from "./views/auth/SignIn/SignIn.jsx";
 import SignUp from "./views/auth/SignUp/SignUp.jsx";
+import Profile from "./views/Profile.jsx";
 
 export default function App() {
   return (
@@ -21,6 +22,9 @@ export default function App() {
           {/* Auth Routes */}
           <Route path="/auth/signin" exact component={SignIn} />
           <Route path="/auth/signup" exact component={SignUp} />
+          
+          {/* Profile Route */}
+          <Route path="/profile/:id?" component={Profile} />
           
           {/* Layout Routes */}
           <Route path="/admin" component={Admin} />

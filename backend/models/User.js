@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: function() {
-            return !this.linkedinId; // Password only required if not using LinkedIn
+            return !this.linkedinId && !this.googleId; // Password only required if not using social login
         },
         minlength: 6
     },
@@ -106,8 +106,13 @@ const userSchema = new mongoose.Schema({
     },
     linkedinId: {
         type: String,
-        sparse: true,
-        unique: true
+        unique: true,
+        sparse: true
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
     },
     photoURL: {
         type: String,

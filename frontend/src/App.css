@@ -1,0 +1,45 @@
+/* Dark mode text colors */
+[data-theme='dark'] {
+    color-scheme: dark;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-tertiary: #b0b0b0;
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2d2d2d;
+}
+
+/* Light mode text colors */
+[data-theme='light'] {
+    color-scheme: light;
+    --text-primary: #000000;
+    --text-secondary: #424242;
+    --text-tertiary: #666666;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-tertiary: #e0e0e0;
+}
+
+/* Apply text colors */
+body {
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+}
+
+p, span, div {
+    color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+}
+
+/* Secondary text elements */
+.text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* Tertiary text elements */
+.text-tertiary {
+    color: var(--text-tertiary) !important;
+}

@@ -6,15 +6,20 @@ import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import axios from 'axios';
 
 const SignUp = () => {
-  const { signUpUser, updateUserProfile, user, handleLinkedInLogin } = useAuth();
+  const { signUpUser, updateUserProfile, user, handleLinkedInSignUp, handleGoogleSignUp, updateUser } = useAuth();
   const [showP, setShowp] = useState(false);
+  const [showConfirmP, setShowConfirmP] = useState(false);
   const history = useHistory();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
+    confirmPassword: '',
     firstName: '',
     lastName: '',
     phoneNumber: '',
@@ -23,6 +28,30 @@ const SignUp = () => {
     photo: null,
     certificationFile: null
   });
+  const [loading, setLoading] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecialChar: false
+  });
+
+  // Password validation rules
+  const validatePassword = (password) => {
+    return {
+      hasMinLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+  };
+
+  const isPasswordValid = (strength) => {
+    return Object.values(strength).every(Boolean);
+  };
 
   const [showSkillInput, setShowSkillInput] = useState(false);
   const [currentSkill, setCurrentSkill] = useState('');
@@ -92,10 +121,19 @@ const SignUp = () => {
         });
       }
     } else {
-      setFormData({
+      const newFormData = {
         ...formData,
         [name]: value
-      });
+      };
+      setFormData(newFormData);
+
+      // Check password match and strength when password changes
+      if (name === 'password') {
+        setPasswordStrength(validatePassword(value));
+        setPasswordsMatch(value === formData.confirmPassword);
+      } else if (name === 'confirmPassword') {
+        setPasswordsMatch(value === formData.password);
+      }
     }
   };
 
@@ -117,60 +155,149 @@ const SignUp = () => {
     });
   };
 
-  const handleSignUp = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validate required fields
-    const requiredFields = ['username', 'email', 'password', 'firstName', 'lastName'];
-    const missingFields = requiredFields.filter(field => !formData[field]);
-    if (missingFields.length > 0) {
-      toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
-      return;
-    }
-
-    // Validate phone number format
-    if (formData.phoneNumber && !formData.phoneNumber.startsWith('+')) {
-      toast.error('Phone number must start with + and use international format (e.g., +1234567890)');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
-      return;
-    }
-
-    if (!/[A-Z]/.test(formData.password)) {
-      toast.error("Password must contain at least one uppercase letter");
-      return;
-    }
-
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
-      toast.error("Password must contain at least one special character");
-      return;
-    }
+    setLoading(true);
 
     try {
-      // Create FormData object to handle file upload
-      const submitData = new FormData();
-      for (const key in formData) {
-        if (formData[key] !== null && formData[key] !== '') {
-          if (key === 'teachingSubjects') {
-            submitData.append(key, JSON.stringify(formData[key]));
-          } else {
-            submitData.append(key, formData[key]);
+      // Validate required fields
+      if (!formData.username || !formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+        toast.error('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+
+      // Validate password strength
+      if (!isPasswordValid(passwordStrength)) {
+        toast.error('Please ensure your password meets all requirements');
+        setLoading(false);
+        return;
+      }
+
+      // Validate password confirmation
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+
+      // Additional validation for teachers
+      if (formData.role === 'teacher') {
+        if (!formData.certificationFile) {
+          toast.error('Please upload your certification');
+          setLoading(false);
+          return;
+        }
+        if (!formData.teachingSubjects || formData.teachingSubjects.length === 0) {
+          toast.error('Please select at least one teaching subject');
+          setLoading(false);
+          return;
+        }
+
+        // Validate certificate
+        try {
+          const certificateFormData = new FormData();
+          certificateFormData.append('certificate', formData.certificationFile);
+
+          const certificateResponse = await axios.post(
+            'http://localhost:5000/api/certificates/validate',
+            certificateFormData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+              withCredentials: true
+            }
+          );
+
+          if (!certificateResponse.data.success) {
+            toast.error('Invalid certificate. Please upload a valid certification document.');
+            setLoading(false);
+            return;
           }
+        } catch (error) {
+          console.error('Certificate validation error:', error);
+          toast.error('Error validating certificate. Please try again.');
+          setLoading(false);
+          return;
         }
       }
 
-      await signUpUser(submitData);
-      notify();
-      history.push("/");
-    } catch (error) {
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Error during sign up. Please try again.");
+      const formDataToSubmit = new FormData();
+      formDataToSubmit.append('username', formData.username);
+      formDataToSubmit.append('email', formData.email);
+      formDataToSubmit.append('password', formData.password);
+      formDataToSubmit.append('firstName', formData.firstName);
+      formDataToSubmit.append('lastName', formData.lastName);
+      formDataToSubmit.append('phoneNumber', formData.phoneNumber || '');
+      formDataToSubmit.append('role', formData.role);
+      
+      if (formData.role === 'teacher') {
+        formDataToSubmit.append('teachingSubjects', JSON.stringify(formData.teachingSubjects));
+        formDataToSubmit.append('certificationFile', formData.certificationFile);
       }
+
+      if (formData.photo) {
+        formDataToSubmit.append('photo', formData.photo);
+      }
+
+      const response = await axios.post(
+        'http://localhost:5000/api/auth/signup',
+        formDataToSubmit,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          withCredentials: true
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('Signup successful!');
+        // Update auth context with the new user
+        if (updateUser) {
+          updateUser(response.data.user);
+        }
+        // Redirect to dashboard
+        history.push('/dashboard');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      const errorMessage = error.response?.data?.error || 'Error during signup';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e, fieldName) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type based on field
+      const allowedTypes = fieldName === 'photo' 
+        ? ['image/jpeg', 'image/png']
+        : ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(fieldName === 'photo' 
+          ? 'Please upload a JPG or PNG image'
+          : 'Please upload a PDF or Word document');
+        e.target.value = ''; // Clear the file input
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size should be less than 5MB');
+        e.target.value = ''; // Clear the file input
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: file
+      }));
+      toast.success(`${fieldName === 'photo' ? 'Photo' : 'Certification'} file uploaded successfully`);
     }
   };
 
@@ -186,7 +313,7 @@ const SignUp = () => {
   }
 
   return (
-    <div className="dark:bg-[#0f1729] min-h-screen">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <Helmet>
         <title>SkillMate | Sign Up</title>
       </Helmet>
@@ -204,27 +331,29 @@ const SignUp = () => {
           <div className="card w-96">
             <div className="card-body p-0">
               {/* LinkedIn Sign Up Button */}
-              <button
-                type="button"
-                onClick={handleLinkedInLogin}
-                className="w-full mb-4 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm bg-[#0077B5] text-white rounded-md hover:bg-[#006097] transition-colors"
-              >
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.68 1.68 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
-                </svg>
-                <span>Sign up with LinkedIn</span>
-              </button>
+              <div className="flex flex-col gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={handleLinkedInSignUp}
+                  className="btn btn-outline flex items-center justify-center gap-2 dark:text-white dark:hover:text-white"
+                >
+                  <img src="/linkedin.svg" alt="LinkedIn" className="w-6 h-6" />
+                  Sign up with LinkedIn
+                </button>
 
-              <div className="relative mb-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">Or register with email</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleGoogleSignUp}
+                  className="btn btn-outline flex items-center justify-center gap-2 dark:text-white dark:hover:text-white"
+                >
+                  <img src="/google.svg" alt="Google" className="w-6 h-6" />
+                  Sign up with Google
+                </button>
               </div>
 
-              <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="divider text-gray-500 dark:text-gray-400">OR</div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-control">
                   <input
                     type="text"
@@ -274,31 +403,86 @@ const SignUp = () => {
                 </div>
 
                 <div className="form-control">
-                  <input
-                    type="tel"
-                    name="phoneNumber"
+                  <PhoneInput
+                    country={'tn'}
                     value={formData.phoneNumber}
-                    onChange={handleChange}
-                    placeholder="Phone Number (e.g., +1234567890)"
-                    className="input input-bordered dark:bg-gray-800"
+                    onChange={phone => setFormData({...formData, phoneNumber: '+' + phone})}
+                    inputClass="input input-bordered dark:bg-gray-800 w-full"
+                    containerClass="w-full"
+                    buttonClass="dark:bg-gray-700"
+                    dropdownClass="dark:bg-gray-800 dark:text-white"
+                    placeholder="Phone Number"
                   />
                 </div>
 
-                <div className="form-control relative">
-                  <input
-                    type={showP ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Password *"
-                    className="input input-bordered dark:bg-gray-800"
-                    required
-                  />
-                  <div
-                    onClick={handleShowP}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
-                  >
-                    {showP ? <GoEyeClosed /> : <GoEye />}
+                <div className="space-y-4">
+                  {/* Password input with requirements */}
+                  <div className="relative">
+                    <input
+                      type={showP ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Password *"
+                      className="input input-bordered dark:bg-gray-800 w-full"
+                      required
+                    />
+                    <div
+                      className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+                      onClick={() => setShowp(!showP)}
+                    >
+                      {showP ? <GoEyeClosed /> : <GoEye />}
+                    </div>
+                  </div>
+
+                  {/* Password requirements checklist */}
+                  <div className="text-sm space-y-1 text-[var(--text-secondary)] bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                    <h4 className="font-semibold mb-2 text-[var(--text-primary)]">Password Requirements:</h4>
+                    <div className={`flex items-center ${passwordStrength.hasMinLength ? 'text-green-600 dark:text-green-400' : ''}`}>
+                      <span className="mr-2">{passwordStrength.hasMinLength ? '✓' : '○'}</span>
+                      At least 8 characters
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasUpperCase ? 'text-green-600 dark:text-green-400' : ''}`}>
+                      <span className="mr-2">{passwordStrength.hasUpperCase ? '✓' : '○'}</span>
+                      One uppercase letter (A-Z)
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasLowerCase ? 'text-green-600 dark:text-green-400' : ''}`}>
+                      <span className="mr-2">{passwordStrength.hasLowerCase ? '✓' : '○'}</span>
+                      One lowercase letter (a-z)
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasNumber ? 'text-green-600 dark:text-green-400' : ''}`}>
+                      <span className="mr-2">{passwordStrength.hasNumber ? '✓' : '○'}</span>
+                      One number (0-9)
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasSpecialChar ? 'text-green-600 dark:text-green-400' : ''}`}>
+                      <span className="mr-2">{passwordStrength.hasSpecialChar ? '✓' : '○'}</span>
+                      One special character {'(!@#$%^&*(),.?":{}|)'}
+                    </div>
+                    <div className="mt-2 text-[var(--text-tertiary)] text-xs">
+                      Example: "SkillMate2024!"
+                    </div>
+                  </div>
+
+                  {/* Confirm Password input */}
+                  <div className="relative">
+                    <input
+                      type={showConfirmP ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm Password *"
+                      className={`input input-bordered dark:bg-gray-800 w-full ${!passwordsMatch && formData.confirmPassword ? 'border-red-500' : ''}`}
+                      required
+                    />
+                    <div
+                      className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-[var(--text-secondary)]"
+                      onClick={() => setShowConfirmP(!showConfirmP)}
+                    >
+                      {showConfirmP ? <GoEyeClosed /> : <GoEye />}
+                    </div>
+                    {!passwordsMatch && formData.confirmPassword && (
+                      <p className="text-red-500 text-sm mt-1">Passwords do not match</p>
+                    )}
                   </div>
                 </div>
 
@@ -377,9 +561,10 @@ const SignUp = () => {
                       <input
                         type="file"
                         name="certificationFile"
-                        onChange={handleChange}
+                        onChange={(e) => handleFileChange(e, 'certificationFile')}
                         accept=".pdf,.doc,.docx"
                         className="file-input file-input-bordered w-full dark:bg-gray-800"
+                        required={formData.role === 'teacher'}
                       />
                     </div>
                   </div>
@@ -392,7 +577,7 @@ const SignUp = () => {
                   <input
                     type="file"
                     name="photo"
-                    onChange={handleChange}
+                    onChange={(e) => handleFileChange(e, 'photo')}
                     accept="image/jpeg,image/png,application/pdf"
                     className="file-input file-input-bordered w-full dark:bg-gray-800"
                   />
@@ -414,8 +599,8 @@ const SignUp = () => {
                 </div>
 
                 <div className="form-control mt-6">
-                  <button type="submit" className="btn btn-main">
-                    Sign Up
+                  <button type="submit" className="btn btn-main" disabled={loading}>
+                    {loading ? 'Signing up...' : 'Sign Up'}
                   </button>
                 </div>
 

@@ -4,6 +4,8 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const upload = require('../middleware/upload');
+const jwt = require('jsonwebtoken');
+const { sendWelcomeEmail } = require('../services/emailService');
 
 // Debug middleware for all routes
 router.use((req, res, next) => {
@@ -26,66 +28,93 @@ router.post('/signup', upload.fields([
     { name: 'certificationFile', maxCount: 1 }
 ]), async (req, res) => {
     try {
+        const { username, email, password, firstName, lastName, phoneNumber, role, teachingSubjects } = req.body;
+
         // Check if user already exists
-        const existingUser = await User.findOne({ email: req.body.email });
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already registered' });
+            return res.status(400).json({
+                success: false,
+                error: 'User with this email or username already exists'
+            });
         }
 
-        const userData = { ...req.body };
-        
-        // Handle photo file upload
-        if (req.files && req.files.photo) {
-            const photo = req.files.photo[0];
-            userData.photoURL = `/uploads/photos/${photo.filename}`;
-        }
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Handle certification file upload
-        if (req.files && req.files.certificationFile) {
-            const cert = req.files.certificationFile[0];
-            userData.certificationFile = `/uploads/certifications/${cert.filename}`;
-        }
+        // Create user object
+        const userData = {
+            username,
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            teachingSubjects: role === 'teacher' ? JSON.parse(teachingSubjects) : undefined
+        };
 
-        // Hash password if provided
-        if (userData.password) {
-            userData.password = await bcrypt.hash(userData.password, 10);
-        }
-
-        // Parse teaching subjects if provided as string
-        if (typeof userData.teachingSubjects === 'string') {
-            userData.teachingSubjects = JSON.parse(userData.teachingSubjects);
-        }
-
-        const newUser = new User(userData);
-        await newUser.save();
-
-        // Log in the user after signup
-        req.login(newUser, (err) => {
-            if (err) {
-                console.error('Session creation error:', err);
-                return res.status(500).json({ message: 'Error creating session' });
+        // Add certification path only for teachers
+        if (role === 'teacher') {
+            if (!req.files?.certificationFile?.[0]) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Certification file is required for teachers'
+                });
             }
+            userData.certification = req.files.certificationFile[0].path.replace(/\\/g, '/');
+        }
 
-            // Create user response object without sensitive data
-            const userResponse = {
-                message: 'User created successfully',
-                user: {
-                    id: newUser._id,
-                    username: newUser.username,
-                    email: newUser.email,
-                    firstName: newUser.firstName,
-                    lastName: newUser.lastName,
-                    role: newUser.role,
-                    photoURL: newUser.photoURL,
-                    teachingSubjects: newUser.teachingSubjects
-                }
-            };
+        // Add photo if provided
+        if (req.files?.photo?.[0]) {
+            userData.photoURL = req.files.photo[0].path.replace(/\\/g, '/');
+        }
 
-            res.status(201).json(userResponse);
+        // Create new user
+        const user = new User(userData);
+        await user.save();
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '30d' }
+        );
+
+        // Set JWT token in HTTP-only cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Return success response
+        res.status(201).json({
+            success: true,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                photoURL: user.photoURL,
+                teachingSubjects: user.teachingSubjects
+            }
         });
     } catch (error) {
-        console.error('Error in user creation:', error);
-        res.status(500).json({ message: error.message });
+        console.error('Signup Error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 });
 
@@ -94,27 +123,109 @@ router.get('/linkedin', passport.authenticate('linkedin'));
 
 // LinkedIn callback route
 router.get('/linkedin/callback', (req, res, next) => {
-    passport.authenticate('linkedin', (err, user, info) => {
+    passport.authenticate('linkedin', async (err, user, info) => {
+        const frontendUrl = req.headers.referer?.includes('5174') ? 'http://localhost:5174' : 'http://localhost:5173';
+        
         if (err) {
             console.error('LinkedIn Auth Error:', err);
-            return res.redirect('http://localhost:5173/auth/signin?error=auth_failed');
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
         }
         
         if (!user) {
-            console.error('No user data:', info);
-            return res.redirect('http://localhost:5173/auth/signin?error=no_user');
+            console.error('LinkedIn Auth: No user data');
+            return res.redirect(`${frontendUrl}/auth/signin?error=no_user`);
         }
+        
+        try {
+            // Generate JWT token
+            const token = jwt.sign(
+                { 
+                    id: user._id,
+                    email: user.email,
+                    username: user.username,
+                    photoURL: user.photoURL
+                }, 
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '30d' }
+            );
 
-        // Log the user in
-        req.login(user, (err) => {
-            if (err) {
-                console.error('Session creation error:', err);
-                return res.redirect('http://localhost:5173/auth/signin?error=session_failed');
+            // Set JWT token in HTTP-only cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+            });
+
+            // Always redirect to dashboard after successful LinkedIn auth
+            console.log('Successfully authenticated with LinkedIn. Redirecting to dashboard...');
+            return res.redirect(`${frontendUrl}/dashboard`);
+        } catch (error) {
+            console.error('JWT Sign Error:', error);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
+    })(req, res, next);
+});
+
+// Google Auth routes
+router.get('/google', passport.authenticate('google', {
+    scope: ['profile', 'email']
+}));
+
+router.get('/google/callback', (req, res, next) => {
+    passport.authenticate('google', async (err, user, info) => {
+        const frontendUrl = req.headers.referer?.includes('5174') ? 'http://localhost:5174' : 'http://localhost:5173';
+        
+        if (err) {
+            console.error('Google Auth Error:', err);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
+        
+        if (!user) {
+            console.error('Google Auth: No user data');
+            return res.redirect(`${frontendUrl}/auth/signin?error=no_user`);
+        }
+        
+        try {
+            // Check if this is a new user
+            const isNewUser = info && info.isNewUser;
+
+            // Generate JWT token
+            const token = jwt.sign(
+                { 
+                    id: user._id,
+                    email: user.email,
+                    username: user.username,
+                    role: user.role
+                }, 
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '30d' }
+            );
+
+            // Set JWT token in HTTP-only cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+            });
+
+            // Send welcome email if this is a new user
+            if (isNewUser) {
+                try {
+                    await sendWelcomeEmail(user);
+                } catch (emailError) {
+                    console.error('Failed to send welcome email:', emailError);
+                    // Don't block the auth process if email fails
+                }
             }
 
-            // Successful authentication, redirect home
-            res.redirect('http://localhost:5173/');
-        });
+            // Redirect to dashboard
+            return res.redirect(`${frontendUrl}/dashboard`);
+        } catch (error) {
+            console.error('JWT Sign Error:', error);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
     })(req, res, next);
 });
 
@@ -148,18 +259,45 @@ router.post('/signin', async (req, res) => {
     }
 });
 
-// Get current user
-router.get('/check', (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: 'Not authenticated' });
+// Check auth status
+router.get('/check', async (req, res) => {
+    try {
+        const token = req.cookies.token;
+        
+        if (!token) {
+            return res.status(401).json({ 
+                error: 'Not authenticated',
+                isAuthenticated: false 
+            });
+        }
+
+        // Verify JWT token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        
+        // Get fresh user data from database
+        const user = await User.findById(decoded.id).select('-password');
+        
+        if (!user) {
+            return res.status(401).json({ 
+                error: 'User not found',
+                isAuthenticated: false 
+            });
+        }
+
+        res.json({ 
+            user,
+            isAuthenticated: true
+        });
+    } catch (error) {
+        console.error('Auth Check Error:', error);
+        res.status(401).json({ 
+            error: 'Invalid token',
+            isAuthenticated: false 
+        });
     }
-    res.json({ 
-        user: req.user,
-        isAuthenticated: true
-    });
 });
 
-// Check auth status
+// Status
 router.get('/status', (req, res) => {
     const isAuthenticated = req.isAuthenticated();
     res.json({
@@ -168,15 +306,10 @@ router.get('/status', (req, res) => {
     });
 });
 
-// Logout
-router.get('/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) {
-            console.error('Logout error:', err);
-            return res.status(500).json({ error: 'Error during logout' });
-        }
-        res.redirect('http://localhost:5173/auth/signin');
-    });
+// Logout route
+router.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.json({ success: true });
 });
 
 module.exports = router;

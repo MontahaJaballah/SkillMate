@@ -19,6 +19,42 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+const sendWelcomeEmail = async (user) => {
+    try {
+        const mailOptions = {
+            from: {
+                name: 'SkillMate',
+                address: process.env.EMAIL_USER
+            },
+            to: user.email,
+            subject: 'Welcome to SkillMate! 🎉',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #007456;">Welcome to SkillMate!</h2>
+                    <p>Hi ${user.firstName},</p>
+                    <p>Thank you for joining SkillMate! We're excited to have you as part of our community.</p>
+                    <p>With SkillMate, you can:</p>
+                    <ul>
+                        <li>Connect with skilled teachers</li>
+                        <li>Learn new skills at your own pace</li>
+                        <li>Share your knowledge with others</li>
+                    </ul>
+                    <p>Get started by exploring our platform and discovering the skills you want to learn!</p>
+                    <p style="margin-top: 20px;">Best regards,</p>
+                    <p>The SkillMate Team</p>
+                </div>
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✉️ Welcome email sent successfully to:', user.email);
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to send welcome email:', error.message);
+        return false;
+    }
+};
+
 const sendBlockNotification = async (userEmail, reason) => {
     try {
         const mailOptions = {
@@ -53,5 +89,6 @@ const sendBlockNotification = async (userEmail, reason) => {
 };
 
 module.exports = {
-    sendBlockNotification
+    sendBlockNotification,
+    sendWelcomeEmail
 };

@@ -39,6 +39,49 @@
   @apply bg-gray-500 dark:bg-gray-500;
 }
 
+/* Dark mode styles */
+.dark {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.dark input,
+.dark textarea {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+.dark .bg-white {
+    background-color: #1a1a1a !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+    color: #ffffff !important;
+}
+
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+    background-color: #2d2d2d !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+    border-color: #404040 !important;
+}
+
+/* Ensure dropdown text is visible in dark mode */
+.dark .dropdown-content {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+.dark .dropdown-item:hover {
+    background-color: #404040;
+}
+
 /* Dark mode transitions */
 * {
   transition: background-color 0.3s ease, border-color 0.3s ease;

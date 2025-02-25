@@ -2,6 +2,8 @@ import React, { useContext } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Context } from "../../components/AuthProvider/AuthProvider";
 import { useEffect, useState } from "react";
+import UserMenu from "../UserMenu/UserMenu";
+import { FaSun, FaMoon } from "react-icons/fa";
 
 const Navbar = () => {
   const { user, signOut } = useContext(Context);
@@ -10,24 +12,15 @@ const Navbar = () => {
   );
 
   const handleToggle = (e) => {
-    if (e.target.checked) {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
+    const newTheme = e.target.checked ? "dark" : "light";
+    setTheme(newTheme);
   };
 
   useEffect(() => {
     localStorage.setItem("theme", theme);
-    const localTheme = localStorage.getItem("theme");
-    document.querySelector("html").setAttribute("data-theme", localTheme);
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
-
-  const handleSignOut = () => {
-    signOut()
-      .then(() => {})
-      .catch((error) => console.log(error));
-  };
 
   const navItems = (
     <>
@@ -84,9 +77,15 @@ const Navbar = () => {
     </>
   );
 
+  const handleSignOut = () => {
+    signOut()
+      .then(() => {})
+      .catch((error) => console.log(error));
+  };
+
   return (
-    <div>
-      <div className="navbar justify-center py-6 container mx-auto">
+    <div className="bg-white dark:bg-gray-900 shadow-sm">
+      <div className="navbar justify-between py-6 container mx-auto px-4">
         <div className="navbar-start">
           <div className="dropdown">
             <label tabIndex={0} className="btn btn-ghost lg:hidden">
@@ -107,91 +106,48 @@ const Navbar = () => {
             </label>
             <ul
               tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 dark:bg-gray-800"
             >
               {navItems}
             </ul>
           </div>
-          <Link to={"/"}>
-            <div className="flex items-center gap-3">
-              <img
-                src="https://i.ibb.co/8m1d6zD/Untitled-design.png"
-                className="w-12"
-                alt="SkillMate Logo"
-              />
-              <p className="text-2xl font-bold text-main">SkillMate</p>
-            </div>
+          <Link
+            to="/"
+            className="text-2xl font-bold text-main dark:text-white"
+          >
+            SkillMate
           </Link>
         </div>
         <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1 gap-6 text-lg">{navItems}</ul>
+          <ul className="menu menu-horizontal px-1 gap-6">{navItems}</ul>
         </div>
-        <div className="navbar-end">
-          <label className="swap swap-rotate mr-4">
+        <div className="navbar-end flex items-center gap-4">
+          <label className="swap swap-rotate">
             <input
               type="checkbox"
               onChange={handleToggle}
-              checked={theme === "light" ? false : true}
+              checked={theme === "dark"}
+              className="hidden"
             />
-            <svg
-              className="swap-on fill-current w-7 h-7"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-            >
-              <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
-            </svg>
-            <svg
-              className="swap-off fill-current w-7 h-7"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
+            <FaSun className="swap-on h-5 w-5 text-yellow-500" />
+            <FaMoon className="swap-off h-5 w-5 text-gray-600" />
           </label>
 
-          <div className="dropdown dropdown-bottom dropdown-end">
-            <label tabIndex={0} className="">
-              {user && (
-                <img
-                  className="w-12 mr-4 h-12 rounded-full border-2 border-main mb-4 mt-4"
-                  src={user?.photoURL ? user.photoURL : ""}
-                  alt=""
-                />
-              )}
-            </label>
-            {user && (
-              <ul className="p-2 shadow menu dropdown-content z-[1] bg-base-100 rounded-box w-72">
-                <img
-                  className="w-12 mx-auto rounded-full mb-2 mt-2 border-2 border-main"
-                  src={user?.photoURL ? user.photoURL : ""}
-                  alt=""
-                />
-                <p className="font-semibold text-center mr-2 mb-2 text-main">
-                  {user.displayName}
-                </p>
-                <p className="font-semibold text-center mr-2 mb-2 text-main">
-                  {user.email}
-                </p>
-                <li className="btn w-9/12 mx-auto btn-sm mt-2 btn-outline btn-success">
-                  <NavLink to={"/dashboard/profile"}>View Profile</NavLink>
-                </li>
-                <li className="mx-auto my-2">
-                  <NavLink to={"/dashboard/profile"}>DashBoard</NavLink>
-                </li>
-                <button onClick={handleSignOut}>Sign Out</button>
-              </ul>
-            )}
-          </div>
-          {!user && (
-            <div>
-              <Link to={"/auth/signin"} className="">
-                <button className="cursor-pointer rounded-full font-semibold overflow-hidden relative z-100 border border-main group px-4 py-1">
-                  <span className="relative z-10 text-main group-hover:text-white text-lg duration-500">
-                    Sign In
-                  </span>
-                  <span className="absolute w-full h-full bg-main -left-32 top-0 -rotate-45 group-hover:rotate-0 group-hover:left-0 duration-500"></span>
-                  <span className="absolute w-full h-full bg-main -right-32 top-0 -rotate-45 group-hover:rotate-0 group-hover:right-0 duration-500"></span>
-                </button>
+          {user ? (
+            <UserMenu handleSignOut={handleSignOut} />
+          ) : (
+            <div className="flex gap-2">
+              <Link
+                to="/auth/signin"
+                className="btn btn-ghost dark:text-white"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/auth/signup"
+                className="btn btn-primary"
+              >
+                Sign Up
               </Link>
             </div>
           )}
