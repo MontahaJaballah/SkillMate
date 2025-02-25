@@ -4,7 +4,9 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "npx mocha",
+    "build": "echo 'No build needed for Node.js' && exit 0"
   },
   "keywords": [],
   "author": "",
