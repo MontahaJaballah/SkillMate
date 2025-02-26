@@ -50,6 +50,32 @@
     color: #e5e7eb;
 }
 
+/* Search input styles */
+.input-bordered {
+  border: 1px solid #e5e7eb;
+}
+
+.input-bordered:focus {
+  border-color: #007456;
+  box-shadow: none;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+  opacity: 0.8;
+}
+
+.dark .input-bordered {
+  border-color: #4b5563;
+  background-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.dark .input-bordered:focus {
+  border-color: #00a67c;
+}
+
 /* Remove hover background */
 .menu li>*:not(ul):not(.menu-title):not(details):active,
 .menu li>*:not(ul):not(.menu-title):not(details).active,

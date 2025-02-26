@@ -8,6 +8,7 @@ import Footer from "../components/Footers/Footer.jsx";
 // Views
 import Landing from "../views/client/Landing.jsx";
 import Profile from "../views/client/Profile.jsx";
+import SearchResults from "../views/client/SearchResults.jsx";
 
 export default function Client() {
   return (
@@ -17,6 +18,7 @@ export default function Client() {
         <Switch>
           <Route path="/client/landing" exact component={Landing} />
           <Route path="/client/profile/:id?" exact component={Profile} />
+          <Route path="/client/search/:query" exact component={SearchResults} />
           <Redirect from="/client" to="/client/landing" />
         </Switch>
       </main>

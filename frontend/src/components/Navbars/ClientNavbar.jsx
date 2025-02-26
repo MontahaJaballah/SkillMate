@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useHistory } from "react-router-dom";
 import { useState, useEffect, useContext } from "react";
 import { Context } from "../AuthProvider/AuthProvider";
 import "./Navbar.css";
@@ -7,6 +7,8 @@ const Navbar = () => {
   const { user, logout } = useContext(Context);
   const [theme, setTheme] = useState(localStorage.getItem("theme") ? localStorage.getItem("theme") : "light");
   const [theme2, setTheme2] = useState(localStorage.getItem("theme2") ? localStorage.getItem("theme2") : "light");
+  const history = useHistory();
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     localStorage.setItem("theme", theme);
@@ -32,6 +34,14 @@ const Navbar = () => {
     } else {
       setTheme("light");
       setTheme2("light");
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      history.push(`/client/search/${searchQuery}`);
+      setSearchQuery("");
     }
   };
 
@@ -99,6 +109,37 @@ const Navbar = () => {
           </ul>
         </div>
         <div className="navbar-end">
+          {/* Search Form */}
+          <form onSubmit={handleSearch} className="mr-4 hidden md:flex">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search users..."
+                className="input input-bordered rounded-full w-full max-w-xs"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button 
+                type="submit" 
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-main"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth="2" 
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                  />
+                </svg>
+              </button>
+            </div>
+          </form>
           <label className="cursor-pointer grid place-items-center mr-4">
             <input
               checked={theme === "night"}
