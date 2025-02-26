@@ -1,8 +1,16 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-const { sendBlockNotification } = require('../services/emailService');
+const path = require('path');
+const { sendBlockNotificationUser } = require('../services/emailServiceUser');
+const { sendBlockNotificationAdmin, sendAdminCredentials, generateSecurePassword } = require('../services/emailServiceAdmin');
 const twilio = require('twilio');
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Initialize Twilio client only if credentials are available
 let twilioClient = null;
@@ -16,16 +24,32 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     console.log('Missing Twilio credentials');
 }
 
-async function add(req, res) {
+async function addUser(req, res) {
     try {
         console.log('Received registration data:', req.body);
-        
+
         const userData = { ...req.body };
-        
-        // Handle file upload
-        if (req.file) {
-            console.log('File received:', req.file);
-            userData.certificationFile = req.file.path;
+
+        // Handle photo file upload
+        let photoURL = '';
+        if (req.files && req.files.photo) {
+            const photoFile = req.files.photo;
+            const fileName = `${Date.now()}-${photoFile.name}`;
+            const filePath = path.join(uploadDir, 'photos', fileName);
+
+            await photoFile.mv(filePath);
+            photoURL = `http://localhost:5000/uploads/photos/${fileName}`;
+        }
+
+        // Handle certification file upload
+        let certificationFile = '';
+        if (req.files && req.files.certificationFile) {
+            const certFile = req.files.certificationFile;
+            const fileName = `${Date.now()}-${certFile.name}`;
+            const filePath = path.join(uploadDir, 'certifications', fileName);
+
+            await certFile.mv(filePath);
+            certificationFile = `/uploads/certifications/${fileName}`;
         }
 
         // Parse teaching subjects if they're sent as a string
@@ -49,7 +73,7 @@ async function add(req, res) {
 
         const user = new User(userData);
         await user.save();
-        
+
         console.log('User created successfully');
         // Send back the user data (excluding sensitive information)
         const userResponse = {
@@ -61,14 +85,15 @@ async function add(req, res) {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                role: user.role
+                role: user.role,
+                photoURL: user.photoURL
             }
         };
         console.log('Sending response:', userResponse);
         res.status(200).json(userResponse);
     } catch (error) {
         console.error('Error in user registration:', error);
-        
+
         // Clean up uploaded file if user creation fails
         if (req.file) {
             fs.unlink(req.file.path, (err) => {
@@ -80,31 +105,40 @@ async function add(req, res) {
         if (error.code === 11000) {
             // Duplicate key error
             const field = Object.keys(error.keyPattern)[0];
-            res.status(400).json({ 
+            res.status(400).json({
                 success: false,
                 error: `This ${field} is already registered. Please use a different ${field}.`
             });
         } else if (error.name === 'ValidationError') {
             // Mongoose validation error
             const errors = Object.values(error.errors).map(err => err.message);
-            res.status(400).json({ 
+            res.status(400).json({
                 success: false,
-                error: errors.join(', ') 
+                error: errors.join(', ')
             });
         } else {
-            res.status(500).json({ 
+            res.status(500).json({
                 success: false,
                 error: 'Registration failed. Please try again.',
-                details: error.message 
+                details: error.message
             });
         }
     }
 }
 
-async function getAll(req, res) {
+async function getAllUsers(req, res) {
     try {
-        const users = await User.find();
+        const users = await User.find({ role: { $in: ['student', 'teacher'] } });
         res.status(200).send(users);
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
+
+async function getAllAdmins(req, res) {
+    try {
+        const admins = await User.find({ role: 'admin' });
+        res.status(200).send(admins);
     } catch (error) {
         res.status(500).send({ error: error.toString() });
     }
@@ -122,20 +156,40 @@ async function getById(req, res) {
     }
 }
 
+//Select profile photo
 async function update(req, res) {
     try {
         const userData = { ...req.body };
 
-        // Handle file upload
-        if (req.file) {
-            // Delete old file if it exists
-            const oldUser = await User.findById(req.params.id);
-            if (oldUser && oldUser.certificationFile) {
-                fs.unlink(oldUser.certificationFile, (err) => {
-                    if (err) console.error('Error deleting old file:', err);
-                });
+        // Handle photo file upload
+        let photoURL = req.user.photoURL; // Keep existing photo URL if no new photo
+        if (req.files && req.files.photo) {
+            const photoFile = req.files.photo;
+            const fileName = `${Date.now()}-${photoFile.name}`;
+            const filePath = path.join(uploadDir, 'photos', fileName);
+
+            await photoFile.mv(filePath);
+            photoURL = `http://localhost:5000/uploads/photos/${fileName}`;
+
+            // Delete old photo if it exists
+            if (req.user.photoURL) {
+                const oldPhotoPath = req.user.photoURL.replace('http://localhost:5000', '');
+                const fullOldPhotoPath = path.join(__dirname, '..', oldPhotoPath);
+                if (fs.existsSync(fullOldPhotoPath)) {
+                    fs.unlinkSync(fullOldPhotoPath);
+                }
             }
-            userData.certificationFile = req.file.path;
+        }
+
+        // Handle certification file upload
+        let certificationFile = '';
+        if (req.files && req.files.certificationFile) {
+            const certFile = req.files.certificationFile;
+            const fileName = `${Date.now()}-${certFile.name}`;
+            const filePath = path.join(uploadDir, 'certifications', fileName);
+
+            await certFile.mv(filePath);
+            certificationFile = `/uploads/certifications/${fileName}`;
         }
 
         // Parse teaching subjects if they're sent as a string
@@ -156,7 +210,7 @@ async function update(req, res) {
 
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            userData,
+            { ...userData, photoURL },
             { new: true }
         );
 
@@ -198,41 +252,147 @@ async function remove(req, res) {
 
 async function addSubAdmin(req, res) {
     try {
-        const { username, email, password } = req.body;
+        const { username, firstName, lastName, email, sendCredentials } = req.body;
+
+        // Check if required fields are present
+        if (!username || !firstName || !lastName || !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields (username, firstName, lastName, email) are required'
+            });
+        }
+
+        // Check if username or email already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: `${existingUser.username === username ? 'Username' : 'Email'} already exists`
+            });
+        }
+
+        // Generate a secure password
+        const generatedPassword = generateSecurePassword();
+
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(generatedPassword, salt);
+
         const subAdmin = new User({
             username,
+            firstName,
+            lastName,
             email,
-            password,
+            password: hashedPassword,
             role: 'admin'
         });
+
         await subAdmin.save();
-        res.status(201).json({ message: 'Sub-admin created successfully', subAdmin });
+
+        // Send credentials via email
+        const emailSent = await sendAdminCredentials(email, username, generatedPassword);
+
+        res.status(201).json({
+            message: 'Sub-admin created successfully' + (emailSent ? '. Credentials sent via email.' : ''),
+            success: true,
+            emailSent
+        });
     } catch (error) {
-        res.status(400).send({ error: error.toString() });
+        console.error('Error creating sub-admin:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Failed to create sub-admin account'
+        });
+    }
+}
+
+async function updateAdmin(req, res) {
+    try {
+        const { username, firstName, lastName, email } = req.body;
+
+        // Check if required fields are present
+        if (!username || !firstName || !lastName || !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields (username, firstName, lastName, email) are required'
+            });
+        }
+
+        // Check if username or email already exists for other users
+        const existingUser = await User.findOne({
+            $and: [
+                { _id: { $ne: req.params.id } },
+                { $or: [{ username }, { email }] }
+            ]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: `${existingUser.username === username ? 'Username' : 'Email'} already exists`
+            });
+        }
+
+        const updatedAdmin = await User.findByIdAndUpdate(
+            req.params.id,
+            {
+                username,
+                firstName,
+                lastName,
+                email
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedAdmin) {
+            return res.status(404).json({
+                success: false,
+                message: 'Admin not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Admin updated successfully',
+            admin: updatedAdmin
+        });
+    } catch (error) {
+        console.error('Error updating admin:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Failed to update admin'
+        });
     }
 }
 
 async function blockUser(req, res) {
     try {
+        // Only retrieve the user by ID
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
-        if (user.role === 'admin') {
-            return res.status(403).json({ error: 'Cannot block an admin user' });
-        }
+
+        console.log('📧user found:', user.username);
+        // Block the user and set the reason
 
         user.isBlocked = true;
         user.blockReason = req.body.reason;
-        await user.save();
+        user.status = 'deactivated'
+        await user.save({ validateModifiedOnly: true }); // ✅ Only validates changed fields
 
+        // Optionally send an email notification if required
         if (req.body.sendEmail) {
             console.log('📧 Sending block notification email to user:', user.email);
-            await sendBlockNotification(user.email, req.body.reason);
+            if (user.role === 'user') {
+                await sendBlockNotificationUser(user.email, req.body.reason);
+            }
+            else {
+                await sendBlockNotificationAdmin(user.email, req.body.reason);
+            }
         }
 
-        res.status(200).json({ 
+        res.status(200).json({
             message: 'User blocked successfully',
             emailSent: req.body.sendEmail
         });
@@ -250,7 +410,10 @@ async function unblockUser(req, res) {
         }
 
         user.isBlocked = false;
-        await user.save();
+        user.blockReason = null
+        user.status = 'active'
+
+        await user.save({ validateModifiedOnly: true }); // ✅ Only validates changed fields
         res.status(200).json({ message: 'User unblocked successfully' });
     } catch (error) {
         res.status(500).send({ error: error.toString() });
@@ -273,20 +436,44 @@ async function login(req, res) {
 
         // Check if account is deactivated
         if (user.status === 'deactivated') {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 message: 'Account is deactivated. Please reactivate it using your phone number.',
                 deactivated: true,
-                userId: user._id 
+                userId: user._id
             });
         }
+
+        console.log('Password matched, generating token for user:', user.email);
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '30d' }
+        );
+
+        // Set JWT token in HTTP-only cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
 
         // Send user data without sensitive information
         const userData = {
             _id: user._id,
             username: user.username,
             email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
             role: user.role,
-            status: user.status
+            status: user.status,
+            photoURL: user.photoURL
         };
 
         res.json({ user: userData });
@@ -307,27 +494,27 @@ async function searchByUsername(req, res) {
 async function deactivate(req, res) {
     try {
         const { userId, phoneNumber } = req.body;
-        
+
         if (!phoneNumber) {
             return res.status(400).json({ message: 'Phone number is required for account deactivation' });
         }
 
         // Validate phone number format
         if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 message: 'Invalid phone number format. Please use international format (e.g., +1234567890)'
             });
         }
 
         const user = await User.findByIdAndUpdate(
             userId,
-            { 
+            {
                 phoneNumber: phoneNumber,
                 status: 'deactivated'
             },
             { new: true }
         );
-        
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -342,7 +529,7 @@ async function reactivateWithPhone(req, res) {
     try {
         const { phoneNumber, userId } = req.body;
         console.log('Attempting reactivation for:', { userId, phoneNumber });
-        
+
         const user = await User.findById(userId);
 
         if (!user) {
@@ -402,16 +589,16 @@ async function reactivateWithPhone(req, res) {
             res.json({ message: 'Verification code sent successfully' });
         } catch (twilioError) {
             console.error('Twilio error:', twilioError);
-            
+
             // In development mode, return the code even if SMS fails
             if (process.env.NODE_ENV === 'development') {
                 console.log('Development mode - verification code (SMS failed):', verificationCode);
-                return res.json({ 
+                return res.json({
                     message: 'SMS failed but code generated (development mode)',
-                    verificationCode: verificationCode 
+                    verificationCode: verificationCode
                 });
             }
-            
+
             res.status(500).json({ message: 'Failed to send verification code' });
         }
     } catch (error) {
@@ -461,7 +648,8 @@ async function verifyAndReactivate(req, res) {
             username: updatedUser.username,
             email: updatedUser.email,
             role: updatedUser.role,
-            status: updatedUser.status
+            status: updatedUser.status,
+            photoURL: updatedUser.photoURL
         };
 
         res.json({ user: userData, message: 'Account reactivated successfully' });
@@ -471,16 +659,18 @@ async function verifyAndReactivate(req, res) {
 }
 
 module.exports = {
-    add,
-    remove,
+    addUser,
     update,
-    getAll,
+    remove,
+    getAllUsers,
+    getAllAdmins,
     getById,
-    login,
-    searchByUsername,
     addSubAdmin,
+    updateAdmin,
     blockUser,
     unblockUser,
+    login,
+    searchByUsername,
     deactivate,
     reactivateWithPhone,
     verifyAndReactivate

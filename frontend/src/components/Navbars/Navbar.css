@@ -1,0 +1,65 @@
+/* Base styles */
+.text-main {
+    color: #007456;
+}
+
+.border-main {
+    border-color: #007456;
+}
+
+.bg-main {
+    background-color: #007456;
+}
+
+/* Navigation links */
+.navbar li a {
+    color: #1f2937 !important;
+    /* This prevents dark mode from working */
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.navbar li a:hover {
+    color: #007456 !important;
+    background: transparent !important;
+}
+
+.navbar li a.active {
+    color: #007456 !important;
+    background: transparent !important;
+}
+
+/* Dark mode overrides */
+.dark .navbar li a {
+    color: #e5e7eb !important;
+}
+
+.dark .text-main {
+    color: #00a67c;
+}
+
+.dark .border-main {
+    border-color: #00a67c;
+}
+
+.dark .bg-main {
+    background-color: #00a67c;
+}
+
+.dark .text-black {
+    color: #e5e7eb;
+}
+
+/* Remove hover background */
+.menu li>*:not(ul):not(.menu-title):not(details):active,
+.menu li>*:not(ul):not(.menu-title):not(details).active,
+.menu li>details>summary:active {
+    background-color: transparent !important;
+    color: #007456 !important;
+}
+
+.dark .menu li>*:not(ul):not(.menu-title):not(details):active,
+.dark .menu li>*:not(ul):not(.menu-title):not(details).active,
+.dark .menu li>details>summary:active {
+    color: #00a67c !important;
+}

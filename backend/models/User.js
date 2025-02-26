@@ -9,8 +9,8 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: function() {
-            return !this.linkedinId; // Password only required if not using LinkedIn
+        required: function () {
+            return !this.linkedinId && !this.googleId; // Password only required if not using social login
         },
         minlength: 6
     },
@@ -35,8 +35,8 @@ const userSchema = new mongoose.Schema({
     phoneNumber: {
         type: String,
         validate: {
-            validator: function(v) {
-                return /^\+[1-9]\d{1,14}$/.test(v);
+            validator: function (v) {
+                return !v || /^\+[1-9]\d{1,14}$/.test(v);
             },
             message: props => `${props.value} is not a valid phone number! Please use international format (e.g., +1234567890)`
         },
@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema({
     certification: {
         type: String,
         // Required only if role is teacher
-        required: function() {
+        required: function () {
             return this.role === 'teacher';
         }
     },
@@ -104,7 +104,26 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    linkedinId: String,
+    linkedinId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    photoURL: {
+        type: String,
+        default: ''
+    },
+    displayName: {
+        type: String,
+        get: function () {
+            return this.firstName + ' ' + this.lastName;
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now

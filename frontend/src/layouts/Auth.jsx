@@ -1,8 +1,6 @@
 import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
-import Navbar from "../components/Navbar/Navbar";
 
-// Auth pages
 import SignIn from "../views/auth/SignIn/SignIn";
 import SignUp from "../views/auth/SignUp/SignUp";
 

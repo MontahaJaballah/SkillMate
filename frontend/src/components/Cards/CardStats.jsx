@@ -6,10 +6,10 @@ export default function CardStats({
   statTitle = "350,897",
   statArrow = "up",
   statPercent = "3.48",
-  statPercentColor = "text-emerald-500",
-  statDescripiron = "Since last month",
+  statPercentColor = "text-primary",
+  statDescription = "Since last month",
   statIconName = "far fa-chart-bar",
-  statIconColor = "bg-red-500",
+  statIconColor = "bg-primary",
 }) {
   return (
     <>
@@ -17,38 +17,25 @@ export default function CardStats({
         <div className="flex-auto p-4">
           <div className="flex flex-wrap">
             <div className="relative w-full pr-4 max-w-full flex-grow flex-1">
-              <h5 className="text-gray-500 uppercase font-bold text-xs">
+              <h5 className="text-dark-500 uppercase font-heading text-xs font-semibold">
                 {statSubtitle}
               </h5>
-              <span className="font-semibold text-xl text-gray-800">
+              <span className="font-heading font-bold text-xl text-dark-900">
                 {statTitle}
               </span>
             </div>
             <div className="relative w-auto pl-4 flex-initial">
-              <div
-                className={
-                  "text-white p-3 text-center inline-flex items-center justify-center w-12 h-12 shadow-lg rounded-full " +
-                  statIconColor
-                }
-              >
+              <div className={`text-white p-3 text-center inline-flex items-center justify-center w-12 h-12 shadow-lg rounded-full ${statIconColor}`}>
                 <i className={statIconName}></i>
               </div>
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-4">
-            <span className={statPercentColor + " mr-2"}>
-              <i
-                className={
-                  statArrow === "up"
-                    ? "fas fa-arrow-up"
-                    : statArrow === "down"
-                      ? "fas fa-arrow-down"
-                      : ""
-                }
-              ></i>{" "}
+          <p className="text-sm text-dark-500 mt-4">
+            <span className={`${statPercentColor} mr-2`}>
+              <i className={`fas fa-arrow-${statArrow} ${statArrow === "up" ? "text-primary" : "text-secondary"}`}></i>{" "}
               {statPercent}%
             </span>
-            <span className="whitespace-nowrap">{statDescripiron}</span>
+            <span className="whitespace-nowrap">{statDescription}</span>
           </p>
         </div>
       </div>
@@ -62,7 +49,7 @@ CardStats.propTypes = {
   statArrow: PropTypes.oneOf(["up", "down"]),
   statPercent: PropTypes.string,
   statPercentColor: PropTypes.string,
-  statDescripiron: PropTypes.string,
+  statDescription: PropTypes.string,
   statIconName: PropTypes.string,
   statIconColor: PropTypes.string,
 };

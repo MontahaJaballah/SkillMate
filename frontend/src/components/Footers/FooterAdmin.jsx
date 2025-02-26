@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-export default function FooterAdmin({ absolute }) {
+export default function FooterAdmin({ absolute = false }) {
   return (
     <>
       <footer className={
@@ -57,10 +57,6 @@ export default function FooterAdmin({ absolute }) {
     </>
   );
 }
-
-FooterAdmin.defaultProps = {
-  absolute: false,
-};
 
 FooterAdmin.propTypes = {
   absolute: PropTypes.bool,

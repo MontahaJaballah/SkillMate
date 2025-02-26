@@ -1,4 +1,5 @@
 import { Typewriter } from "react-simple-typewriter";
+import cscc from "../../assets/images/cscc.png";
 
 const Banner = () => {
   return (
@@ -6,23 +7,22 @@ const Banner = () => {
       <div className="flex  container flex-col-reverse lg:flex-row p-4 md:p-auto mx-auto place-items-center lg:h-[65vh]">
         <div className="flex-1 text-3xl text-black font-semibold leading-[50px]">
           <div className="mb-4 md:text-4xl text-center md:text-start leading-10 text-2xl md:border-l-4 md:border-[#007456]">
-            <h1 className=" ml-4 dark:text-slate-300">
-              <span className="">Worried About Jobs?</span>
-              <br /> Can't Find The Job You're Looking For!
+            <h1 className="ml-4 dark:text-slate-300">
+              <span className="">Struggling to Learn New Skills?</span>
+              <br /> Can't Find the Right Training for Your Career Growth?
             </h1>
           </div>
           <div className="mb-4 md:text-4xl text-center md:text-start leading-10 text-2xl md:border-l-4 md:border-[#007456] mt-6">
-            <h1 className=" ml-4 dark:text-slate-300">
-
-              On <span className=" text-[#007456] dark:text-[#29c098]"> Skill-Exchange</span>
+            <h1 className="ml-4 dark:text-slate-300">
+              On <span className="text-[#007456] dark:text-[#29c098]">Skillmate</span>
               <br />
               <Typewriter
                 words={[
-                  "Find World's best Jobs From Home..",
-                  " Elevate your career with the finest work-from-home opportunities worldwide..",
-                  "Redefine your work-life balance with the world's top remote jobs..",
-                  "Join the future of work: Seamless, global, and rewarding – Find your perfect job..",
-                  "Craft your career path without boundaries..",
+                  "Access top online courses and certifications..",
+                  "Boost your career with expert-led training..",
+                  "Master in-demand skills from anywhere..",
+                  "Unlock new opportunities with practical learning..",
+                  "Upgrade your future—one skill at a time..",
                 ]}
                 loop={true}
                 cursor
@@ -38,7 +38,7 @@ const Banner = () => {
               <div className="flex items-start h-28 md:w-40 w-60 justify-center px-4 mx-0.5 my-0.5 border-r-4 border-[#007456]">
                 <div className="flex-col">
                   <div className="text-xl text-[#007456] dark:text-[#29c098] font-bold  my-2">
-                    Job Submit
+                    Course Submit
                   </div>
                   <div className="className flex items-center">
                     <div className="text-3xl dark:text-slate-300 font-bold ">
@@ -76,7 +76,7 @@ const Banner = () => {
         </div>
         <div className="flex-1">
           <img
-            src="https://i.ibb.co/NmXms76/71a5ab45-ccd6-483f-a579-d86740a6f198.webp"
+            src={cscc}
             alt=""
           />
         </div>

@@ -12,9 +12,9 @@ const Footer = () => {
             alt=""
           />
           <p>
-            <span className="text-2xl font-bold text-main">Skill Exchange</span>
+            <span className="text-2xl font-bold text-main">SkillMate</span>
             <br />
-            Providing reliable tech since 2009
+            Providing reliable courses since {new Date().getFullYear()}{" "}
           </p>
         </aside>
         <nav>
@@ -61,7 +61,7 @@ const Footer = () => {
           </div>
         </nav>
       </footer>
-      <p className="text-sm font-medium pt-4 t text-center pb-10 text-main ">Copyright © 2023 - All right reserved by Skill-Exchange Ltd</p>
+      <p className="text-sm font-medium pt-4 t text-center pb-10 text-main ">Copyright © {new Date().getFullYear()}{" "} - All right reserved by Skill-Exchange Ltd</p>
     </div>
   );
 };

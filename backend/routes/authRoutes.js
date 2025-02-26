@@ -1,47 +1,419 @@
 const express = require('express');
 const passport = require('passport');
 const router = express.Router();
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const upload = require('../middleware/upload');
+const jwt = require('jsonwebtoken');
+const { sendWelcomeEmail } = require('../services/emailServiceUser');
+const userController = require('../controllers/userController');
 
-// LinkedIn OAuth Routes
-router.get('/auth/linkedin', (req, res, next) => {
-    passport.authenticate('linkedin', {
-        state: Math.random().toString(36).substring(7)
+// Debug middleware for all routes
+router.use((req, res, next) => {
+    console.log('Auth Route Request:', {
+        method: req.method,
+        path: req.path,
+        originalUrl: req.originalUrl,
+        query: req.query,
+        headers: {
+            referer: req.headers.referer,
+            origin: req.headers.origin
+        }
+    });
+    next();
+});
+
+// Signup route
+router.post('/signup', upload.fields([
+    { name: 'photo', maxCount: 1 },
+    { name: 'certificationFile', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const { username, email, password, firstName, lastName, phoneNumber, role, teachingSubjects } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'User with this email or username already exists'
+            });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create user object
+        const userData = {
+            username,
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            teachingSubjects: role === 'teacher' ? JSON.parse(teachingSubjects) : undefined
+        };
+
+        // Add certification path only for teachers
+        if (role === 'teacher') {
+            if (!req.files?.certificationFile?.[0]) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Certification file is required for teachers'
+                });
+            }
+            userData.certification = req.files.certificationFile[0].path.replace(/\\/g, '/');
+        }
+
+        // Add photo if provided
+        if (req.files?.photo?.[0]) {
+            userData.photoURL = req.files.photo[0].path.replace(/\\/g, '/');
+        }
+
+        // Create new user
+        const user = new User(userData);
+        await user.save();
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '30d' }
+        );
+
+        // Set JWT token in HTTP-only cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Return success response
+        res.status(201).json({
+            success: true,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                photoURL: user.photoURL,
+                teachingSubjects: user.teachingSubjects
+            }
+        });
+    } catch (error) {
+        console.error('Signup Error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// LinkedIn authentication route
+router.get('/linkedin', passport.authenticate('linkedin'));
+
+// LinkedIn callback route
+router.get('/linkedin/callback', (req, res, next) => {
+    passport.authenticate('linkedin', async (err, user, info) => {
+        const frontendUrl = req.headers.referer?.includes('5174') ? 'http://localhost:5174' : 'http://localhost:5173';
+
+        if (err) {
+            console.error('LinkedIn Auth Error:', err);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
+
+        if (!user) {
+            console.error('LinkedIn Auth: No user data');
+            return res.redirect(`${frontendUrl}/auth/signin?error=no_user`);
+        }
+
+        try {
+            // Generate JWT token
+            const token = jwt.sign(
+                {
+                    id: user._id,
+                    email: user.email,
+                    username: user.username,
+                    photoURL: user.photoURL
+                },
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '30d' }
+            );
+
+            // Set JWT token in HTTP-only cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+            });
+
+            // Always redirect to dashboard after successful LinkedIn auth
+            console.log('Successfully authenticated with LinkedIn. Redirecting to dashboard...');
+            return res.redirect(`${frontendUrl}/dashboard`);
+        } catch (error) {
+            console.error('JWT Sign Error:', error);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
     })(req, res, next);
 });
 
-router.get('/auth/linkedin/callback', 
-    passport.authenticate('linkedin', { 
-        successRedirect: 'http://localhost:5000/dashboard',
-        failureRedirect: 'http://localhost:5000/login',
-        failureMessage: true
-    })
-);
+// Google Auth routes
+router.get('/google', passport.authenticate('google', {
+    scope: ['profile', 'email']
+}));
 
-// Get current user
-router.get('/auth/current-user', (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: 'Not authenticated' });
-    }
-    res.json(req.user);
+router.get('/google/callback', (req, res, next) => {
+    passport.authenticate('google', async (err, user, info) => {
+        const frontendUrl = req.headers.referer?.includes('5174') ? 'http://localhost:5174' : 'http://localhost:5173';
+
+        if (err) {
+            console.error('Google Auth Error:', err);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
+
+        if (!user) {
+            console.error('Google Auth: No user data');
+            return res.redirect(`${frontendUrl}/auth/signin?error=no_user`);
+        }
+
+        try {
+            // Check if this is a new user
+            const isNewUser = info && info.isNewUser;
+
+            // Generate JWT token
+            const token = jwt.sign(
+                {
+                    id: user._id,
+                    email: user.email,
+                    username: user.username,
+                    role: user.role
+                },
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '30d' }
+            );
+
+            // Set JWT token in HTTP-only cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+            });
+
+            // Send welcome email if this is a new user
+            if (isNewUser) {
+                try {
+                    await sendWelcomeEmail(user);
+                } catch (emailError) {
+                    console.error('Failed to send welcome email:', emailError);
+                    // Don't block the auth process if email fails
+                }
+            }
+
+            // Redirect to dashboard
+            return res.redirect(`${frontendUrl}/dashboard`);
+        } catch (error) {
+            console.error('JWT Sign Error:', error);
+            return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
+        }
+    })(req, res, next);
 });
+
+// Sign in endpoint
+router.post("/login", userController.login);
+/*router.post('/signin', async (req, res) => {
+    try {
+        console.log('Sign in request received:', {
+            body: req.body,
+            headers: req.headers
+        });
+ 
+        const { email, password } = req.body;
+ 
+        if (!email || !password) {
+            console.log('Missing credentials:', { email: !!email, password: !!password });
+            return res.status(400).json({
+                success: false,
+                error: 'Email and password are required'
+            });
+        }
+ 
+        // Find user by email
+        console.log('Finding user with email:', email);
+        const user = await User.findOne({ email });
+ 
+        if (!user) {
+            console.log('User not found with email:', email);
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+        }
+ 
+        // Check password
+        console.log('Checking password for user:', user.email);
+        const isMatch = await bcrypt.compare(password, user.password);
+ 
+        if (!isMatch) {
+            console.log('Password does not match for user:', user.email);
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+        }
+ 
+        console.log('Password matched, generating token for user:', user.email);
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '30d' }
+        );
+ 
+        // Set JWT token in HTTP-only cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+ 
+        // Return user data without sensitive information
+        const userResponse = {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            photoURL: user.photoURL,
+            teachingSubjects: user.teachingSubjects
+        };
+ 
+        console.log('Login successful for user:', user.email);
+        res.json({
+            success: true,
+            user: userResponse
+        });
+    } catch (error) {
+        console.error('Sign in error:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});*/
 
 // Check auth status
-router.get('/auth/status', (req, res) => {
+router.get('/check', async (req, res) => {
+    console.log('Auth Check Request:', {
+        cookies: req.cookies,
+        headers: {
+            origin: req.headers.origin,
+            referer: req.headers.referer
+        }
+    });
+
+    try {
+        const token = req.cookies.token;
+
+        if (!token) {
+            console.warn('No token found in cookies');
+            return res.status(401).json({
+                error: 'Not authenticated - No token',
+                isAuthenticated: false,
+                cookiesPresent: Object.keys(req.cookies).length > 0
+            });
+        }
+
+        // Verify JWT token with more robust error handling
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            console.log('Token decoded successfully:', {
+                id: decoded.id,
+                email: decoded.email
+            });
+        } catch (verifyError) {
+            console.error('Token Verification Error:', verifyError);
+            return res.status(401).json({
+                error: 'Invalid or expired token',
+                details: verifyError.message,
+                isAuthenticated: false
+            });
+        }
+
+        // Validate decoded token structure
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({
+                error: 'Invalid token payload',
+                isAuthenticated: false
+            });
+        }
+
+        // Get fresh user data from database
+        let user;
+        try {
+            user = await User.findById(decoded.id).select('-password');
+            if (!user) {
+                console.warn(`No user found with ID: ${decoded.id}`);
+                return res.status(401).json({
+                    error: 'User not found',
+                    isAuthenticated: false
+                });
+            }
+        } catch (dbError) {
+            console.error('Database User Retrieval Error:', dbError);
+            return res.status(500).json({
+                error: 'Database error during user retrieval',
+                details: dbError.message,
+                isAuthenticated: false
+            });
+        }
+
+        res.json({
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                photoURL: user.photoURL,
+                teachingSubjects: user.teachingSubjects
+            },
+            isAuthenticated: true
+        });
+    } catch (error) {
+        console.error('Unexpected Auth Check Error:', error);
+        res.status(500).json({
+            error: 'Unexpected server error during authentication check',
+            details: error.message,
+            isAuthenticated: false
+        });
+    }
+});
+
+// Status
+router.get('/status', (req, res) => {
+    const isAuthenticated = req.isAuthenticated();
     res.json({
-        isAuthenticated: req.isAuthenticated(),
-        user: req.user
+        isAuthenticated,
+        user: isAuthenticated ? req.user : null
     });
 });
 
-// Logout
-router.get('/auth/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) {
-            console.error('Logout error:', err);
-            return res.status(500).json({ error: 'Error during logout' });
-        }
-        res.redirect('http://localhost:5000');
-    });
+// Logout route
+router.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.json({ success: true });
 });
 
 module.exports = router;

@@ -1,91 +1,182 @@
-// SkillMate/frontend/src/components/AuthProvider/AuthProvider.jsx
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
-export const Context = createContext("");
-
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api',  // adjust to your backend URL
-  withCredentials: true
-});
+export const Context = createContext(null);
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loader, setLoader] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const signInUser = async (email, password) => {
-    setLoader(true);
+  const checkAuthStatus = async () => {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      setUser(response.data.user);
-      toast.success("Sign in successful!");
-      return response.data;
+      const response = await axios.get('http://localhost:5000/api/auth/check', {
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data && response.data.user) {
+        const isNewLogin = !user && response.data.user;
+        setUser(response.data.user);
+
+        if (isNewLogin) {
+          toast.success('Successfully logged in!');
+        }
+      } else {
+        setUser(null);
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Sign in failed");
-      throw error;
-    } finally {
-      setLoader(false);
-    }
-  };
-
-  const signOutUser = async () => {
-    setLoader(true);
-    try {
-      await api.post('/auth/logout');
+      // Only log error if it's not a 401 (unauthorized)
+      if (error.response?.status !== 401) {
+        console.error('Auth check error:', error);
+      }
       setUser(null);
-      toast.success("Signed out successfully!");
-    } catch (error) {
-      toast.error("Sign out failed");
-      throw error;
     } finally {
-      setLoader(false);
+      setLoading(false);
     }
   };
 
-  const signUpUser = async (email, password) => {
-    setLoader(true);
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/register', { email, password });
+      const response = await axios.post('http://localhost:5000/api/auth/signin', {
+        email,
+        password
+      }, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        setUser(response.data.user);
+        toast.success('Successfully logged in!');
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.error || 'Failed to login');
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await axios.post('http://localhost:5000/api/auth/logout', {}, {
+        withCredentials: true
+      });
+      setUser(null);
+      toast.success('Successfully logged out!');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+      throw error;
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/signup', userData, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        setUser(response.data.user);
+        toast.success('Successfully registered!');
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error(error.response?.data?.error || 'Failed to register');
+      throw error;
+    }
+  };
+
+  const handleLinkedInLogin = () => {
+    // Store the current URL to redirect back after login
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
+  const handleLinkedInSignUp = () => {
+    // Store the current URL to redirect back after signup
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
+  const handleGoogleSignUp = () => {
+    // Store the current URL to redirect back after signup
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
+
+  const signUpUser = async (userData) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/signup', userData, {
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       setUser(response.data.user);
-      toast.success("Sign up successful!");
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Sign up failed");
       throw error;
-    } finally {
-      setLoader(false);
     }
   };
 
-  const updateUserProfile = async (name, photoUrl) => {
-    setLoader(true);
+  const signInUser = async (credentials) => {
     try {
-      const response = await api.put('/auth/profile', { displayName: name, photoURL: photoUrl });
+      const response = await axios.post('http://localhost:5000/api/auth/signin', credentials, {
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
       setUser(response.data.user);
-      toast.success("Profile updated!");
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Update failed");
       throw error;
-    } finally {
-      setLoader(false);
     }
   };
 
-  const authInfo = {
+  const signOut = async () => {
+    try {
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Error signing out');
+      // Still clear the user state and redirect on error
+      setUser(null);
+      window.location.href = '/';
+    }
+  };
+
+  const value = {
+    user,
+    loading,
+    login,
+    logout,
+    register,
+    checkAuthStatus,
+    handleLinkedInLogin,
+    handleLinkedInSignUp,
+    handleGoogleSignUp,
     signUpUser,
     signInUser,
-    user,
-    loader,
-    signOutUser,
-    updateUserProfile
+    signOut
   };
 
   return (
-    <Context.Provider value={authInfo}>
-      {children}
+    <Context.Provider value={value}>
+      {!loading && children}
     </Context.Provider>
   );
 };

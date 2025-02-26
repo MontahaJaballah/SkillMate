@@ -10,7 +10,9 @@ import FooterAdmin from "../components/Footers/FooterAdmin.jsx";
 // views
 import Dashboard from "../views/admin/Dashboard.jsx";
 import Settings from "../views/admin/Settings.jsx";
-import Tables from "../views/admin/Tables.jsx";
+import Users from "../views/admin/Users.jsx";
+import FormUser from "../views/admin/FormUser.jsx";
+import Admins from "../views/admin/Admins.jsx";
 
 export default function Admin() {
   return (
@@ -24,7 +26,9 @@ export default function Admin() {
           <Switch>
             <Route path="/admin/dashboard" exact component={Dashboard} />
             <Route path="/admin/settings" exact component={Settings} />
-            <Route path="/admin/tables" exact component={Tables} />
+            <Route path="/admin/users" exact component={Users} />
+            <Route path="/admin/admins" exact component={Admins} />
+            <Route path="/admin/formuser" exact component={FormUser} />
             <Redirect from="/admin" to="/admin/dashboard" />
           </Switch>
           <FooterAdmin />

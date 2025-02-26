@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import Banner from "../../components/Banner/Banner";
 
 
@@ -6,7 +6,7 @@ const Home = () => {
   return (
     <div className="">
       <Helmet>
-        <title>Skill Exchange || Home</title>
+        <title>SkillMate || Home</title>
       </Helmet>
       <Banner></Banner>
     </div>

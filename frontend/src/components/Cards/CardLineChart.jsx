@@ -18,16 +18,16 @@ export default function CardLineChart() {
         datasets: [
           {
             label: "2024",
-            backgroundColor: "#fff",
-            borderColor: "#fff",
-            data: [40, 68, 86, 74, 56, 60, 87],
+            backgroundColor: "#29C098",
+            borderColor: "#29C098",
+            data: [65, 78, 66, 44, 56, 67, 75],
             fill: false,
           },
           {
             label: "2025",
-            backgroundColor: "#4c51bf",
-            borderColor: "#4c51bf",
-            data: [65, 78, 76, 45, 65, 70, 75],
+            backgroundColor: "#8B5CF6",
+            borderColor: "#8B5CF6",
+            data: [40, 68, 86, 74, 56, 60, 87],
             fill: false,
           },
         ],
@@ -38,11 +38,13 @@ export default function CardLineChart() {
         title: {
           display: false,
           text: "Sales Charts",
-          fontColor: "white",
+          fontColor: "#0F1729",
+          fontFamily: "'Inter', sans-serif",
         },
         legend: {
           labels: {
-            fontColor: "white",
+            fontColor: "#0F1729",
+            fontFamily: "'Inter', sans-serif",
           },
           align: "end",
           position: "bottom",
@@ -59,20 +61,22 @@ export default function CardLineChart() {
           xAxes: [
             {
               ticks: {
-                fontColor: "rgba(255,255,255,.7)",
+                fontColor: "#0F1729",
+                fontFamily: "'Inter', sans-serif",
               },
               display: true,
               scaleLabel: {
-                display: false,
+                display: true,
                 labelString: "Month",
-                fontColor: "white",
+                fontColor: "#0F1729",
+                fontFamily: "'Inter', sans-serif",
               },
               gridLines: {
                 display: false,
                 borderDash: [2],
                 borderDashOffset: [2],
                 color: "rgba(33, 37, 41, 0.3)",
-                zeroLineColor: "rgba(0, 0, 0, 0)",
+                zeroLineColor: "rgba(33, 37, 41, 0.3)",
                 zeroLineBorderDash: [2],
                 zeroLineBorderDashOffset: [2],
               },
@@ -81,20 +85,22 @@ export default function CardLineChart() {
           yAxes: [
             {
               ticks: {
-                fontColor: "rgba(255,255,255,.7)",
+                fontColor: "#0F1729",
+                fontFamily: "'Inter', sans-serif",
               },
               display: true,
               scaleLabel: {
-                display: false,
+                display: true,
                 labelString: "Value",
-                fontColor: "white",
+                fontColor: "#0F1729",
+                fontFamily: "'Inter', sans-serif",
               },
               gridLines: {
-                borderDash: [3],
-                borderDashOffset: [3],
+                borderDash: [2],
                 drawBorder: false,
-                color: "rgba(255, 255, 255, 0.15)",
-                zeroLineColor: "rgba(33, 37, 41, 0)",
+                borderDashOffset: [2],
+                color: "rgba(33, 37, 41, 0.15)",
+                zeroLineColor: "rgba(33, 37, 41, 0.15)",
                 zeroLineBorderDash: [2],
                 zeroLineBorderDashOffset: [2],
               },
@@ -109,14 +115,16 @@ export default function CardLineChart() {
 
   return (
     <>
-      <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded bg-gray-800">
+      <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded bg-white">
         <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
           <div className="flex flex-wrap items-center">
             <div className="relative w-full max-w-full flex-grow flex-1">
-              <h6 className="uppercase text-gray-200 mb-1 text-xs font-semibold">
+              <h6 className="uppercase text-dark-400 mb-1 text-xs font-semibold font-heading">
                 Overview
               </h6>
-              <h2 className="text-white text-xl font-semibold">Sales value</h2>
+              <h2 className="text-dark-900 text-xl font-bold font-heading">
+                Sales value
+              </h2>
             </div>
           </div>
         </div>
