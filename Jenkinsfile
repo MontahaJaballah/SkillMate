@@ -94,7 +94,13 @@ pipeline {
             }
         }
     }
-
+stage('Building images (node and mongo)') {
+    steps {
+        script {
+            sh 'docker-compose build'
+        }
+    }
+}
     post {
         success {
             echo 'Pipeline executed successfully!'
