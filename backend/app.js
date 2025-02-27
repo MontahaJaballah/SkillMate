@@ -8,6 +8,14 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const User = require('./models/User');
 
+// Set the correct path for Dialogflow credentials
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS === 'C:/Users/MonMSI/Downloads/skillmateBot.json') {
+    console.log('Using Dialogflow credentials from .env file');
+} else {
+    console.log('Overriding Dialogflow credentials path');
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = 'C:/Users/MonMSI/Downloads/skillmateBot.json';
+}
+
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const dbConfig = require('./config/db.json');

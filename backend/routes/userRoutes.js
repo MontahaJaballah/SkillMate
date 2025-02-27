@@ -48,6 +48,9 @@ router.put("/blockuser/:id", userController.blockUser);
 router.put("/unblockuser/:id", userController.unblockUser);
 router.get("/searchuser/:username", userController.searchByUsername);
 
+// Chat endpoint
+router.post("/chat", userController.chat);
+
 // Serve uploaded files
 router.get('/uploads/photos/:filename', (req, res) => {
     const filePath = path.join(__dirname, '../uploads/photos', req.params.filename);

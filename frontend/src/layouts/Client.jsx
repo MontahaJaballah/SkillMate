@@ -4,6 +4,7 @@ import { Switch, Route, Redirect } from "react-router-dom";
 // Components
 import Navbar from "../components/Navbars/ClientNavbar.jsx";
 import Footer from "../components/Footers/Footer.jsx";
+import Chatbot from "../components/Chatbot/Chatbot.jsx";
 
 // Views
 import Landing from "../views/client/Landing.jsx";
@@ -23,6 +24,9 @@ export default function Client() {
         </Switch>
       </main>
       <Footer />
+      <div style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 1000 }}>
+        <Chatbot />
+      </div>
     </>
   );
 }
