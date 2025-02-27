@@ -8,10 +8,11 @@ export const Context = createContext(null);
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = "http://localhost:5000/api/auth";
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/check', {
+      const response = await axios.get(`${API_BASE_URL}/check`, {
         withCredentials: true,
         headers: {
           'Accept': 'application/json',
@@ -46,11 +47,15 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signin', {
+      const response = await axios.post(`${API_BASE_URL}/login`, {
         email,
         password
       }, {
-        withCredentials: true
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -65,24 +70,13 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      await axios.post('http://localhost:5000/api/auth/logout', {}, {
-        withCredentials: true
-      });
-      setUser(null);
-      toast.success('Successfully logged out!');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Failed to logout');
-      throw error;
-    }
-  };
-
   const register = async (userData) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signup', userData, {
-        withCredentials: true
+      const response = await axios.post(`${API_BASE_URL}/signup`, userData, {
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -97,53 +91,25 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  const handleLinkedInLogin = () => {
-    // Store the current URL to redirect back after login
-    sessionStorage.setItem('redirectUrl', window.location.pathname);
-    window.location.href = 'http://localhost:5000/api/auth/linkedin';
-  };
-
-  const handleLinkedInSignUp = () => {
-    // Store the current URL to redirect back after signup
-    sessionStorage.setItem('redirectUrl', window.location.pathname);
-    window.location.href = 'http://localhost:5000/api/auth/linkedin';
-  };
-
-  const handleGoogleSignUp = () => {
-    // Store the current URL to redirect back after signup
-    sessionStorage.setItem('redirectUrl', window.location.pathname);
-    window.location.href = 'http://localhost:5000/api/auth/google';
-  };
-
-  const signUpUser = async (userData) => {
+  const logout = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signup', userData, {
-        withCredentials: true,
-        headers: {
-          'Accept': 'application/json'
-        }
+      await axios.post(`${API_BASE_URL}/logout`, {}, {
+        withCredentials: true
       });
-      setUser(response.data.user);
-      return response.data;
+      setUser(null);
+      toast.success('Successfully logged out!');
+      return true;
     } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
       throw error;
     }
   };
 
-  const signInUser = async (credentials) => {
-    try {
-      const response = await axios.post('http://localhost:5000/api/auth/signin', credentials, {
-        withCredentials: true,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      setUser(response.data.user);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  const handleSocialAuth = (provider) => {
+    // Store the current URL to redirect back after auth
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = `${API_BASE_URL}/${provider}`;
   };
 
   const signOut = async () => {
@@ -165,13 +131,12 @@ const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
+    signOut,
     checkAuthStatus,
-    handleLinkedInLogin,
-    handleLinkedInSignUp,
-    handleGoogleSignUp,
-    signUpUser,
-    signInUser,
-    signOut
+    // Social auth handlers
+    handleLinkedInLogin: () => handleSocialAuth('linkedin'),
+    handleLinkedInSignUp: () => handleSocialAuth('linkedin'),
+    handleGoogleSignUp: () => handleSocialAuth('google')
   };
 
   return (

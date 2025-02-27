@@ -8,7 +8,6 @@
     "build": "vite build && npm run build:tailwind",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build": "vite build && npm run build:tailwind",
     "build:tailwind": "tailwindcss build src/assets/styles/index.css -o src/assets/styles/tailwind.css",
     "test": "echo \"No tests specified\" && exit 0"
   },

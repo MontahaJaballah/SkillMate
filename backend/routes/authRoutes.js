@@ -314,7 +314,7 @@ router.post("/login", userController.login);
 // Check auth status
 router.get('/check', async (req, res) => {
     console.log('Auth Check Request:', {
-        cookies: req.cookies,
+        cookies: Object.keys(req.cookies),
         headers: {
             origin: req.headers.origin,
             referer: req.headers.referer
@@ -327,7 +327,7 @@ router.get('/check', async (req, res) => {
         if (!token) {
             console.warn('No token found in cookies');
             return res.status(401).json({
-                error: 'Not authenticated - No token',
+                error: 'Not authenticated',
                 isAuthenticated: false,
                 cookiesPresent: Object.keys(req.cookies).length > 0
             });
@@ -336,16 +336,16 @@ router.get('/check', async (req, res) => {
         // Verify JWT token with more robust error handling
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
             console.log('Token decoded successfully:', {
                 id: decoded.id,
                 email: decoded.email
             });
         } catch (verifyError) {
-            console.error('Token Verification Error:', verifyError);
+            console.error('Token Verification Error:', verifyError.name);
             return res.status(401).json({
-                error: 'Invalid or expired token',
-                details: verifyError.message,
+                error: 'Token verification failed',
+                details: verifyError.name,
                 isAuthenticated: false
             });
         }
@@ -358,44 +358,29 @@ router.get('/check', async (req, res) => {
             });
         }
 
-        // Get fresh user data from database
-        let user;
-        try {
-            user = await User.findById(decoded.id).select('-password');
-            if (!user) {
-                console.warn(`No user found with ID: ${decoded.id}`);
-                return res.status(401).json({
-                    error: 'User not found',
-                    isAuthenticated: false
-                });
-            }
-        } catch (dbError) {
-            console.error('Database User Retrieval Error:', dbError);
-            return res.status(500).json({
-                error: 'Database error during user retrieval',
-                details: dbError.message,
+        // Fetch user from database to ensure user still exists
+        const user = await User.findById(decoded.id).select('-password');
+        if (!user) {
+            return res.status(401).json({
+                error: 'User not found',
                 isAuthenticated: false
             });
         }
 
-        res.json({
+        // Return user data without sensitive information
+        return res.json({
+            isAuthenticated: true,
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-                photoURL: user.photoURL,
-                teachingSubjects: user.teachingSubjects
-            },
-            isAuthenticated: true
+                role: user.role
+            }
         });
     } catch (error) {
-        console.error('Unexpected Auth Check Error:', error);
-        res.status(500).json({
-            error: 'Unexpected server error during authentication check',
-            details: error.message,
+        console.error('Unexpected error in auth check:', error);
+        return res.status(500).json({
+            error: 'Internal server error during authentication check',
             isAuthenticated: false
         });
     }

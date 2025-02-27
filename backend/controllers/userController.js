@@ -5,6 +5,7 @@ const path = require('path');
 const { sendBlockNotificationUser } = require('../services/emailServiceUser');
 const { sendBlockNotificationAdmin, sendAdminCredentials, generateSecurePassword } = require('../services/emailServiceAdmin');
 const twilio = require('twilio');
+const jwt = require('jsonwebtoken');  // Ensure this line is present
 
 // Create uploads directory if it doesn't exist
 const uploadDir = path.join(__dirname, '../uploads');
@@ -426,17 +427,24 @@ async function login(req, res) {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
         // Check if account is deactivated
         if (user.status === 'deactivated') {
             return res.status(403).json({
+                success: false,
                 message: 'Account is deactivated. Please reactivate it using your phone number.',
                 deactivated: true,
                 userId: user._id
@@ -476,9 +484,17 @@ async function login(req, res) {
             photoURL: user.photoURL
         };
 
-        res.json({ user: userData });
+        res.json({
+            success: true,
+            user: userData
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during login',
+            error: error.message
+        });
     }
 }
 
