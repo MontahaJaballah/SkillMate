@@ -128,6 +128,14 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
+    lastActive: {
+        type: Date,
+        default: Date.now
+    },
     courses: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'

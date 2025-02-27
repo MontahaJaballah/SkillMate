@@ -59,6 +59,9 @@ const Navbar = () => {
       <li>
         <NavLink to="/blogs">Blogs</NavLink>
       </li>
+      <li>
+        <NavLink to="/client/chat">Chat</NavLink>
+      </li>
     </>
   );
 

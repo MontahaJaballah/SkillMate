@@ -453,6 +453,11 @@ async function login(req, res) {
             });
         }
 
+        // Update user's online status
+        user.isOnline = true;
+        user.lastActive = new Date();
+        await user.save();
+
         console.log('Password matched, generating token for user:', user.email);
         // Generate JWT token
         const token = jwt.sign(
@@ -483,12 +488,14 @@ async function login(req, res) {
             lastName: user.lastName,
             role: user.role,
             status: user.status,
-            photoURL: user.photoURL
+            photoURL: user.photoURL,
+            isOnline: user.isOnline
         };
 
-        res.json({
+        return res.status(200).json({
             success: true,
-            user: userData
+            user: userData,
+            token: token
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -506,6 +513,36 @@ async function searchByUsername(req, res) {
         res.status(200).send(users);
     } catch (error) {
         res.status(500).send({ error: error.toString() });
+    }
+}
+
+async function logout(req, res) {
+    try {
+        // Get user ID from JWT token
+        const userId = req.user ? req.user.id : null;
+        
+        if (userId) {
+            // Update user's online status
+            await User.findByIdAndUpdate(userId, {
+                isOnline: false,
+                lastActive: new Date()
+            });
+        }
+        
+        // Clear the token cookie
+        res.clearCookie('token');
+        
+        return res.status(200).json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during logout',
+            error: error.message
+        });
     }
 }
 
@@ -676,6 +713,16 @@ async function verifyAndReactivate(req, res) {
     }
 }
 
+// Get online users
+async function getOnlineUsers(req, res) {
+    try {
+        const onlineUsers = await User.find({ isOnline: true });
+        res.status(200).send(onlineUsers);
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
+
 // Chat with Dialogflow
 async function chat(req, res) {
     const { message } = req.body;
@@ -734,8 +781,10 @@ module.exports = {
     unblockUser,
     login,
     searchByUsername,
+    logout,
     deactivate,
     reactivateWithPhone,
     verifyAndReactivate,
+    getOnlineUsers,
     chat
 };

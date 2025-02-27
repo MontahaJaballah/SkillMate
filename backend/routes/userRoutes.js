@@ -47,6 +47,7 @@ router.put("/updateadmin/:id", userController.updateAdmin);
 router.put("/blockuser/:id", userController.blockUser);
 router.put("/unblockuser/:id", userController.unblockUser);
 router.get("/searchuser/:username", userController.searchByUsername);
+router.post("/logout", userController.logout);
 
 // Chat endpoint
 router.post("/chat", userController.chat);

@@ -10,6 +10,7 @@ import Chatbot from "../components/Chatbot/Chatbot.jsx";
 import Landing from "../views/client/Landing.jsx";
 import Profile from "../views/client/Profile.jsx";
 import SearchResults from "../views/client/SearchResults.jsx";
+import ChatPage from "../views/client/ChatPage/ChatPage.jsx";
 
 export default function Client() {
   return (
@@ -20,6 +21,7 @@ export default function Client() {
           <Route path="/client/landing" exact component={Landing} />
           <Route path="/client/profile/:id?" exact component={Profile} />
           <Route path="/client/search/:query" exact component={SearchResults} />
+          <Route path="/client/chat" exact component={ChatPage} />
           <Redirect from="/client" to="/client/landing" />
         </Switch>
       </main>

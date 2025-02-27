@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.1",
+    "@giphy/js-fetch-api": "^5.6.0",
+    "@giphy/react-components": "^10.0.1",
     "@popperjs/core": "^2.11.8",
     "@tanstack/react-query": "^5.66.9",
     "aos": "^2.3.4",
@@ -21,6 +23,7 @@
     "chart.js": "2.9.4",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
+    "emoji-picker-react": "^4.12.0",
     "react": "^18.2.0",
     "react-countup": "^6.5.3",
     "react-dom": "^18.2.0",
@@ -31,7 +34,10 @@
     "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^5.3.4",
     "react-simple-typewriter": "^5.0.1",
-    "react-typed": "^2.0.12"
+    "react-typed": "^2.0.12",
+    "simple-peer": "^9.11.1",
+    "socket.io-client": "^4.8.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
