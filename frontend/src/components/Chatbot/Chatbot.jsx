@@ -53,17 +53,17 @@ const Chatbot = () => {
             setMessages(prevMessages => [...prevMessages, botMessage]);
         } catch (error) {
             console.error("Error sending message:", error);
-            const errorMessage = { 
-                sender: "bot", 
+            const errorMessage = {
+                sender: "bot",
                 text: error.response?.data?.error || "Sorry, I encountered an error. Please try again.",
-                isError: true 
+                isError: true
             };
-            
+
             // Add more detailed error for developers in console
             if (error.response?.data?.details) {
                 console.error("Error details:", error.response.data.details);
             }
-            
+
             setMessages(prevMessages => [...prevMessages, errorMessage]);
         }
     };
@@ -83,75 +83,32 @@ const Chatbot = () => {
 
     if (!isOpen) {
         return (
-            <div 
-                className="chat-bubble"
+            <div
+                className="fixed bottom-6 right-6 w-16 h-16 bg-main text-white rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-110 z-50"
                 onClick={() => setIsOpen(true)}
-                style={{
-                    position: "fixed",
-                    bottom: "20px",
-                    right: "20px",
-                    width: "60px",
-                    height: "60px",
-                    borderRadius: "50%",
-                    backgroundColor: "#007bff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-                    transition: "transform 0.2s",
-                    zIndex: 1000,
-                }}
-                onMouseEnter={(e) => e.target.style.transform = "scale(1.1)"}
-                onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
             >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
                 </svg>
             </div>
         );
     }
 
     return (
-        <div 
-            className="chatbot-container" 
-            style={{ 
-                position: "fixed",
-                bottom: "20px",
-                right: "20px",
+        <div
+            className="fixed bottom-6 right-6 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col"
+            style={{
                 width: `${size.width}px`,
                 height: `${size.height}px`,
-                backgroundColor: "#ffffff",
-                borderRadius: "8px",
-                boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-                display: "flex",
-                flexDirection: "column",
-                zIndex: 1000,
-                overflow: "hidden"
             }}
         >
             {/* Header */}
-            <div style={{
-                padding: "10px 15px",
-                backgroundColor: "#007bff",
-                color: "#ffffff",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "move"
-            }}>
-                <span>Chat Assistant</span>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button 
+            <div className="bg-main text-white px-4 py-3 rounded-t-xl flex justify-between items-center">
+                <span className="font-semibold">AI Assistant</span>
+                <div className="flex space-x-2">
+                    <button
                         onClick={() => setIsOpen(false)}
-                        style={{
-                            background: "none",
-                            border: "none",
-                            color: "white",
-                            cursor: "pointer",
-                            fontSize: "20px",
-                            padding: "0 5px"
-                        }}
+                        className="text-white hover:bg-opacity-20 hover:bg-white rounded-full w-8 h-8 flex items-center justify-center"
                     >
                         −
                     </button>
@@ -159,68 +116,45 @@ const Chatbot = () => {
             </div>
 
             {/* Messages Container */}
-            <div 
+            <div
                 ref={chatContainerRef}
-                style={{ 
-                    flex: 1,
-                    overflowY: "auto",
-                    padding: "20px",
-                    backgroundColor: "#f5f5f5"
-                }}
+                className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900"
             >
                 {messages.map((msg, index) => (
-                    <div 
-                        key={index} 
-                        style={{ 
-                            textAlign: msg.sender === "user" ? "right" : "left",
-                            margin: "10px 0",
-                            padding: "8px 12px",
-                            backgroundColor: msg.isError ? "#ffebee" : msg.sender === "user" ? "#007bff" : "#ffffff",
-                            color: msg.sender === "user" ? "#ffffff" : msg.isError ? "#d32f2f" : "#000000",
-                            borderRadius: "12px",
-                            maxWidth: "70%",
-                            marginLeft: msg.sender === "user" ? "auto" : "0",
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-                            wordBreak: "break-word"
-                        }}
+                    <div
+                        key={index}
+                        className={`flex mb-3 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                     >
-                        {msg.text}
+                        <div
+                            className={`
+                                max-w-[70%] px-4 py-2 rounded-xl 
+                                ${msg.isError
+                                    ? "bg-red-100 text-red-800"
+                                    : msg.sender === "user"
+                                        ? "bg-main text-white"
+                                        : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white"}
+                                shadow-sm
+                            `}
+                        >
+                            {msg.text}
+                        </div>
                     </div>
                 ))}
             </div>
 
             {/* Input Container */}
-            <div style={{
-                padding: "15px",
-                borderTop: "1px solid #eee",
-                backgroundColor: "#ffffff",
-                display: "flex",
-                gap: "10px"
-            }}>
-                <input 
-                    value={input} 
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex space-x-2">
+                <input
+                    value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Type your message..."
-                    style={{
-                        flex: 1,
-                        padding: "10px",
-                        borderRadius: "4px",
-                        border: "1px solid #ddd",
-                        fontSize: "14px"
-                    }}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-main dark:bg-gray-700 dark:text-white"
                 />
-                <button 
+                <button
                     onClick={sendMessage}
-                    style={{
-                        padding: "10px 20px",
-                        backgroundColor: "#007bff",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "14px"
-                    }}
+                    className="bg-main text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50"
+                    disabled={!input.trim()}
                 >
                     Send
                 </button>
@@ -230,25 +164,17 @@ const Chatbot = () => {
             <div
                 ref={resizeRef}
                 onMouseDown={handleMouseDown}
-                style={{
-                    position: "absolute",
-                    bottom: 0,
-                    right: 0,
-                    width: "15px",
-                    height: "15px",
-                    cursor: "se-resize",
-                    background: "transparent"
-                }}
+                className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
             >
                 <svg
                     width="15"
                     height="15"
                     viewBox="0 0 15 15"
-                    style={{ display: "block" }}
+                    className="text-gray-400"
                 >
                     <path
                         d="M11 11L15 15M7 11L15 11M11 7L15 7"
-                        stroke="#999"
+                        stroke="currentColor"
                         strokeWidth="1"
                     />
                 </svg>
