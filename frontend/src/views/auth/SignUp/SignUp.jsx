@@ -9,6 +9,7 @@ import "aos/dist/aos.css";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import axios from 'axios';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const SignUp = () => {
   const { signUpUser, updateUserProfile, user, handleLinkedInSignUp, handleGoogleSignUp, updateUser } = useAuth();
@@ -37,6 +38,7 @@ const SignUp = () => {
     hasNumber: false,
     hasSpecialChar: false
   });
+  const [recaptchaValue, setRecaptchaValue] = useState(null);
 
   // Password validation rules
   const validatePassword = (password) => {
@@ -157,6 +159,12 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!recaptchaValue) {
+      toast.error("Please complete the reCAPTCHA verification");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -596,6 +604,13 @@ const SignUp = () => {
                       )}
                     </div>
                   )}
+                </div>
+
+                <div className="mb-4 flex justify-center">
+                  <ReCAPTCHA
+                    sitekey="6LdfxeIqAAAAAKz8P8nh1SyzvvaO_ZRwuNBAW1DS"
+                    onChange={(value) => setRecaptchaValue(value)}
+                  />
                 </div>
 
                 <div className="form-control mt-6">

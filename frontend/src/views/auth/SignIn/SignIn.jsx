@@ -30,16 +30,18 @@ const SignIn = () => {
     const form = new FormData(e.currentTarget);
     const email = form.get("email");
     const password = form.get("password");
-    e.target.reset();
-
-    signInUser(email, password)
+    
+    signInUser({ email, password })  
       .then(() => {
         notify();
         history.push("/");
       })
       .catch((error) => {
-        if (error) {
-          toast.error("Invalid Email And Password")
+        console.error('Sign in error:', error);
+        if (error.response?.data?.error) {
+          toast.error(error.response.data.error);
+        } else {
+          toast.error("An error occurred while signing in");
         }
       });
   };

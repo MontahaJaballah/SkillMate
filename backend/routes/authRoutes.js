@@ -232,30 +232,80 @@ router.get('/google/callback', (req, res, next) => {
 // Sign in endpoint
 router.post('/signin', async (req, res) => {
     try {
+        console.log('Sign in request received:', {
+            body: req.body,
+            headers: req.headers
+        });
+
         const { email, password } = req.body;
         
+        if (!email || !password) {
+            console.log('Missing credentials:', { email: !!email, password: !!password });
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Email and password are required' 
+            });
+        }
+
         // Find user by email
+        console.log('Finding user with email:', email);
         const user = await User.findOne({ email });
+        
         if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+            console.log('User not found with email:', email);
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
 
         // Check password
+        console.log('Checking password for user:', user.email);
         const isMatch = await bcrypt.compare(password, user.password);
+        
         if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+            console.log('Password does not match for user:', user.email);
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
 
-        // Log in the user
-        req.login(user, (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error logging in' });
-            }
-            return res.json({ user });
+        console.log('Password matched, generating token for user:', user.email);
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '30d' }
+        );
+
+        // Set JWT token in HTTP-only cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Return user data without sensitive information
+        const userResponse = {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            photoURL: user.photoURL,
+            teachingSubjects: user.teachingSubjects
+        };
+
+        console.log('Login successful for user:', user.email);
+        res.json({ 
+            success: true,
+            user: userResponse
         });
     } catch (error) {
         console.error('Sign in error:', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 

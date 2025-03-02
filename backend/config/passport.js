@@ -25,22 +25,30 @@ passport.use(new LinkedInStrategy({
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     callbackURL: "http://localhost:5000/api/auth/linkedin/callback",
     scope: ['openid', 'profile', 'email'],
-    state: true
-}, async (accessToken, refreshToken, profile, done) => {
+    state: true,
+    passReqToCallback: true
+}, async (req, accessToken, refreshToken, params, profile, done) => {
     try {
-        let user = await User.findOne({ linkedinId: profile.id });
+        // Fetch user info from LinkedIn's OpenID userinfo endpoint
+        const userInfoResponse = await axios.get('https://api.linkedin.com/v2/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        const userInfo = userInfoResponse.data;
+        let user = await User.findOne({ linkedinId: userInfo.sub });
         
         if (!user) {
             const randomPassword = Math.random().toString(36).slice(-8);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
             
-            const profilePicUrl = profile.photos?.[0]?.value;
-            let photoURL = '';
+            let photoURL = 'uploads/photos/default-avatar.png';
             
-            if (profilePicUrl) {
+            if (userInfo.picture) {
                 try {
-                    const response = await axios.get(profilePicUrl, { responseType: 'arraybuffer' });
-                    const fileName = `linkedin-${profile.id}-${Date.now()}.jpg`;
+                    const response = await axios.get(userInfo.picture, { responseType: 'arraybuffer' });
+                    const fileName = `linkedin-${userInfo.sub}-${Date.now()}.jpg`;
                     const uploadDir = path.join(__dirname, '../uploads/photos');
                     const filePath = path.join(uploadDir, fileName);
                     
@@ -53,21 +61,18 @@ passport.use(new LinkedInStrategy({
                     console.log('LinkedIn profile picture saved:', photoURL);
                 } catch (error) {
                     console.error('Error saving LinkedIn profile picture:', error);
-                    photoURL = 'uploads/photos/default-avatar.png';
                 }
-            } else {
-                photoURL = 'uploads/photos/default-avatar.png';
             }
             
-            const baseUsername = profile.name.givenName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const baseUsername = (userInfo.given_name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '');
             const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
             const username = `${baseUsername}${randomSuffix}`;
 
             user = await User.create({
-                linkedinId: profile.id,
-                email: profile.emails[0].value,
-                firstName: profile.name.givenName,
-                lastName: profile.name.familyName,
+                linkedinId: userInfo.sub,
+                email: userInfo.email,
+                firstName: userInfo.given_name || '',
+                lastName: userInfo.family_name || '',
                 username: username,
                 photoURL: photoURL,
                 password: hashedPassword,
