@@ -21,9 +21,9 @@ export default function Client() {
         <Switch>
           <Route path="/client/landing" exact component={Landing} />
           <PrivateRoute
-            path="/profile/:id?"
+            path="/client/profile/:id?"
             exact component={Profile}
-            roles={['admin']}
+            roles={['student', 'teacher']}
           />
           <Route path="/client/search/:query" exact component={SearchResults} />
           <Route path="/client/chat" exact component={ChatPage} />

@@ -162,73 +162,74 @@ async function getById(req, res) {
 //Select profile photo
 async function update(req, res) {
     try {
+        const userId = req.params.id;
+
+        // Find the existing user first
+        const existingUser = await User.findById(userId);
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                error: "User not found"
+            });
+        }
+
         const userData = { ...req.body };
 
+        // Handle photo URL more robustly
+        let photoURL = existingUser.photoURL || '';
+
         // Handle photo file upload
-        let photoURL = req.user.photoURL; // Keep existing photo URL if no new photo
         if (req.files && req.files.photo) {
-            const photoFile = req.files.photo;
-            const fileName = `${Date.now()}-${photoFile.name}`;
+            const photoFile = req.files.photo[0]; // Assuming multer middleware
+            const fileName = `${Date.now()}-${photoFile.originalname}`;
             const filePath = path.join(uploadDir, 'photos', fileName);
 
-            await photoFile.mv(filePath);
+            // Save file
+            await fs.promises.writeFile(filePath, photoFile.buffer);
             photoURL = `http://localhost:5000/uploads/photos/${fileName}`;
 
-            // Delete old photo if it exists
-            if (req.user.photoURL) {
-                const oldPhotoPath = req.user.photoURL.replace('http://localhost:5000', '');
-                const fullOldPhotoPath = path.join(__dirname, '..', oldPhotoPath);
-                if (fs.existsSync(fullOldPhotoPath)) {
-                    fs.unlinkSync(fullOldPhotoPath);
+            // Optional: Delete old photo
+            if (existingUser.photoURL) {
+                try {
+                    const oldPhotoPath = existingUser.photoURL.replace('http://localhost:5000', '');
+                    await fs.promises.unlink(path.join(__dirname, '..', oldPhotoPath));
+                } catch (err) {
+                    console.log('Could not delete old photo:', err);
                 }
             }
         }
 
-        // Handle certification file upload
-        let certificationFile = '';
-        if (req.files && req.files.certificationFile) {
-            const certFile = req.files.certificationFile;
-            const fileName = `${Date.now()}-${certFile.name}`;
-            const filePath = path.join(uploadDir, 'certifications', fileName);
-
-            await certFile.mv(filePath);
-            certificationFile = `/uploads/certifications/${fileName}`;
-        }
-
-        // Parse teaching subjects if they're sent as a string
-        if (typeof userData.teachingSubjects === 'string') {
-            try {
-                userData.teachingSubjects = JSON.parse(userData.teachingSubjects);
-            } catch (e) {
-                console.error('Error parsing teaching subjects:', e);
-                userData.teachingSubjects = [];
-            }
-        }
-
-        // Hash password if it's being updated
-        if (userData.password) {
-            const salt = await bcrypt.genSalt(10);
-            userData.password = await bcrypt.hash(userData.password, salt);
-        }
-
+        // Update user data
         const updatedUser = await User.findByIdAndUpdate(
-            req.params.id,
-            { ...userData, photoURL },
-            { new: true }
+            userId,
+            {
+                ...userData,
+                photoURL
+            },
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
         if (!updatedUser) {
-            return res.status(404).send({ error: "User not found" });
-        }
-        res.status(200).send(updatedUser);
-    } catch (error) {
-        // Clean up uploaded file if update fails
-        if (req.file) {
-            fs.unlink(req.file.path, (err) => {
-                if (err) console.error('Error deleting file:', err);
+            return res.status(404).json({
+                success: false,
+                error: "User not found"
             });
         }
-        res.status(500).send({ error: error.toString() });
+
+        res.status(200).json({
+            success: true,
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.error('Update error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Update failed'
+        });
     }
 }
 
@@ -548,7 +549,7 @@ async function logout(req, res) {
     try {
         // Get user ID from JWT token
         const userId = req.user ? req.user.id : null;
-        
+
         if (userId) {
             // Update user's online status
             await User.findByIdAndUpdate(userId, {
@@ -556,10 +557,10 @@ async function logout(req, res) {
                 lastActive: new Date()
             });
         }
-        
+
         // Clear the token cookie
         res.clearCookie('token');
-        
+
         return res.status(200).json({
             success: true,
             message: 'Logged out successfully'
@@ -754,32 +755,32 @@ async function getOnlineUsers(req, res) {
 // Chat with Dialogflow
 async function chat(req, res) {
     const { message } = req.body;
-    
+
     if (!message) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             error: "Message is required"
         });
     }
-    
+
     // Check if Dialogflow environment variables are set
     if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        return res.status(503).json({ 
+        return res.status(503).json({
             error: "The chatbot service is not configured properly. Please contact the administrator.",
             details: "Missing Dialogflow credentials"
         });
     }
-    
+
     try {
         // Generate a unique session ID for each user or use their user ID if authenticated
         const sessionId = req.user ? req.user._id.toString() : uuid.v4();
-        
+
         // Call our detectIntent function
         const response = await detectIntent(message, sessionId);
         res.json({ reply: response });
     } catch (error) {
         console.error("Error in chat endpoint:", error);
         let errorMessage = "An error occurred while processing your message.";
-        
+
         if (error.code === 7 && error.details && error.details.includes('IAM permission')) {
             errorMessage = "The chatbot is currently unavailable due to authentication issues. Please try again later.";
             // Log detailed error for debugging
@@ -788,8 +789,8 @@ async function chat(req, res) {
                 "2. Dialogflow API is enabled\n",
                 "3. Service account key file is valid and accessible");
         }
-        
-        res.status(500).json({ 
+
+        res.status(500).json({
             error: errorMessage,
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });

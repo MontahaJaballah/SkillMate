@@ -74,13 +74,48 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      const response = await axios.post(`http://localhost:5000/api/users/updateuser/${userId}`, editedData);
-      setUserData(response.data);
-      setIsEditing(false);
-      toast.success('Profil mis à jour avec succès!');
+      const response = await axios.post(
+        `http://localhost:5000/api/users/updateuser/${userId}`,
+        editedData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Log the full response for debugging
+      console.log('Update response:', response.data);
+
+      // Check for successful response
+      if (response.data.success && response.data.user) {
+        const updatedUser = response.data.user;
+
+        // Update local state
+        setUserData(updatedUser);
+        setEditedData(updatedUser);
+
+        // Update global user context if possible
+        if (user && user.setUser) {
+          user.setUser(updatedUser);
+        }
+
+        setIsEditing(false);
+        toast.success('Profile updated successfully!');
+      } else {
+        throw new Error(response.data.error || 'Update failed');
+      }
     } catch (err) {
-      console.error('Update Error:', err);
-      toast.error('Error updating profile');
+      console.error('Update Error:', err.response ? err.response.data : err);
+
+      // More detailed error handling
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        'Error updating profile';
+
+      toast.error(errorMessage);
     }
   };
 
