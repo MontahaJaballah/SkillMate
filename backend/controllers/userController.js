@@ -311,13 +311,13 @@ async function addSubAdmin(req, res) {
 
 async function updateAdmin(req, res) {
     try {
-        const { username, firstName, lastName, email } = req.body;
+        const { username, firstName, lastName, email, phoneNumber } = req.body;
 
         // Check if required fields are present
-        if (!username || !firstName || !lastName || !email) {
+        if (!username || !firstName || !lastName || !email || !phoneNumber) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields (username, firstName, lastName, email) are required'
+                message: 'All fields (username, firstName, lastName, email, phoneNumber) are required'
             });
         }
 
@@ -325,16 +325,32 @@ async function updateAdmin(req, res) {
         const existingUser = await User.findOne({
             $and: [
                 { _id: { $ne: req.params.id } },
-                { $or: [{ username }, { email }] }
+                {
+                    $or: [
+                        { username },
+                        { email },
+                        { phoneNumber }
+                    ]
+                }
             ]
         });
 
         if (existingUser) {
+            let errorMessage = '';
+            if (existingUser.username === username) {
+                errorMessage = 'Username already exists';
+            } else if (existingUser.email === email) {
+                errorMessage = 'Email already exists';
+            } else if (existingUser.phoneNumber === phoneNumber) {
+                errorMessage = 'Phone number already in use';
+            }
+
             return res.status(400).json({
                 success: false,
-                message: `${existingUser.username === username ? 'Username' : 'Email'} already exists`
+                message: errorMessage
             });
         }
+
 
         const updatedAdmin = await User.findByIdAndUpdate(
             req.params.id,
@@ -342,7 +358,8 @@ async function updateAdmin(req, res) {
                 username,
                 firstName,
                 lastName,
-                email
+                email,
+                phoneNumber
             },
             { new: true, runValidators: true }
         );
@@ -440,6 +457,17 @@ async function login(req, res) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
+            });
+        }
+
+        if (user.isBlocked === true) {
+            return res.status(403).json({
+                success: false,
+                message: 'Your account has been blocked.',
+                details: {
+                    reason: user.blockReason,
+                    userId: user._id
+                }
             });
         }
 

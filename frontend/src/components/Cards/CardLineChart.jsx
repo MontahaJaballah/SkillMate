@@ -1,9 +1,14 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Chart from "chart.js";
 
 export default function CardLineChart() {
-  React.useEffect(() => {
-    var config = {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+
+    const chartConfig = {
       type: "line",
       data: {
         labels: [
@@ -17,18 +22,11 @@ export default function CardLineChart() {
         ],
         datasets: [
           {
-            label: "2024",
-            backgroundColor: "#29C098",
-            borderColor: "#29C098",
+            label: "Sales",
+            backgroundColor: isDarkMode ? "rgba(45, 55, 72, 0.4)" : "rgba(0, 116, 86, 0.4)",
+            borderColor: isDarkMode ? "#4299e1" : "#007456",
             data: [65, 78, 66, 44, 56, 67, 75],
-            fill: false,
-          },
-          {
-            label: "2025",
-            backgroundColor: "#8B5CF6",
-            borderColor: "#8B5CF6",
-            data: [40, 68, 86, 74, 56, 60, 87],
-            fill: false,
+            fill: true,
           },
         ],
       },
@@ -38,13 +36,11 @@ export default function CardLineChart() {
         title: {
           display: false,
           text: "Sales Charts",
-          fontColor: "#0F1729",
-          fontFamily: "'Inter', sans-serif",
+          fontColor: isDarkMode ? "#e2e8f0" : "#1a202c",
         },
         legend: {
           labels: {
-            fontColor: "#0F1729",
-            fontFamily: "'Inter', sans-serif",
+            fontColor: isDarkMode ? "#e2e8f0" : "#1a202c",
           },
           align: "end",
           position: "bottom",
@@ -52,89 +48,69 @@ export default function CardLineChart() {
         tooltips: {
           mode: "index",
           intersect: false,
-        },
-        hover: {
-          mode: "nearest",
-          intersect: true,
+          backgroundColor: isDarkMode ? "#2d3748" : "#ffffff",
+          titleFontColor: isDarkMode ? "#e2e8f0" : "#1a202c",
+          bodyFontColor: isDarkMode ? "#e2e8f0" : "#1a202c",
         },
         scales: {
-          xAxes: [
-            {
-              ticks: {
-                fontColor: "#0F1729",
-                fontFamily: "'Inter', sans-serif",
-              },
-              display: true,
-              scaleLabel: {
-                display: true,
-                labelString: "Month",
-                fontColor: "#0F1729",
-                fontFamily: "'Inter', sans-serif",
-              },
-              gridLines: {
-                display: false,
-                borderDash: [2],
-                borderDashOffset: [2],
-                color: "rgba(33, 37, 41, 0.3)",
-                zeroLineColor: "rgba(33, 37, 41, 0.3)",
-                zeroLineBorderDash: [2],
-                zeroLineBorderDashOffset: [2],
-              },
+          xAxes: [{
+            gridLines: {
+              color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
             },
-          ],
-          yAxes: [
-            {
-              ticks: {
-                fontColor: "#0F1729",
-                fontFamily: "'Inter', sans-serif",
-              },
-              display: true,
-              scaleLabel: {
-                display: true,
-                labelString: "Value",
-                fontColor: "#0F1729",
-                fontFamily: "'Inter', sans-serif",
-              },
-              gridLines: {
-                borderDash: [2],
-                drawBorder: false,
-                borderDashOffset: [2],
-                color: "rgba(33, 37, 41, 0.15)",
-                zeroLineColor: "rgba(33, 37, 41, 0.15)",
-                zeroLineBorderDash: [2],
-                zeroLineBorderDashOffset: [2],
-              },
+            ticks: {
+              fontColor: isDarkMode ? "#e2e8f0" : "#1a202c",
             },
-          ],
+          }],
+          yAxes: [{
+            gridLines: {
+              color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+            },
+            ticks: {
+              fontColor: isDarkMode ? "#e2e8f0" : "#1a202c",
+              beginAtZero: true,
+            },
+          }],
         },
       },
     };
-    var ctx = document.getElementById("line-chart").getContext("2d");
-    window.myLine = new Chart(ctx, config);
-  }, []);
+
+    if (chartRef.current) {
+      // Destroy existing chart if it exists
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+
+      // Create new chart
+      chartInstance.current = new Chart(chartRef.current, chartConfig);
+    }
+
+    // Cleanup function
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [document.documentElement.classList]);
 
   return (
-    <>
-      <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded bg-white">
-        <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
-          <div className="flex flex-wrap items-center">
-            <div className="relative w-full max-w-full flex-grow flex-1">
-              <h6 className="uppercase text-dark-400 mb-1 text-xs font-semibold font-heading">
-                Overview
-              </h6>
-              <h2 className="text-dark-900 text-xl font-bold font-heading">
-                Sales value
-              </h2>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 flex-auto">
-          {/* Chart */}
-          <div className="relative h-350-px">
-            <canvas id="line-chart"></canvas>
+    <div className="relative flex flex-col min-w-0 break-words bg-white dark:bg-gray-800 w-full mb-6 shadow-lg rounded">
+      <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
+        <div className="flex flex-wrap items-center">
+          <div className="relative w-full max-w-full flex-grow flex-1">
+            <h6 className="uppercase text-gray-500 dark:text-gray-300 mb-1 text-xs font-semibold">
+              Overview
+            </h6>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+              Sales Value
+            </h2>
           </div>
         </div>
       </div>
-    </>
+      <div className="p-4 flex-auto">
+        <div className="relative h-350-px">
+          <canvas ref={chartRef} height={350}></canvas>
+        </div>
+      </div>
+    </div>
   );
 }

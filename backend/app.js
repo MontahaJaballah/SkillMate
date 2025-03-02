@@ -21,6 +21,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS !== dialogflowCredentialsPath) {
 
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const dbConfig = require('./config/db.json');
@@ -144,6 +145,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/stats', statsRoutes);
+
 app.use('/api/chat', chatRoutes);
 app.use('/api/friends', friendRoutes);
 

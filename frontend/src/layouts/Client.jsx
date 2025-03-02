@@ -1,5 +1,6 @@
 import React from "react";
 import { Switch, Route, Redirect } from "react-router-dom";
+import PrivateRoute from '../components/PrivateRoute/PrivateRoute';
 
 // Components
 import Navbar from "../components/Navbars/ClientNavbar.jsx";
@@ -19,7 +20,11 @@ export default function Client() {
       <main>
         <Switch>
           <Route path="/client/landing" exact component={Landing} />
-          <Route path="/client/profile/:id?" exact component={Profile} />
+          <PrivateRoute
+            path="/profile/:id?"
+            exact component={Profile}
+            roles={['admin']}
+          />
           <Route path="/client/search/:query" exact component={SearchResults} />
           <Route path="/client/chat" exact component={ChatPage} />
           <Redirect from="/client" to="/client/landing" />

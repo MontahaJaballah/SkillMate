@@ -1,20 +1,90 @@
-import React from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import { createPopper } from "@popperjs/core";
+import { Link, useHistory } from "react-router-dom";
+import { Context } from "../AuthProvider/AuthProvider";
+import { getProfilePhotoUrl } from "../Profile/ProfileUtils";
 
 const UserDropdown = () => {
+  const { user, logout } = useContext(Context);
+  const history = useHistory();
+
   // dropdown props
-  const [dropdownPopoverShow, setDropdownPopoverShow] = React.useState(false);
-  const btnDropdownRef = React.createRef();
-  const popoverDropdownRef = React.createRef();
+  const [dropdownPopoverShow, setDropdownPopoverShow] = useState(false);
+  const btnDropdownRef = useRef(null);
+  const popoverDropdownRef = useRef(null);
+  const popperInstanceRef = useRef(null);
+  const [photoError, setPhotoError] = useState(false);
+
   const openDropdownPopover = () => {
-    createPopper(btnDropdownRef.current, popoverDropdownRef.current, {
-      placement: "bottom-start",
-    });
-    setDropdownPopoverShow(true);
+    if (btnDropdownRef.current && popoverDropdownRef.current) {
+      // Destroy any existing popper instance
+      if (popperInstanceRef.current) {
+        popperInstanceRef.current.destroy();
+      }
+
+      // Create new popper instance
+      popperInstanceRef.current = createPopper(btnDropdownRef.current, popoverDropdownRef.current, {
+        placement: "bottom-end",
+        modifiers: [
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 10], // Adjust vertical offset
+            },
+          },
+        ],
+      });
+
+      setDropdownPopoverShow(true);
+    }
   };
+
   const closeDropdownPopover = () => {
     setDropdownPopoverShow(false);
+
+    // Destroy popper instance when closing
+    if (popperInstanceRef.current) {
+      popperInstanceRef.current.destroy();
+      popperInstanceRef.current = null;
+    }
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      history.push('/');
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
+
+  // Add click outside listener to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownPopoverShow &&
+        btnDropdownRef.current &&
+        popoverDropdownRef.current &&
+        !btnDropdownRef.current.contains(event.target) &&
+        !popoverDropdownRef.current.contains(event.target)
+      ) {
+        closeDropdownPopover();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownPopoverShow]);
+
+  const handlePhotoError = () => {
+    setPhotoError(true);
+  };
+
+  const defaultAvatar = "https://demos.creative-tim.com/notus-react/static/media/team-1-800x800.fa5a7ac2.jpg";
+  const profilePhotoUrl = photoError ? defaultAvatar : getProfilePhotoUrl(user?.photoURL);
+
   return (
     <>
       <a
@@ -29,9 +99,10 @@ const UserDropdown = () => {
         <div className="items-center flex">
           <span className="w-12 h-12 text-sm text-white bg-gray-300 inline-flex items-center justify-center rounded-full">
             <img
-              alt="..."
+              alt="User Profile"
               className="w-full rounded-full align-middle border-none shadow-lg"
-              src="https://demos.creative-tim.com/notus-react/static/media/team-1-800x800.fa5a7ac2.jpg"
+              src={profilePhotoUrl}
+              onError={handlePhotoError}
             />
           </span>
         </div>
@@ -43,34 +114,32 @@ const UserDropdown = () => {
           "bg-white text-base z-50 float-left py-2 list-none text-left rounded shadow-lg min-w-48"
         }
       >
-        <a
-          href="#pablo"
-          className={
-            "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-gray-800"
-          }
-          onClick={(e) => e.preventDefault()}
+        <div className="px-4 py-2 text-sm text-gray-700">
+          <div className="font-medium">{user?.username}</div>
+          <div className="text-gray-500 truncate">{user?.email}</div>
+        </div>
+        <div className="border-t border-gray-200 my-1"></div>
+        <Link
+          to="/profile"
+          className="text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-gray-800 hover:bg-gray-100"
+          onClick={closeDropdownPopover}
         >
           Profile
-        </a>
-        <a
-          href="#pablo"
-          className={
-            "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-gray-800"
-          }
-          onClick={(e) => e.preventDefault()}
+        </Link>
+        <Link
+          to="/settings"
+          className="text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-gray-800 hover:bg-gray-100"
+          onClick={closeDropdownPopover}
         >
           Settings
-        </a>
+        </Link>
         <div className="h-0 my-2 border border-solid border-gray-200" />
-        <a
-          href="#pablo"
-          className={
-            "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-gray-800"
-          }
-          onClick={(e) => e.preventDefault()}
+        <button
+          onClick={handleLogout}
+          className="text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-red-600 hover:bg-gray-100 text-left"
         >
           Logout
-        </a>
+        </button>
       </div>
     </>
   );

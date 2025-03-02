@@ -1,9 +1,20 @@
 // Utility functions for profile management
 
 // Format the profile photo URL
-export const getProfilePhotoUrl = (photoURL) => {
-  if (!photoURL) return "https://demos.creative-tim.com/notus-react/static/media/team-2-800x800.3e08ef14.jpg";
-  return photoURL.startsWith('http') ? photoURL : `http://localhost:5000/${photoURL}`;
+export const getProfilePhotoUrl = (photoUrl) => {
+  // If no photo URL is provided, return a default avatar
+  if (!photoUrl) {
+    return "https://demos.creative-tim.com/notus-react/static/media/team-1-800x800.fa5a7ac2.jpg";
+  }
+
+  // If it's a full URL, return it directly
+  if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
+    return photoUrl;
+  }
+
+  // If it's a relative path, prepend the base URL
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  return `${BASE_URL}${photoUrl}`;
 };
 
 // Validate file before upload
@@ -38,10 +49,10 @@ export const formatDate = (date) => {
 // Format user status for display
 export const formatStatus = (status) => {
   if (!status) return { text: 'Not specified', className: '' };
-  
+
   return {
     text: status,
-    className: status === 'active' 
+    className: status === 'active'
       ? 'bg-green-100 text-green-800'
       : 'bg-red-100 text-red-800'
   };

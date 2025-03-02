@@ -12,7 +12,7 @@ export default function Dashboard() {
   return (
     <>
       {/* Content */}
-      <div className="px-4 md:px-10 mx-auto w-full">
+      <div className="px-4 md:px-10 mx-auto w-full bg-gray-100 dark:bg-gray-900 min-h-screen">
         <div className="flex flex-wrap">
           <div className="w-full xl:w-8/12 mb-12 xl:mb-0 px-4">
             <CardLineChart />

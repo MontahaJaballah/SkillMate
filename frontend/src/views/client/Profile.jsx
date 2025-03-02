@@ -80,7 +80,7 @@ export default function Profile() {
       toast.success('Profil mis à jour avec succès!');
     } catch (err) {
       console.error('Update Error:', err);
-      toast.error('Erreur lors de la mise à jour du profil');
+      toast.error('Error updating profile');
     }
   };
 

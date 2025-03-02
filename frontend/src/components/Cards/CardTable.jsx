@@ -34,12 +34,6 @@ export default function CardTable({ color = "light" }) {
     }
   };
 
-  //Handle Block
-  const handleBlock = (user) => {
-    setSelectedUser(user);
-    setIsBlockModalOpen(true);
-  };
-
   const handleBlockUser = async (userId, isBlocked, reason = "") => {
     try {
       const endpoint = isBlocked ? `/users/unblockuser/${userId}` : `/users/blockuser/${userId}`;
@@ -58,12 +52,24 @@ export default function CardTable({ color = "light" }) {
     }
   };
 
-  //Handle Block Confirm
+  //Handle Block action
+  const handleBlock = (user) => {
+    // If user is already blocked, unblock directly without modal
+    if (user.isBlocked) {
+      handleBlockUser(user._id, true);
+    } else {
+      // For blocking, show modal to get reason
+      setSelectedUser(user);
+      setIsBlockModalOpen(true);
+    }
+  };
+
+  //Handle Block Confirm from modal
   const handleBlockConfirm = (reason) => {
     if (!selectedUser) return;
 
-    // Check if user is already blocked - if so, unblock; otherwise block
-    handleBlockUser(selectedUser._id, selectedUser.isBlocked, reason);
+    // For blocking, use the reason provided in the modal
+    handleBlockUser(selectedUser._id, false, reason);
 
     // Reset state
     setSelectedUser(null);
@@ -91,154 +97,117 @@ export default function CardTable({ color = "light" }) {
     setCurrentPage(pageNumber);
   };
 
-
   return (
     <>
       <div
         className={
           "relative flex flex-col min-w-0 break-words w-full shadow-lg rounded " +
-          (color === "light" ? "bg-white" : "bg-primary text-white")
+          (color === "light"
+            ? "bg-white dark:bg-gray-800"
+            : "bg-primary dark:bg-primary-700 text-white")
         }
       >
         <div className="rounded-t mb-0 px-4 py-3 border-0">
-          <div className="flex flex-wrap items-center justify-between">
-            <div className="relative w-full md:w-1/3 px-4 max-w-full flex-grow flex-1">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <i className="fas fa-search text-primary text-lg"></i>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  className="w-full px-4 py-3.5 pl-12 text-sm font-medium text-gray-700 bg-gray-50 border-2 border-gray-100 rounded-xl placeholder-gray-500 shadow-lg transition-all duration-200 ease-in-out hover:border-gray-300 focus:border-primary focus:outline-none focus:shadow-xl"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+          <div className="flex flex-wrap items-center">
+            <div className="relative w-full px-4 max-w-full flex-grow flex-1">
+              <h3 className="font-semibold text-lg text-gray-800 dark:text-white">
+                Users Table
+              </h3>
             </div>
-            <div className="relative w-full md:w-auto px-4 max-w-full flex-grow flex-1 text-right">
-              <button
-                className="bg-primary text-white active:bg-primary-600 text-xs font-bold uppercase px-6 py-3.5 rounded-xl shadow-md hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-                type="button"
-              >
-                <i className="fas fa-plus mr-2"></i> Add User
-              </button>
+            <div className="relative w-full px-4 max-w-full flex-grow flex-1">
+              <input
+                type="text"
+                placeholder="Search users..."
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
         </div>
-        <div className="block w-full overflow-x-auto flex-1">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <i className="fas fa-circle-notch fa-spin text-2xl text-primary mb-2"></i>
-                <p>Loading...</p>
-              </div>
-            </div>
-          ) : filteredData.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="inline-block p-4 rounded-full bg-gray-100 mb-4">
-                  <i className="fas fa-users text-4xl text-gray-400"></i>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Users Found</h3>
-                <p className="text-gray-500">
-                  {searchTerm
-                    ? "No users match your search criteria. Try a different search term."
-                    : "There are no users in the system yet."}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <table className="items-center w-full bg-transparent border-collapse">
-              <thead className="sticky top-0 bg-white">
+        <div className="block w-full overflow-x-auto">
+          <table className="items-center w-full bg-transparent border-collapse">
+            <thead>
+              <tr>
+                {["Username", "Email", "Role", "Status", "Actions"].map((header, index) => (
+                  <th
+                    key={index}
+                    className="px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th className="px-6 bg-dark-50 text-dark-600 align-middle border border-solid border-dark-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-heading font-semibold text-left">
-                    User Info
-                  </th>
-                  <th className="px-6 bg-dark-50 text-dark-600 align-middle border border-solid border-dark-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-heading font-semibold text-left">
-                    Role
-                  </th>
-                  <th className="px-6 bg-dark-50 text-dark-600 align-middle border border-solid border-dark-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-heading font-semibold text-left">
-                    Status
-                  </th>
-                  <th className="px-6 bg-dark-50 text-dark-600 align-middle border border-solid border-dark-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-heading font-semibold text-left">
-                    Created
-                  </th>
-                  <th className="px-6 bg-dark-50 text-dark-600 align-middle border border-solid border-dark-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-heading font-semibold text-left">
-                    Actions
-                  </th>
+                  <td colSpan="5" className="text-center py-4 text-gray-500 dark:text-gray-300">
+                    Loading...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {currentItems.map((user, index) => (
-                  <tr key={index}>
+              ) : currentItems.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-gray-500 dark:text-gray-300">
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+                currentItems.map((user, index) => (
+                  <tr
+                    key={index}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                  >
                     <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                       <div className="flex items-center">
                         <img
-                          src={user.profilePicture || "https://via.placeholder.com/40"}
-                          className="h-12 w-12 bg-white rounded-full border object-cover"
+                          src={user.profilePicture || "/default-avatar.png"}
+                          className="h-10 w-10 rounded-full border object-cover dark:opacity-80"
                           alt={user.username}
                         />
                         <div className="ml-3">
-                          <span className="font-bold text-dark-700">{user.username}</span>
-                          <p className="text-gray-500 text-xs">{user.email}</p>
+                          <span className="font-bold text-gray-800 dark:text-white">
+                            {user.username}
+                          </span>
                         </div>
                       </div>
                     </td>
+                    <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-gray-600 dark:text-gray-300">
+                      {user.email}
+                    </td>
                     <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                      <span className={`${user.role === "student" ? "bg-primary-100 text-primary-600" : "bg-secondary-100 text-secondary-600"
-                        } text-xs font-semibold px-2 py-1 rounded`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded ${user.role === 'admin'
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
+                        : 'bg-secondary-100 dark:bg-secondary-900 text-secondary-600 dark:text-secondary-300'
+                        }`}>
                         {user.role}
                       </span>
                     </td>
                     <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                      <i className={`fas fa-circle ${user.status === "active" ? "text-primary" : "text-gray-400"
-                        } mr-2`}></i>{" "}
-                      {user.status}
-                    </td>
-                    <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                      {user.createdAt ? (
-                        format(parseISO(user.createdAt), 'MMM dd, yyyy')
-                      ) : (
-                        'N/A'
-                      )}
+                      <i className={`fas fa-circle ${!user.isBlocked ? "text-primary" : "text-gray-400"} mr-2`}></i>{" "}
+                      {user.isBlocked ? 'Blocked' : 'Active'}
                     </td>
                     <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                       <button
-                        className="text-dark-600 hover:text-blue-400 transition-colors duration-200 mr-2"
-                        title="Edit"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (user.isBlocked) {
-                            // For unblocking, no need to show the modal
-                            handleBlockUser(user._id, true);
-                          } else {
-                            // For blocking, show the modal to select a reason
-                            handleBlock(user);
-                          }
-                        }}
-                        className="text-dark-600 transition-colors duration-200 mr-2"
+                        onClick={() => handleBlock(user)}
+                        className="text-gray-600 dark:text-gray-300 hover:text-blue-500 transition-colors duration-200 mr-2"
                         title={user.isBlocked ? 'Unblock' : 'Block'}
                       >
-                        <i className={user.isBlocked ? 'fas fa-unlock hover:text-primary' : 'fas fa-lock hover:text-red-400'}></i>
+                        <i className={`fas ${user.isBlocked ? 'fa-unlock' : 'fa-lock'}`}></i>
                       </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-
-        {/* Pagination - Only show if there are items */}
+        {/* Pagination */}
         {filteredData.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-200">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-600">
             <div className="flex-1 flex justify-between items-center">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   Showing{" "}
                   <span className="font-medium">{indexOfFirstItem + 1}</span>
                   {" - "}
@@ -255,9 +224,9 @@ export default function CardTable({ color = "light" }) {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${currentPage === 1
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium ${currentPage === 1
                       ? "text-gray-300 cursor-not-allowed"
-                      : "text-gray-500 hover:bg-gray-50"
+                      : "text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                       }`}
                   >
                     <i className="fas fa-chevron-left"></i>
@@ -268,8 +237,8 @@ export default function CardTable({ color = "light" }) {
                       onClick={() => handlePageChange(i + 1)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium
                         ${currentPage === i + 1
-                          ? "z-10 bg-primary border-primary text-white"
-                          : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                          ? "z-10 bg-primary dark:bg-primary-600 border-primary dark:border-primary-600 text-white"
+                          : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                         }
                       `}
                     >
@@ -279,9 +248,9 @@ export default function CardTable({ color = "light" }) {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${currentPage === totalPages
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium ${currentPage === totalPages
                       ? "text-gray-300 cursor-not-allowed"
-                      : "text-gray-500 hover:bg-gray-50"
+                      : "text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                       }`}
                   >
                     <i className="fas fa-chevron-right"></i>
@@ -292,15 +261,13 @@ export default function CardTable({ color = "light" }) {
           </div>
         )}
       </div>
-
-      {/* Block Reason Modal */}
-      <CardBlock
-        isOpen={isBlockModalOpen}
-        onClose={() => setIsBlockModalOpen(false)}
-        onConfirm={handleBlockConfirm}
-      />
-
-      {/* Notification */}
+      {isBlockModalOpen && (
+        <CardBlock
+          isOpen={isBlockModalOpen}
+          onClose={() => setIsBlockModalOpen(false)}
+          onConfirm={handleBlockConfirm}
+        />
+      )}
       {notification && (
         <Notification
           message={notification.message}

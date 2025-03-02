@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom";
 import AuthProvider from "./components/AuthProvider/AuthProvider";
 import { Toaster } from "react-hot-toast";
 import { HelmetProvider } from 'react-helmet-async';
+import PrivateRoute from './components/PrivateRoute/PrivateRoute';
 
 // Layouts
 import Auth from "./layouts/Auth.jsx";
@@ -14,6 +15,29 @@ import SignIn from "./views/auth/SignIn/SignIn.jsx";
 import SignUp from "./views/auth/SignUp/SignUp.jsx";
 
 export default function App() {
+  useEffect(() => {
+    // Theme initialization
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme2 = localStorage.getItem('theme2') || 'light';
+    const htmlElement = document.querySelector('html');
+
+    // Set theme attributes
+    htmlElement.setAttribute('data-theme', savedTheme);
+
+    // Remove all existing classes
+    htmlElement.classList.remove(...htmlElement.classList);
+
+    // Add theme classes
+    htmlElement.classList.add(savedTheme2);
+
+    // Optional: Add dark mode class for Tailwind
+    if (savedTheme === 'night' || savedTheme2 === 'dark') {
+      htmlElement.classList.add('dark');
+    } else {
+      htmlElement.classList.remove('dark');
+    }
+  }, []);
+
   return (
     <HelmetProvider>
       <AuthProvider>
@@ -25,7 +49,12 @@ export default function App() {
             <Route path="/auth/signup" exact component={SignUp} />
 
             {/* Layout Routes */}
-            <Route path="/admin" component={Admin} />
+            {/* Protected Admin Routes */}
+            <PrivateRoute
+              path="/admin"
+              component={Admin}
+              roles={['admin']}
+            />
             <Route path="/client" component={Client} />
             <Route path="/auth" component={Auth} />
 

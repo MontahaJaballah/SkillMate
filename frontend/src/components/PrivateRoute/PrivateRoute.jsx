@@ -1,10 +1,24 @@
-import { Navigate, useLocation } from "react-router-dom";
-import PropTypes from "prop-types";
-import useAuth from "../../hooks/useAuth";
+import React, { useEffect } from 'react';
+import { Route, Redirect } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import useAuth from '../../hooks/useAuth';
+import { toast } from 'react-hot-toast';
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({
+  component: Component,
+  roles = [],
+  ...rest
+}) => {
   const { user, loading } = useAuth();
-  const location = useLocation();
+
+  useEffect(() => {
+    console.log('PrivateRoute Debug:', {
+      user,
+      loading,
+      roles,
+      userRole: user?.role
+    });
+  }, [user, loading, roles]);
 
   if (loading) {
     return (
@@ -14,15 +28,63 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  if (user) {
-    return children;
-  }
+  return (
+    <Route
+      {...rest}
+      render={(props) => {
+        // Check user from localStorage as a fallback
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        const currentUser = user || storedUser;
 
-  return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+        console.log('PrivateRoute Render Debug:', {
+          currentUser,
+          storedUser,
+          location: props.location
+        });
+
+        // If no user is logged in, redirect to login
+        if (!currentUser) {
+          toast.error('Please log in to access this page');
+          return (
+            <Redirect
+              to={{
+                pathname: "/auth/signin",
+                state: { from: props.location }
+              }}
+            />
+          );
+        }
+
+        // If roles are specified, check if user has required role
+        const hasRequiredRole = roles.length === 0 || roles.includes(currentUser.role);
+
+        // If user doesn't have required role, redirect
+        if (!hasRequiredRole) {
+          toast.error(`Access denied. Required role: ${roles.join(', ')}`);
+          return (
+            <Redirect
+              to={{
+                pathname: "/client", // Redirect to a safe default page
+                state: {
+                  error: true,
+                  message: `Access denied. Required role: ${roles.join(', ')}`,
+                  currentRole: currentUser.role
+                }
+              }}
+            />
+          );
+        }
+
+        // User is authenticated and has required role
+        return <Component {...props} />;
+      }}
+    />
+  );
 };
 
 PrivateRoute.propTypes = {
-  children: PropTypes.node,
+  component: PropTypes.elementType.isRequired,
+  roles: PropTypes.arrayOf(PropTypes.string)
 };
 
 export default PrivateRoute;

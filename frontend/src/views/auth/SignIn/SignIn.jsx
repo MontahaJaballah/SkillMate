@@ -1,8 +1,7 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import toast from "react-hot-toast";
 import { Context } from "../../../components/AuthProvider/AuthProvider";
 import AOS from "aos";
 import "aos/dist/aos.css";
@@ -11,19 +10,19 @@ const SignIn = () => {
   const { login, user } = useContext(Context);
   const [showP, setShowp] = useState(false);
   const history = useHistory();
+  const location = useLocation();
 
-  const notify = () =>
-    toast.success("Sign In Successful.", {
-      style: {
-        border: "1px solid #007456",
-        padding: "20px",
-        color: "#007456",
-      },
-      iconTheme: {
-        primary: "#007456",
-        secondary: "#FFFAEE",
-      },
-    });
+  useEffect(() => {
+    if (user) {
+      // Get the previous location or default based on role
+      const from = location.state?.from?.pathname ||
+        (user.role === 'admin' ? "/admin" :
+          ['client', 'student', 'teacher'].includes(user.role) ? "/client" :
+            "/");
+
+      history.replace(from);
+    }
+  }, [user, history, location]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -32,16 +31,11 @@ const SignIn = () => {
     const password = form.get("password");
 
     try {
-      const response = await login(email, password);
-      notify();
-      // No need to redirect here as AuthProvider will handle it based on role
+      const loginResponse = await login(email, password);
+
+      // If login is successful, the useEffect will handle routing
     } catch (error) {
       console.error('Sign in error:', error);
-      if (error.response?.data?.error) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error("An error occurred while signing in");
-      }
     }
   };
 
@@ -53,10 +47,12 @@ const SignIn = () => {
     window.location.href = 'http://localhost:5000/api/auth/linkedin';
   };
 
-  AOS.init();
+  useEffect(() => {
+    AOS.init();
+  }, []);
 
   if (user) {
-    return history.push("/");
+    return null;
   }
 
   return (
