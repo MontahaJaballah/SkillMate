@@ -12,6 +12,8 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import axios from 'axios';
 import { config } from '../../../config/config';
+import googleIcon from '../../../assets/social/google.svg';
+import linkedinIcon from '../../../assets/social/linkedin.svg';
 
 const SignUp = () => {
   const { signUpUser, updateUserProfile, user, handleLinkedInSignUp, handleGoogleSignUp, updateUser } = useAuth();
@@ -525,7 +527,7 @@ const SignUp = () => {
               onClick={handleGoogleSignUp}
               className="btn btn-outline flex-1 gap-2 hover:bg-red-600 hover:border-red-600"
             >
-              <img src="/google.png" alt="Google" className="w-5 h-5" />
+              <img src={googleIcon} alt="Google" className="w-5 h-5" />
               Sign up with Google
             </button>
             <button
@@ -533,7 +535,7 @@ const SignUp = () => {
               onClick={handleLinkedInSignUp}
               className="btn btn-outline flex-1 gap-2 hover:bg-blue-600 hover:border-blue-600"
             >
-              <img src="/linkedin.png" alt="LinkedIn" className="w-5 h-5" />
+              <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
               Sign up with LinkedIn
             </button>
           </div>
