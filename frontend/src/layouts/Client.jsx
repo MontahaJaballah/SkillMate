@@ -12,6 +12,8 @@ import Landing from "../views/client/Landing.jsx";
 import Profile from "../views/client/Profile.jsx";
 import SearchResults from "../views/client/SearchResults.jsx";
 import ChatPage from "../views/client/ChatPage/ChatPage.jsx";
+import AffiliateProgram from "../views/client/AffiliateProgram.jsx";
+import AccountSettings from "../views/client/AccountSettings/AccountSettings.jsx";
 
 export default function Client() {
   return (
@@ -23,6 +25,16 @@ export default function Client() {
           <PrivateRoute
             path="/client/profile/:id?"
             exact component={Profile}
+            roles={['student', 'teacher']}
+          />
+          <PrivateRoute
+            path="/client/affiliate"
+            exact component={AffiliateProgram}
+            roles={['teacher']}
+          />
+          <PrivateRoute
+            path="/client/account-settings"
+            exact component={AccountSettings}
             roles={['student', 'teacher']}
           />
           <Route path="/client/search/:query" exact component={SearchResults} />

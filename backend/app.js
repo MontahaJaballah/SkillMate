@@ -24,6 +24,8 @@ const authRoutes = require('./routes/authRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const friendRoutes = require('./routes/friendRoutes');
+const affiliateRoutes = require('./routes/affiliateRoutes'); 
+const courseRoutes = require('./routes/courseRoutes');
 const dbConfig = require('./config/db.json');
 
 // Import passport config
@@ -141,10 +143,13 @@ app.use((req, res, next) => {
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/contracts', express.static(path.join(__dirname, 'contracts')));
 
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/affiliate', affiliateRoutes); 
+app.use('/api/courses', courseRoutes);
 app.use('/api/stats', statsRoutes);
 
 app.use('/api/chat', chatRoutes);

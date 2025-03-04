@@ -62,6 +62,11 @@ const Navbar = () => {
       <li>
         <NavLink to="/client/chat">Chat</NavLink>
       </li>
+      {user?.role === 'teacher' && (
+        <li>
+          <NavLink to="/client/affiliate">Affiliate Program</NavLink>
+        </li>
+      )}
     </>
   );
 
@@ -194,20 +199,34 @@ const Navbar = () => {
             {user && (
               <ul className="p-2 shadow menu dropdown-content z-[1] bg-base-100 rounded-box w-72">
                 <img
-                  className="w-12 mx-auto rounded-full mb-2 mt-2 border-2 border-main"
+                  className="w-24 h-24 rounded-full border-2 border-main mx-auto mb-4"
                   src={user?.photoURL}
                   alt=""
                 />
-                <p className="font-semibold text-center mr-2 mb-2 text-main">
-                  {user.displayName}
-                </p>
-                <p className="font-semibold text-center mr-2 mb-2 text-main">
-                  {user.email}
-                </p>
-                <li className="btn w-9/12 mx-auto btn-sm mt-2 btn-outline btn-success">
-                  <NavLink to={`/client/profile/${user._id || ''}`}>View Profile</NavLink>
-                </li>
-                <button className="mx-auto my-2" onClick={handleSignOut}>Sign Out</button>
+                <div className="text-center mb-4">
+                  <h3 className="font-bold">{user?.displayName}</h3>
+                  <p className="text-sm opacity-70">{user?.email}</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <NavLink
+                    to={`/client/profile/${user._id}`}
+                    className="btn btn-sm btn-outline btn-success w-full"
+                  >
+                    View Profile
+                  </NavLink>
+                  <Link
+                    to="/client/account-settings"
+                    className="btn btn-sm btn-outline btn-info w-full"
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="btn btn-sm btn-outline btn-error w-full"
+                  >
+                    Sign Out
+                  </button>
+                </div>
               </ul>
             )}
           </div>

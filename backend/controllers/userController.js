@@ -464,6 +464,7 @@ async function login(req, res) {
         if (user.isBlocked === true) {
             return res.status(403).json({
                 success: false,
+                blocked: true,
                 message: 'Your account has been blocked.',
                 details: {
                     reason: user.blockReason,
@@ -476,8 +477,8 @@ async function login(req, res) {
         if (user.status === 'deactivated') {
             return res.status(403).json({
                 success: false,
-                message: 'Account is deactivated. Please reactivate it using your phone number.',
                 deactivated: true,
+                message: 'Account is deactivated. Please reactivate it using your phone number.',
                 userId: user._id
             });
         }

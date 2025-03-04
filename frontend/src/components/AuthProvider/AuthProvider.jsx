@@ -110,8 +110,6 @@ const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
-
-
   const login = async (email, password) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/login`, {
@@ -147,7 +145,25 @@ const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('user');
 
-      // Use the unified error handler
+      // Check if account is deactivated
+      if (error.response?.status === 403) {
+        if (error.response?.data?.deactivated) {
+          // Return the error for deactivated accounts
+          return {
+            success: false,
+            deactivated: true,
+            userId: error.response.data.userId,
+            message: error.response.data.message
+          };
+        } else if (error.response?.data?.blocked) {
+          // Handle blocked accounts
+          const errorMessage = error.response.data.message || 'Your account has been blocked.';
+          toast.error(errorMessage);
+          throw new Error(errorMessage);
+        }
+      }
+
+      // Use the unified error handler for other errors
       const errorMessage = handleAuthError(error, 'Login failed');
       throw new Error(errorMessage);
     }
