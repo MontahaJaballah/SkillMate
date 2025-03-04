@@ -84,76 +84,52 @@ const Navbar = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 shadow-sm">
-      <div className="navbar justify-between py-6 container mx-auto px-4">
-        <div className="navbar-start">
-          <div className="dropdown">
-            <label tabIndex={0} className="btn btn-ghost lg:hidden">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h8m-8 6h16"
-                />
-              </svg>
-            </label>
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 dark:bg-gray-800"
-            >
-              {navItems}
-            </ul>
+    <nav className="bg-gradient-to-r from-violet-500 to-pink-500 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="text-2xl font-bold">
+              SkillSwap
+            </Link>
           </div>
-          <Link
-            to="/"
-            className="text-2xl font-bold text-main dark:text-white"
-          >
-            SkillMate
-          </Link>
-        </div>
-        <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1 gap-6">{navItems}</ul>
-        </div>
-        <div className="navbar-end flex items-center gap-4">
-          <label className="swap swap-rotate">
-            <input
-              type="checkbox"
-              onChange={handleToggle}
-              checked={theme === "dark"}
-              className="hidden"
-            />
-            <FaSun className="swap-on h-5 w-5 text-yellow-500" />
-            <FaMoon className="swap-off h-5 w-5 text-gray-600" />
-          </label>
 
-          {user ? (
-            <UserMenu handleSignOut={handleSignOut} />
-          ) : (
-            <div className="flex gap-2">
-              <Link
-                to="/auth/signin"
-                className="btn btn-ghost dark:text-white"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/auth/signup"
-                className="btn btn-primary"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <UserMenu user={user} signOut={signOut} />
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/auth/signin"
+                  className="text-white hover:text-violet-200 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/auth/signup"
+                  className="bg-white text-violet-600 px-4 py-2 rounded-lg hover:bg-violet-100 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+            
+            <label className="swap swap-rotate">
+              <input
+                type="checkbox"
+                onChange={handleToggle}
+                checked={theme === "dark"}
+              />
+              <div className="swap-on text-yellow-300">
+                <FaSun size={20} />
+              </div>
+              <div className="swap-off text-gray-200">
+                <FaMoon size={20} />
+              </div>
+            </label>
+          </div>
         </div>
       </div>
-    </div>
+    </nav>
   );
 };
 

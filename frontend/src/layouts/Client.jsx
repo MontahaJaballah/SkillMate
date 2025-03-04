@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // Components
 import Navbar from "../components/Navbar/Navbar.jsx";
@@ -14,11 +14,11 @@ export default function Client() {
     <>
       <Navbar />
       <main>
-        <Switch>
-          <Route path="/client/landing" exact component={Landing} />
-          <Route path="/client/profile" exact component={Profile} />
-          <Redirect from="/client" to="/client/landing" />
-        </Switch>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
       <Footer />
     </>

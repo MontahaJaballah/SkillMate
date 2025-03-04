@@ -16,11 +16,11 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    // Accept only image files
-    if (file.mimetype.startsWith('image/')) {
+    // Accept image files and PDF files
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
         cb(null, true);
     } else {
-        cb(new Error('Only image files are allowed!'), false);
+        cb(new Error('Only image files (JPG, PNG) and PDF files are allowed!'), false);
     }
 };
 
@@ -36,11 +36,20 @@ const upload = multer({
 const handleMulterError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({ error: 'File size is too large. Maximum size is 5MB.' });
+            return res.status(400).json({ 
+                success: false,
+                error: 'File size is too large. Maximum size is 5MB.' 
+            });
         }
-        return res.status(400).json({ error: err.message });
+        return res.status(400).json({ 
+            success: false,
+            error: err.message 
+        });
     } else if (err) {
-        return res.status(400).json({ error: err.message });
+        return res.status(400).json({ 
+            success: false,
+            error: err.message 
+        });
     }
     next();
 };

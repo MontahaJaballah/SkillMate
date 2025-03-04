@@ -18,21 +18,11 @@ const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json'
         }
       });
-      
-      if (response.data && response.data.user) {
-        const isNewLogin = !user && response.data.user;
-        setUser(response.data.user);
-        
-        if (isNewLogin) {
-          toast.success('Successfully logged in!');
-        }
-      } else {
-        setUser(null);
-      }
+      setUser(response.data.user);
     } catch (error) {
-      // Only log error if it's not a 401 (unauthorized)
+      // Don't show error toast for unauthorized status
       if (error.response?.status !== 401) {
-        console.error('Auth check error:', error);
+        toast.error("Authentication check failed");
       }
       setUser(null);
     } finally {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // components
 import AdminNavbar from "../components/Navbars/AdminNavbar.jsx";
@@ -21,12 +21,12 @@ export default function Admin() {
         {/* Header */}
         <HeaderStats />
         <div className="px-4 md:px-10 mx-auto w-full -m-24">
-          <Switch>
-            <Route path="/admin/dashboard" exact component={Dashboard} />
-            <Route path="/admin/settings" exact component={Settings} />
-            <Route path="/admin/tables" exact component={Tables} />
-            <Redirect from="/admin" to="/admin/dashboard" />
-          </Switch>
+          <Routes>
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+            <Route path="/admin/settings" element={<Settings />} />
+            <Route path="/admin/tables" element={<Tables />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          </Routes>
           <FooterAdmin />
         </div>
       </div>

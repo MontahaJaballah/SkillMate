@@ -6,6 +6,7 @@ const passport = require('passport');
 require('dotenv').config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken'); // Added jwt import
 
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -26,7 +27,7 @@ app.use(cors({
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
 }));
 
-// Parse cookies
+// Parse cookies before session middleware
 app.use(cookieParser());
 
 // Parse JSON and URL-encoded bodies
@@ -36,31 +37,50 @@ app.use(express.urlencoded({ extended: true }));
 // Add pre-flight OPTIONS handling
 app.options('*', cors());
 
-// Session middleware
+// Session middleware with secure configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'skill-exchange-app-secret-key-2024',
-    resave: true,
+    resave: false,
     saveUninitialized: false,
     name: 'skillmate.sid',
     proxy: true,
     cookie: {
-        secure: false, // Set to true only in production with HTTPS
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         httpOnly: true,
         sameSite: 'lax',
         path: '/'
-    },
-    store: new session.MemoryStore() // For development only
+    }
 }));
 
 // Initialize Passport and restore authentication state from session
 app.use(passport.initialize());
 app.use(passport.session());
 
+// JWT Authentication middleware
+app.use((req, res, next) => {
+    const token = req.cookies.token;
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            req.user = decoded;
+            req.isAuthenticated = () => true;
+        } catch (error) {
+            req.user = null;
+            req.isAuthenticated = () => false;
+        }
+    } else {
+        req.user = null;
+        req.isAuthenticated = () => false;
+    }
+    next();
+});
+
 // Debug middleware for session
 app.use((req, res, next) => {
     console.log('Session ID:', req.sessionID);
     console.log('Is Authenticated:', req.isAuthenticated());
+    console.log('User:', req.user);
     next();
 });
 

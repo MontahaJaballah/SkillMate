@@ -1,0 +1,110 @@
+:root {
+  /* Light theme */
+  --text-primary: #000000;
+  --text-secondary: #424242;
+  --text-tertiary: #666666;
+  
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  
+  --accent-primary: #7c3aed;
+  --accent-secondary: #f97316;
+  --accent-tertiary: #d946ef;
+  
+  --gradient-start: #7c3aed;
+  --gradient-end: #d946ef;
+}
+
+[data-theme='dark'] {
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #fb923c;
+  --accent-tertiary: #e879f9;
+  
+  --gradient-start: #8b5cf6;
+  --gradient-end: #e879f9;
+}
+
+/* Utility classes */
+.text-gradient {
+  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-gradient {
+  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+}
+
+/* Transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover effects */
+.hover-scale {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Form styles */
+.input-focus {
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.input-focus:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-outline {
+  border: 2px solid var(--accent-primary);
+  color: var(--accent-primary);
+  transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+  background: var(--accent-primary);
+  color: white;
+}

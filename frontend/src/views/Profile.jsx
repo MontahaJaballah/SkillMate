@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import axios from "axios";
-import { useParams, useHistory } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 import { Context } from "../components/AuthProvider/AuthProvider";
 import {
@@ -22,7 +22,7 @@ export default function Profile() {
   const [editedData, setEditedData] = useState({});
   const [isHoveringPhoto, setIsHoveringPhoto] = useState(false);
   const fileInputRef = useRef(null);
-  const history = useHistory();
+  const navigate = useNavigate();
   
   // Get authenticated user from context
   const { user } = useContext(Context);
@@ -38,7 +38,7 @@ export default function Profile() {
       // If no user is logged in and no specific ID is provided, redirect to login
       if (!user && !id) {
         toast.error("Please log in to view profile");
-        history.push('/auth/signin');
+        navigate("/auth/signin");
         return;
       }
 
@@ -63,7 +63,7 @@ export default function Profile() {
     };
 
     fetchUserData();
-  }, [userId, user, id, history]);
+  }, [userId, user, id]);
 
   const handleInputChange = (field, value) => {
     setEditedData(prev => ({
@@ -295,7 +295,7 @@ export default function Profile() {
                       <button
                         className="bg-blue-500 active:bg-blue-600 uppercase text-white font-bold hover:shadow-md shadow text-xs px-4 py-2 rounded outline-none focus:outline-none sm:mr-2 mb-1 ease-linear transition-all duration-150"
                         type="button"
-                        onClick={() => history.push('/client')}
+                        onClick={() => navigate('/client')}
                       >
                         Back to Dashboard
                       </button>

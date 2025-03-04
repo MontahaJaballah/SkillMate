@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
@@ -10,7 +10,7 @@ import "aos/dist/aos.css";
 const SignIn = () => {
   const { signInUser, user } = useAuth();
   const [showP, setShowp] = useState(false);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const notify = () =>
     toast.success("Sign In Successful.", {
@@ -34,7 +34,7 @@ const SignIn = () => {
     signInUser({ email, password })  
       .then(() => {
         notify();
-        history.push("/");
+        navigate("/");
       })
       .catch((error) => {
         console.error('Sign in error:', error);
@@ -57,7 +57,7 @@ const SignIn = () => {
   AOS.init();
 
   if (user) {
-    return history.push("/");
+    return navigate("/");
   }
 
   return (
