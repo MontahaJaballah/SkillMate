@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 // Components
 import Navbar from "../components/Navbar/Navbar.jsx";
 import Footer from "../components/Footers/Footer.jsx";
+import Chatbot from "../components/Chatbot/Chatbot.jsx";
 
 // Views
 import Landing from "../views/Landing/Landing.jsx";
@@ -24,6 +25,7 @@ export default function Client() {
         </Routes>
       </main>
       <Footer />
+      <Chatbot />
     </>
   );
 }

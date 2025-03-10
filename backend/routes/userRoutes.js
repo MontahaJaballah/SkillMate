@@ -4,6 +4,7 @@ const userController = require('../controllers/userController');
 const User = require('../models/User');
 const upload = require('../middleware/upload');
 const path = require('path');
+const chatController = require("../controllers/chatController");
 
 // Create uploads directory if it doesn't exist
 const fs = require('fs');
@@ -47,6 +48,9 @@ router.post("/addsubadmin", userController.addSubAdmin);
 router.put("/blockuser/:id", userController.blockUser);
 router.put("/unblockuser/:id", userController.unblockUser);
 router.get("/searchuser/:username", userController.searchByUsername);
+
+// Chat route
+router.post("/chat", chatController.chat);
 
 // Serve uploaded files
 router.get('/uploads/photos/:filename', (req, res) => {

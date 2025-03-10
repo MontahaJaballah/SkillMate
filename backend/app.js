@@ -87,6 +87,13 @@ app.use((req, res, next) => {
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Set up Dialogflow credentials path
+const dialogflowCredentialsPath = path.resolve(__dirname, 'config', 'skillmateBot.json');
+
+// Always set the environment variable to use our skillmateBot.json
+process.env.GOOGLE_APPLICATION_CREDENTIALS = dialogflowCredentialsPath;
+console.log('Setting Dialogflow credentials path:', dialogflowCredentialsPath);
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
