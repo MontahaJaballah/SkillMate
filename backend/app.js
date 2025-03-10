@@ -6,14 +6,14 @@ const passport = require('passport');
 require('dotenv').config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken'); // Added jwt import
+const jwt = require('jsonwebtoken'); 
 
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const dbConfig = require('./config/db.json');
 
-// Import passport config
+
 require('./config/passport');
 
 const app = express();

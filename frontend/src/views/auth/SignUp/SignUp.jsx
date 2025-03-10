@@ -44,6 +44,7 @@ const SignUp = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [certPreview, setCertPreview] = useState(null);
   const [phoneError, setPhoneError] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
   const navigate = useNavigate();
 
   // Password validation rules with real-time feedback
@@ -71,6 +72,8 @@ const SignUp = () => {
     } else if (name === 'confirmPassword') {
       setPasswordsMatch(value === formData.password);
       setFormData({ ...formData, confirmPassword: value });
+    } else if (name === 'teachingSubjects') {
+      setSelectedSubject(value);
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -214,6 +217,25 @@ const SignUp = () => {
     );
   };
 
+  // Handle adding a teaching subject
+  const handleAddSkill = () => {
+    if (selectedSubject && !formData.teachingSubjects.includes(selectedSubject)) {
+      setFormData({
+        ...formData,
+        teachingSubjects: [...formData.teachingSubjects, selectedSubject]
+      });
+      setSelectedSubject('');
+    }
+  };
+
+  // Handle removing a teaching subject
+  const handleRemoveSkill = (skillToRemove) => {
+    setFormData({
+      ...formData,
+      teachingSubjects: formData.teachingSubjects.filter(skill => skill !== skillToRemove)
+    });
+  };
+
   AOS.init();
 
   if (user) {
@@ -249,7 +271,7 @@ const SignUp = () => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                 required
               />
             </div>
@@ -264,7 +286,7 @@ const SignUp = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                 required
               />
             </div>
@@ -279,7 +301,7 @@ const SignUp = () => {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                 required
               />
             </div>
@@ -294,7 +316,7 @@ const SignUp = () => {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                 required
               />
             </div>
@@ -328,7 +350,7 @@ const SignUp = () => {
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="select select-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                className="select select-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
               >
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
@@ -349,7 +371,7 @@ const SignUp = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-200 mt-2 border focus:border-violet-500 focus:bg-white focus:outline-none"
+                    className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                     required
                     onFocus={() => setShowPasswordRequirements(true)}
                     onBlur={() => setShowPasswordRequirements(false)}
@@ -357,7 +379,7 @@ const SignUp = () => {
                   <button
                     type="button"
                     onClick={() => setShowp(!showP)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-300"
                   >
                     {showP ? <GoEyeClosed size={20} /> : <GoEye size={20} />}
                   </button>
@@ -375,7 +397,7 @@ const SignUp = () => {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 pr-10 ${
+                    className={`input input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 pr-10 ${
                       formData.confirmPassword && !passwordsMatch ? 'border-red-500' : ''
                     }`}
                     required
@@ -383,7 +405,7 @@ const SignUp = () => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmP(!showConfirmP)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-purple-500"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-300"
                   >
                     {showConfirmP ? <GoEyeClosed size={20} /> : <GoEye size={20} />}
                   </button>
@@ -406,7 +428,7 @@ const SignUp = () => {
                 name="photo"
                 onChange={handleChange}
                 accept="image/jpeg,image/png"
-                className="file-input file-input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                className="file-input file-input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
               />
               {photoPreview && (
                 <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg">
@@ -430,44 +452,50 @@ const SignUp = () => {
                 <label className="label">
                   <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Teaching Subjects</span>
                 </label>
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="relative mb-4">
+                  <select
+                    name="teachingSubjects"
+                    value={selectedSubject}
+                    onChange={handleChange}
+                    className="select select-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">Select a subject</option>
+                    <option value="Music">Music</option>
+                    <option value="Chess">Chess</option>
+                    <option value="Rubik's Cube">Rubik's Cube</option>
+                    <option value="IT">IT</option>
+                    <option value="Gym">Gym</option>
+                    <option value="Cooking">Cooking</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddSkill}
+                    disabled={!selectedSubject}
+                    className="mt-2 btn w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-none disabled:from-gray-400 disabled:to-gray-500"
+                  >
+                    Add Subject
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
                   {formData.teachingSubjects.map((subject, index) => (
-                    <span
+                    <div
                       key={index}
-                      className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full flex items-center gap-2"
+                      className="group relative flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/50 dark:to-pink-900/50 shadow-sm hover:shadow-md transition-all duration-200"
                     >
-                      {subject}
+                      <span className="text-purple-800 dark:text-purple-200">{subject}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveSkill(subject)}
-                        className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200"
+                        className="ml-2 p-1 text-purple-600 dark:text-purple-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                       >
-                        ×
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
-                    </span>
+                    </div>
                   ))}
                 </div>
-                <select
-                  value={formData.teachingSubjects}
-                  onChange={(e) => setFormData({ ...formData, teachingSubjects: e.target.value })}
-                  className="select select-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 mb-2"
-                >
-                  <option value="">Select a subject</option>
-                  <option value="Music">Music</option>
-                  <option value="Chess">Chess</option>
-                  <option value="Rubik's Cube">Rubik's Cube</option>
-                  <option value="IT">IT</option>
-                  <option value="Gym">Gym</option>
-                  <option value="Cooking">Cooking</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddSkill}
-                  disabled={!formData.teachingSubjects}
-                  className="btn btn-outline btn-primary w-full hover:bg-purple-600 hover:border-purple-600"
-                >
-                  Add Subject
-                </button>
               </div>
 
               {/* Certification Upload */}
@@ -481,7 +509,7 @@ const SignUp = () => {
                     name="certificationFile"
                     onChange={handleChange}
                     accept="image/jpeg,image/png,application/pdf"
-                    className="file-input file-input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                    className="file-input file-input-bordered w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500"
                     required
                   />
                   {certPreview && (
@@ -525,7 +553,7 @@ const SignUp = () => {
               onClick={handleGoogleSignUp}
               className="btn btn-outline flex-1 gap-2 hover:bg-red-600 hover:border-red-600"
             >
-              <img src="/google.png" alt="Google" className="w-5 h-5" />
+              <img src="/assets/images/google.svg" alt="Google" className="w-5 h-5" />
               Sign up with Google
             </button>
             <button
@@ -533,7 +561,7 @@ const SignUp = () => {
               onClick={handleLinkedInSignUp}
               className="btn btn-outline flex-1 gap-2 hover:bg-blue-600 hover:border-blue-600"
             >
-              <img src="/linkedin.png" alt="LinkedIn" className="w-5 h-5" />
+              <img src="/assets/images/linkedin.svg" alt="LinkedIn" className="w-5 h-5" />
               Sign up with LinkedIn
             </button>
           </div>

@@ -6,7 +6,7 @@ import Navbar from "../components/Navbar/Navbar.jsx";
 import Footer from "../components/Footers/Footer.jsx";
 
 // Views
-import Landing from "../views/client/Landing.jsx";
+import Landing from "../views/Landing/Landing.jsx";
 import Profile from "../views/Profile.jsx";
 
 export default function Client() {

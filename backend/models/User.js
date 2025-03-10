@@ -34,12 +34,6 @@ const userSchema = new mongoose.Schema({
     },
     phoneNumber: {
         type: String,
-        validate: {
-            validator: function(v) {
-                return !v || /^\+[1-9]\d{1,14}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid phone number! Please use international format (e.g., +1234567890)`
-        },
         trim: true
     },
     role: {

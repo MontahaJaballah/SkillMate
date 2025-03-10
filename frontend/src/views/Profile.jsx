@@ -211,18 +211,17 @@ export default function Profile() {
     <>
       <main className="profile-page">
         <section className="relative block h-[500px]">
-          <div
-            className="absolute top-0 w-full h-full bg-center bg-cover"
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1499336315816-097655dcfbda?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2710&q=80')",
-            }}
-          >
-            <span
-              id="blackOverlay"
-              className="w-full h-full absolute opacity-50 bg-black"
-            ></span>
-          </div>
+        <div
+  className="absolute top-0 w-full h-full bg-center bg-cover"
+  style={{
+    backgroundImage: "url('http://localhost:5000/uploads/background/backgound.jpeg')",
+  }}
+>
+  <span
+    id="blackOverlay"
+    className="w-full h-full absolute opacity-50 bg-black"
+  ></span>
+</div>
           <div
             className="top-auto bottom-0 left-0 right-0 w-full absolute pointer-events-none overflow-hidden h-[70px]"
             style={{ transform: "translateZ(0)" }}

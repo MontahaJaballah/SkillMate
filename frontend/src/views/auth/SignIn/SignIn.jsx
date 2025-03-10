@@ -8,22 +8,9 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 
 const SignIn = () => {
-  const { signInUser, user } = useAuth();
+  const { signInUser, user, handleGoogleSignIn, handleLinkedInSignIn } = useAuth();
   const [showP, setShowp] = useState(false);
   const navigate = useNavigate();
-
-  const notify = () =>
-    toast.success("Sign In Successful.", {
-      style: {
-        border: "1px solid #007456",
-        padding: "20px",
-        color: "#007456",
-      },
-      iconTheme: {
-        primary: "#007456",
-        secondary: "#FFFAEE",
-      },
-    });
 
   const handleSignIn = (e) => {
     e.preventDefault();
@@ -33,7 +20,7 @@ const SignIn = () => {
     
     signInUser({ email, password })  
       .then(() => {
-        notify();
+        toast.success('Successfully signed in!');
         navigate("/");
       })
       .catch((error) => {
@@ -46,104 +33,104 @@ const SignIn = () => {
       });
   };
 
-  const handleShowP = () => {
-    setShowp(!showP);
-  };
-
-  const handleLinkedInLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/linkedin';
-  };
-
   AOS.init();
 
   if (user) {
-    return navigate("/");
+    navigate("/");
+    return null;
   }
 
   return (
-    <div className="dark:bg-[#0f1729] min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 py-12 px-4 sm:px-6 lg:px-8">
       <Helmet>
-        <title>SkillMate | Sign In</title>
+        <title>Sign In | SkillMate</title>
       </Helmet>
-      <div className="min-h-screen flex items-center justify-center">
-        <div
-          data-aos="zoom-in"
-          data-aos-offset="200"
-          data-aos-duration="600"
-          data-aos-mirror="true"
-          data-aos-once="false"
-          data-aos-anchor-placement="top"
-          className="hero-content flex-col md:w-auto w-[99vw] md:my-auto my-10 md:shadow-[0_0_10px_1px_#D1D1D1] dark:shadow-[0_0_50px_#122827] md:px-10 bg-white dark:bg-gray-900 bg-opacity-70 rounded-xl p-8"
-        >
-          <h1 className="text-5xl font-bold text-main pt-4 pb-6">
-            Sign In now!
-          </h1>
-          <div className="card w-96">
-            <div className="card-body p-0">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text dark:text-gray-200">Email</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="email"
-                    className="input bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
-                    required
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text dark:text-gray-200">Password</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showP ? "text" : "password"}
-                      name="password"
-                      placeholder="password"
-                      className="input w-full bg-transparent dark:text-slate-300 border border-black focus:border-dashed focus:outline-none focus:border-main focus:ring-0"
-                      required
-                    />
-                    <button
-                      onClick={handleShowP}
-                      type="button"
-                      className="absolute top-1/2 -translate-y-1/2 right-3 text-xl"
-                    >
-                      {showP ? <GoEyeClosed /> : <GoEye />}
-                    </button>
-                  </div>
-                </div>
-                <div className="form-control">
-                  <button className="btn btn-primary bg-main hover:bg-main border-none text-white">
-                    Sign In
-                  </button>
-                </div>
-              </form>
-              
-              {/* LinkedIn Sign In */}
-              <div className="divider">OR</div>
-              <button
-                onClick={handleLinkedInLogin}
-                className="btn btn-outline w-full border-main hover:bg-main hover:border-main text-main hover:text-white"
-              >
-                <img
-                  src="https://cdn-icons-png.flaticon.com/512/174/174857.png"
-                  alt="LinkedIn"
-                  className="w-5 h-5 mr-2"
-                />
-                Sign in with LinkedIn
-              </button>
+      <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 space-y-8 transform hover:scale-[1.02] transition-transform duration-300">
+        <div className="text-center">
+          <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+            Welcome Back
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400">
+            Sign in to continue your journey
+          </p>
+        </div>
 
-              <p className="text-center mt-4 dark:text-gray-200">
-                New to SkillMate?{" "}
-                <Link to="/auth/signup" className="text-main font-bold">
-                  Sign Up
-                </Link>
-              </p>
+        <form onSubmit={handleSignIn} className="space-y-6">
+          <div className="space-y-4">
+            {/* Email field */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Email</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                required
+              />
+            </div>
+
+            {/* Password field */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Password</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showP ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter your password"
+                  className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowp(!showP)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-purple-500"
+                >
+                  {showP ? <GoEyeClosed size={20} /> : <GoEye size={20} />}
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-300"
+          >
+            Sign In
+          </button>
+        </form>
+
+        {/* Social Sign In Options */}
+        <div className="divider text-gray-500 dark:text-gray-400">OR</div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="btn btn-outline flex-1 gap-2 hover:bg-red-600 hover:border-red-600"
+          >
+            <img src="/assets/images/google.svg" alt="Google" className="w-5 h-5" />
+            Sign in with Google
+          </button>
+          <button
+            type="button"
+            onClick={handleLinkedInSignIn}
+            className="btn btn-outline flex-1 gap-2 hover:bg-blue-600 hover:border-blue-600"
+          >
+            <img src="/assets/images/linkedin.svg" alt="LinkedIn" className="w-5 h-5" />
+            Sign in with LinkedIn
+          </button>
         </div>
+
+        <p className="text-center text-gray-600 dark:text-gray-400">
+          Don't have an account?{" "}
+          <Link to="/signup" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium">
+            Sign Up
+          </Link>
+        </p>
       </div>
     </div>
   );
