@@ -122,6 +122,74 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  // Account deactivation
+  const deactivateAccount = async (userId, phoneNumber) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/deactivate', 
+        { userId, phoneNumber },
+        { 
+          withCredentials: true,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      if (response.data.success) {
+        await signOut();
+      }
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Request reactivation code
+  const sendReactivationCode = async (userId, phoneNumber) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/reactivate/request', 
+        { userId, phoneNumber },
+        { 
+          withCredentials: true,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // In development mode, show the verification code
+      if (response.data.verificationCode) {
+        toast.success(`Development mode - Verification code: ${response.data.verificationCode}`, {
+          duration: 10000 // Show for 10 seconds
+        });
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Send reactivation code error:', error);
+      throw error;
+    }
+  };
+
+  // Verify code and reactivate account
+  const verifyAndReactivate = async (userId, verificationCode) => {
+    const response = await axios.post('http://localhost:5000/api/auth/reactivate/verify', 
+      { userId, verificationCode },
+      { 
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    if (response.data.success) {
+      setUser(response.data.user);
+    }
+    return response.data;
+  };
+
   const value = {
     user,
     loading,
@@ -130,7 +198,10 @@ const AuthProvider = ({ children }) => {
     signOut,
     handleLinkedInLogin,
     handleLinkedInSignUp,
-    handleGoogleSignUp
+    handleGoogleSignUp,
+    deactivateAccount,
+    sendReactivationCode,
+    verifyAndReactivate
   };
 
   return (

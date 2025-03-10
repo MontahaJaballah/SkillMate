@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
-import { FaUserCircle, FaSignOutAlt, FaTachometerAlt, FaCommentAlt } from 'react-icons/fa';
+import { FaUserCircle, FaSignOutAlt, FaTachometerAlt, FaCommentAlt, FaCog } from 'react-icons/fa';
 
 const UserMenu = () => {
   const { user, signOut } = useAuth();
@@ -86,6 +86,17 @@ const UserMenu = () => {
             <FaCommentAlt className="mr-2 text-violet-400" />
             Chat
           </Link>
+
+          <Link
+            to="/settings"
+            className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => setIsOpen(false)}
+          >
+            <FaCog className="mr-2" />
+            Account Settings
+          </Link>
+          
+          <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
           
           <button
             onClick={() => {
