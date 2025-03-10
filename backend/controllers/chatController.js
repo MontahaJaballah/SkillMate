@@ -1,5 +1,38 @@
+const Message = require('../models/Message');
 const detectIntent = require('../services/dialogflowService');
 const uuid = require('uuid');
+
+// Send a message
+exports.sendMessage = async (req, res) => {
+  try {
+    const { sender, receiver, message } = req.body;
+
+    const newMessage = new Message({ sender, receiver, message });
+    await newMessage.save();
+
+    res.status(201).json(newMessage);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get chat history between two users
+exports.getMessages = async (req, res) => {
+  try {
+    const { sender, receiver } = req.params;
+
+    const messages = await Message.find({
+      $or: [
+        { sender, receiver },
+        { sender: receiver, receiver: sender }
+      ]
+    }).sort({ timestamp: 1 });
+
+    res.status(200).json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 async function chat(req, res) {
     const { message } = req.body;
@@ -46,5 +79,7 @@ async function chat(req, res) {
 }
 
 module.exports = {
-    chat
+    chat,
+    sendMessage: exports.sendMessage,
+    getMessages: exports.getMessages
 };

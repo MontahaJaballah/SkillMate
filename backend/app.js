@@ -7,25 +7,30 @@ require('dotenv').config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken'); 
+const http = require('http');
+const { Server } = require('socket.io');
 
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const friendRoutes = require('./routes/friendRoutes');
 const dbConfig = require('./config/db.json');
-
 
 require('./config/passport');
 
 const app = express();
 
 // Middleware
-app.use(cors({
+const corsOptions = {
     origin: ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Parse cookies before session middleware
 app.use(cookieParser());
@@ -35,7 +40,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Add pre-flight OPTIONS handling
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 // Session middleware with secure configuration
 app.use(session({
@@ -76,14 +81,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Debug middleware for session
-app.use((req, res, next) => {
-    console.log('Session ID:', req.sessionID);
-    console.log('Is Authenticated:', req.isAuthenticated());
-    console.log('User:', req.user);
-    next();
-});
-
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -98,6 +95,8 @@ console.log('Setting Dialogflow credentials path:', dialogflowCredentialsPath);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/friends', friendRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -113,9 +112,61 @@ mongoose.connect(dbConfig.mongodb.url)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173', // Vite dev server port
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Socket.io connection
+const connectedUsers = new Map();
+
+io.on('connection', (socket) => {
+  console.log('A user connected: ' + socket.id);
+
+  // Handle user connection with their ID
+  socket.on('user_connected', (userId) => {
+    connectedUsers.set(userId, socket.id);
+    console.log(`User ${userId} connected with socket ${socket.id}`);
+  });
+
+  socket.on('sendMessage', (data) => {
+    io.emit('receiveMessage', data); // Broadcast to all clients
+  });
+
+  // Handle friend request events
+  socket.on('send_friend_request', ({ requesterId, recipientId }) => {
+    const recipientSocketId = connectedUsers.get(recipientId);
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('friend_request_received', { requesterId });
+    }
+  });
+
+  socket.on('accept_friend_request', ({ requesterId, recipientId }) => {
+    const requesterSocketId = connectedUsers.get(requesterId);
+    if (requesterSocketId) {
+      io.to(requesterSocketId).emit('friend_request_accepted', { recipientId });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    // Remove user from connected users
+    for (const [userId, socketId] of connectedUsers.entries()) {
+      if (socketId === socket.id) {
+        connectedUsers.delete(userId);
+        break;
+      }
+    }
+    console.log('User disconnected');
+  });
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 module.exports = app;

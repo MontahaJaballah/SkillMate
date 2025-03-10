@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useHistory } from "react-router-dom";
+import { Menu } from '@headlessui/react';
 
 export default function ClientNavbar() {
   const [navbarOpen, setNavbarOpen] = React.useState(false);
@@ -58,8 +59,8 @@ export default function ClientNavbar() {
                 </button>
               </div>
             </form>
-            <ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
-              <li className="flex items-center">
+            <Menu as="ul" className="flex flex-col lg:flex-row list-none lg:ml-auto">
+              <Menu.Item>
                 <Link
                   to="/client/profile"
                   className="text-gray-800 hover:text-gray-600 px-3 py-4 lg:py-2 flex items-center text-xs uppercase font-bold"
@@ -67,8 +68,8 @@ export default function ClientNavbar() {
                   <i className="fas fa-user-circle text-lg leading-lg text-gray-500"/>
                   <span className="lg:hidden inline-block ml-2">Profile</span>
                 </Link>
-              </li>
-              <li className="flex items-center">
+              </Menu.Item>
+              <Menu.Item>
                 <Link
                   to="/admin"
                   className="text-gray-800 hover:text-gray-600 px-3 py-4 lg:py-2 flex items-center text-xs uppercase font-bold"
@@ -76,8 +77,17 @@ export default function ClientNavbar() {
                   <i className="fas fa-cog text-lg leading-lg text-gray-500"/>
                   <span className="lg:hidden inline-block ml-2">Admin</span>
                 </Link>
-              </li>
-              <li className="flex items-center">
+              </Menu.Item>
+              <Menu.Item>
+                <Link
+                  to="/chat"
+                  className="text-gray-800 hover:text-gray-600 px-3 py-4 lg:py-2 flex items-center text-xs uppercase font-bold"
+                >
+                  <i className="fas fa-comment-alt text-lg leading-lg text-gray-500"/>
+                  <span className="lg:hidden inline-block ml-2">Chat</span>
+                </Link>
+              </Menu.Item>
+              <Menu.Item>
                 <Link
                   to="/auth/login"
                   className="text-gray-800 hover:text-gray-600 px-3 py-4 lg:py-2 flex items-center text-xs uppercase font-bold"
@@ -85,8 +95,16 @@ export default function ClientNavbar() {
                   <i className="fas fa-sign-out-alt text-lg leading-lg text-gray-500"/>
                   <span className="lg:hidden inline-block ml-2">Logout</span>
                 </Link>
-              </li>
-            </ul>
+              </Menu.Item>
+              <Menu.Item>
+                <Link
+                  to="/chat"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Chat
+                </Link>
+              </Menu.Item>
+            </Menu>
           </div>
         </div>
       </nav>
