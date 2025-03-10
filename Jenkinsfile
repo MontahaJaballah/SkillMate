@@ -6,7 +6,7 @@ pipeline {
             steps {
                 script {
                     cleanWs()
-                    git branch: 'main', url: 'https://github.com/MontahaJaballah/SkillMate.git'
+                    git branch: 'develop', url: 'https://github.com/MontahaJaballah/SkillMate.git'
                 }
             }
         }
@@ -67,6 +67,17 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'scanner'
+                    withSonarQubeEnv {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+
         stage('Build Backend') {
             steps {
                 script {
@@ -81,6 +92,14 @@ pipeline {
                 script {
                     echo 'Building frontend...'
                     sh 'cd frontend && npm run build'
+                }
+            }
+        }
+
+        stage('Building images (node and mongo)') {
+            steps {
+                script {
+                    sh 'docker-compose build'
                 }
             }
         }
