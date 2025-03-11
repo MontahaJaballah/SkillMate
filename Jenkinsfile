@@ -97,13 +97,13 @@ pipeline {
         }
 
         stage('Building images (node and mongo)') {
-    steps {
-        script {
-            sh('docker-compose build')
+            steps {
+                script {
+                    sh('docker-compose build')
+                }
+            }
         }
     }
-}
-
 
     post {
         success {
