@@ -28,7 +28,7 @@ export default function HeaderStats({ children }) {
           axiosInstance.get("/stats/total-users"),
           axiosInstance.get("/stats/total-users-last-month"),
           axiosInstance.get("/stats/new-mentors"),
-          axiosInstance.get("/users/stats/new-mentors-last-week")
+          axiosInstance.get("/stats/new-mentors-last-week")
         ]);
 
         const totalUsers = usersResponse.data.count;
@@ -100,7 +100,7 @@ export default function HeaderStats({ children }) {
                   statSubtitle="TOTAL USERS"
                   statTitle={stats.totalUsers.toLocaleString()}
                   statArrow={stats.totalUsersArrow}
-                  statPercent={stats.totalUsersPercentChange}
+                  statPercent={stats.totalUsersPercentChange.toString()}
                   statPercentColor="text-primary"
                   statDescription="Since last month"
                   statIconName="fas fa-users"
@@ -112,7 +112,7 @@ export default function HeaderStats({ children }) {
                   statSubtitle="NEW MENTORS"
                   statTitle={stats.newMentors.toLocaleString()}
                   statArrow={stats.newMentorsArrow}
-                  statPercent={stats.newMentorsPercentChange}
+                  statPercent={stats.newMentorsPercentChange.toString()}
                   statPercentColor="text-secondary"
                   statDescription="Since last week"
                   statIconName="fas fa-chalkboard-teacher"

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 
-router.get('/stats/total-users', async (req, res) => {
+router.get('/total-users', async (req, res) => {
     try {
         const count = await User.countDocuments();
         res.json({ count });
@@ -11,7 +11,7 @@ router.get('/stats/total-users', async (req, res) => {
     }
 });
 
-router.get('/stats/new-mentors', async (req, res) => {
+router.get('/new-mentors', async (req, res) => {
     try {
         // Assuming you have a way to determine new mentors, 
         // e.g., mentors created in the last week
@@ -26,7 +26,7 @@ router.get('/stats/new-mentors', async (req, res) => {
     }
 });
 
-router.get('/stats/total-users-last-month', async (req, res) => {
+router.get('/total-users-last-month', async (req, res) => {
     try {
         const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         const count = await User.countDocuments({
@@ -41,7 +41,7 @@ router.get('/stats/total-users-last-month', async (req, res) => {
     }
 });
 
-router.get('/stats/new-mentors-last-week', async (req, res) => {
+router.get('/new-mentors-last-week', async (req, res) => {
     try {
         const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

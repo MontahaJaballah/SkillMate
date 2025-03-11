@@ -9,16 +9,12 @@ const PrivateRoute = ({
   roles = [],
   ...rest
 }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, checkAuthStatus } = useAuth();
 
   useEffect(() => {
-    console.log('PrivateRoute Debug:', {
-      user,
-      loading,
-      roles,
-      userRole: user?.role
-    });
-  }, [user, loading, roles]);
+    // Validate user authentication status on mount
+    checkAuthStatus();
+  }, []);
 
   if (loading) {
     return (
@@ -32,18 +28,8 @@ const PrivateRoute = ({
     <Route
       {...rest}
       render={(props) => {
-        // Check user from localStorage as a fallback
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        const currentUser = user || storedUser;
-
-        console.log('PrivateRoute Render Debug:', {
-          currentUser,
-          storedUser,
-          location: props.location
-        });
-
         // If no user is logged in, redirect to login
-        if (!currentUser) {
+        if (!user) {
           toast.error('Please log in to access this page');
           return (
             <Redirect
@@ -56,7 +42,7 @@ const PrivateRoute = ({
         }
 
         // If roles are specified, check if user has required role
-        const hasRequiredRole = roles.length === 0 || roles.includes(currentUser.role);
+        const hasRequiredRole = roles.length === 0 || roles.includes(user.role);
 
         // If user doesn't have required role, redirect
         if (!hasRequiredRole) {
@@ -64,11 +50,11 @@ const PrivateRoute = ({
           return (
             <Redirect
               to={{
-                pathname: "/client", // Redirect to a safe default page
+                pathname: "/unauthorized",
                 state: {
                   error: true,
                   message: `Access denied. Required role: ${roles.join(', ')}`,
-                  currentRole: currentUser.role
+                  currentRole: user.role
                 }
               }}
             />
@@ -86,5 +72,5 @@ PrivateRoute.propTypes = {
   component: PropTypes.elementType.isRequired,
   roles: PropTypes.arrayOf(PropTypes.string)
 };
-
+ 
 export default PrivateRoute;
