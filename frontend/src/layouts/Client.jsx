@@ -27,6 +27,13 @@ export default function Client() {
             exact component={Profile}
             roles={['student', 'teacher']}
           />
+          <PrivateRoute path="/client/search/:query"
+            exact component={SearchResults}
+            roles={['student', 'teacher']}
+          />
+          <PrivateRoute path="/client/chat"
+            exact component={ChatPage}
+            roles={['student', 'teacher']} />
           <PrivateRoute
             path="/client/affiliate"
             exact component={AffiliateProgram}
@@ -37,8 +44,6 @@ export default function Client() {
             exact component={AccountSettings}
             roles={['student', 'teacher']}
           />
-          <Route path="/client/search/:query" exact component={SearchResults} />
-          <Route path="/client/chat" exact component={ChatPage} />
           <Redirect from="/client" to="/client/landing" />
         </Switch>
       </main>
