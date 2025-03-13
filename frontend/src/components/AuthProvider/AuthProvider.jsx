@@ -20,7 +20,6 @@ const AuthProvider = ({ children }) => {
       });
       setUser(response.data.user);
     } catch (error) {
-      // Don't show error toast for unauthorized status
       if (error.response?.status !== 401) {
         toast.error("Authentication check failed");
       }
@@ -28,6 +27,10 @@ const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateUser = (userData) => {
+    setUser(userData);
   };
 
   const logout = async () => {
@@ -43,15 +46,12 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check auth status on mount and periodically
   useEffect(() => {
     checkAuthStatus();
 
-    // Check auth status when window gains focus
     const onFocus = () => checkAuthStatus();
     window.addEventListener('focus', onFocus);
 
-    // Check auth status every 5 minutes
     const interval = setInterval(checkAuthStatus, 5 * 60 * 1000);
 
     return () => {
@@ -61,19 +61,16 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const handleLinkedInLogin = () => {
-    // Store the current URL to redirect back after login
     sessionStorage.setItem('redirectUrl', window.location.pathname);
     window.location.href = 'http://localhost:5000/api/auth/linkedin';
   };
 
   const handleLinkedInSignUp = () => {
-    // Store the current URL to redirect back after signup
     sessionStorage.setItem('redirectUrl', window.location.pathname);
     window.location.href = 'http://localhost:5000/api/auth/linkedin';
   };
 
   const handleGoogleSignUp = () => {
-    // Store the current URL to redirect back after signup
     sessionStorage.setItem('redirectUrl', window.location.pathname);
     window.location.href = 'http://localhost:5000/api/auth/google';
   };
@@ -116,7 +113,6 @@ const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Error signing out');
-      // Still clear the user state and redirect on error
       setUser(null);
       window.location.href = '/';
     }
@@ -130,7 +126,8 @@ const AuthProvider = ({ children }) => {
     signOut,
     handleLinkedInLogin,
     handleLinkedInSignUp,
-    handleGoogleSignUp
+    handleGoogleSignUp,
+    updateUser // Added updateUser to context
   };
 
   return (
