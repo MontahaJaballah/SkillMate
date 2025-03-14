@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const { sendBlockNotification } = require('../services/emailService');
 const twilio = require('twilio');
+const CertificateValidationService = require('../services/certificateValidation');
+const validator = new CertificateValidationService();
+const crypto = require('crypto'); // Added for file hashing
 
 // Create uploads directory and subdirectories if they don't exist
 const uploadDir = path.join(__dirname, '../uploads');
@@ -31,31 +34,63 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 async function add(req, res) {
     try {
         console.log('Received registration data:', req.body);
-        
+
         const userData = { ...req.body };
-        
+
         // Handle photo file upload
         let photoURL = '';
         if (req.files && req.files.photo) {
             const photoFile = req.files.photo;
             const fileName = `${Date.now()}-${photoFile.name}`;
             const filePath = path.join(photosDir, fileName);
-            
+
             await photoFile.mv(filePath);
             photoURL = `/uploads/photos/${fileName}`;
             userData.photoURL = photoURL;
         }
 
-        // Handle certification file upload
+        // Handle certification file upload and validation
         let certificationFile = '';
+        let certificationStatus = 'pending'; // Default to pending, will be updated based on validation
         if (req.files && req.files.certificationFile) {
             const certFile = req.files.certificationFile;
             const fileName = `${Date.now()}-${certFile.name}`;
             const filePath = path.join(certsDir, fileName);
-            
+
+            // Compute file hash for debugging
+            const fileBuffer = fs.readFileSync(certFile.tempFilePath || certFile.path);
+            const fileHash = crypto.createHash('md5').update(fileBuffer).digest('hex');
+            console.log('Certificate file details:', {
+                name: certFile.name,
+                mimeType: certFile.mimetype,
+                size: certFile.size,
+                path: filePath,
+                hash: fileHash
+            });
+
             await certFile.mv(filePath);
             certificationFile = `/uploads/certifications/${fileName}`;
-            userData.certificationFile = certificationFile;
+
+            // Validate certificate only for teachers
+            if (userData.role === 'teacher') {
+                const validationResult = await validator.validateCertificate(filePath, certFile.mimetype);
+                certificationStatus = validationResult.fileInfo.status;
+                if (!validationResult.isValid) {
+                    console.log('Certificate validation failed, rejecting signup.');
+                    await validator.cleanupFile(filePath); // Clean up invalid file
+                    return res.status(400).json({
+                        success: false,
+                        error: validationResult.message,
+                    });
+                }
+            }
+        } else if (userData.role === 'teacher') {
+            // No certificate uploaded for teacher
+            console.log('No certificate uploaded for teacher, rejecting signup.');
+            return res.status(400).json({
+                success: false,
+                error: 'Certificate file is required for teachers.',
+            });
         }
 
         // Parse teaching subjects if they're sent as a string
@@ -77,9 +112,15 @@ async function add(req, res) {
 
         console.log('Creating user with data:', { ...userData, password: '[HIDDEN]' });
 
+        // Add certification fields to user data if teacher
+        if (userData.role === 'teacher') {
+            userData.certificationFile = certificationFile;
+            userData.certificationStatus = certificationStatus;
+        }
+
         const user = new User(userData);
         await user.save();
-        
+
         console.log('User created successfully');
         // Send back more complete user data
         const userResponse = {
@@ -95,19 +136,20 @@ async function add(req, res) {
                 role: user.role,
                 photoURL: user.photoURL,
                 teachingSubjects: user.teachingSubjects || [],
-                certificationFile: user.certificationFile || ''
+                certificationFile: user.certificationFile || '',
+                certificationStatus: user.certificationStatus || null, // Include certificationStatus
             }
         };
         console.log('Sending response:', userResponse);
         res.status(200).json(userResponse);
     } catch (error) {
         console.error('Error in user registration:', error);
-        
+
         // Clean up uploaded files if user creation fails
         const cleanupFiles = [];
         if (req.files?.photo) cleanupFiles.push(req.files.photo.path);
         if (req.files?.certificationFile) cleanupFiles.push(req.files.certificationFile.path);
-        
+
         cleanupFiles.forEach(filePath => {
             fs.unlink(filePath, (err) => {
                 if (err) console.error('Error deleting file:', err);
@@ -117,27 +159,26 @@ async function add(req, res) {
         // Send more detailed error message
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern)[0];
-            res.status(400).json({ 
+            res.status(400).json({
                 success: false,
                 error: `This ${field} is already registered. Please use a different ${field}.`
             });
         } else if (error.name === 'ValidationError') {
             const errors = Object.values(error.errors).map(err => err.message);
-            res.status(400).json({ 
+            res.status(400).json({
                 success: false,
-                error: errors.join(', ') 
+                error: errors.join(', ')
             });
         } else {
-            res.status(500).json({ 
+            res.status(500).json({
                 success: false,
                 error: 'Registration failed. Please try again.',
-                details: error.message 
+                details: error.message
             });
         }
     }
 }
 
-// Rest of the functions remain unchanged
 async function getAll(req, res) {
     try {
         const users = await User.find();
@@ -168,7 +209,7 @@ async function update(req, res) {
             const photoFile = req.files.photo;
             const fileName = `${Date.now()}-${photoFile.name}`;
             const filePath = path.join(photosDir, fileName);
-            
+
             await photoFile.mv(filePath);
             photoURL = `/uploads/photos/${fileName}`;
             userData.photoURL = photoURL;
@@ -179,7 +220,7 @@ async function update(req, res) {
             const certFile = req.files.certificationFile;
             const fileName = `${Date.now()}-${certFile.name}`;
             const filePath = path.join(certsDir, fileName);
-            
+
             await certFile.mv(filePath);
             certificationFile = `/uploads/certifications/${fileName}`;
             userData.certificationFile = certificationFile;
@@ -266,7 +307,7 @@ async function blockUser(req, res) {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
+
         if (user.role === 'admin') {
             return res.status(403).json({ error: 'Cannot block an admin user' });
         }
@@ -280,7 +321,7 @@ async function blockUser(req, res) {
             await sendBlockNotification(user.email, req.body.reason);
         }
 
-        res.status(200).json({ 
+        res.status(200).json({
             message: 'User blocked successfully',
             emailSent: req.body.sendEmail
         });
@@ -320,10 +361,10 @@ async function login(req, res) {
         }
 
         if (user.status === 'deactivated') {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 message: 'Account is deactivated. Please reactivate it using your phone number.',
                 deactivated: true,
-                userId: user._id 
+                userId: user._id
             });
         }
 
@@ -354,26 +395,26 @@ async function searchByUsername(req, res) {
 async function deactivate(req, res) {
     try {
         const { userId, phoneNumber } = req.body;
-        
+
         if (!phoneNumber) {
             return res.status(400).json({ message: 'Phone number is required for account deactivation' });
         }
 
         if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 message: 'Invalid phone number format. Please use international format (e.g., +1234567890)'
             });
         }
 
         const user = await User.findByIdAndUpdate(
             userId,
-            { 
+            {
                 phoneNumber: phoneNumber,
                 status: 'deactivated'
             },
             { new: true }
         );
-        
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -388,7 +429,7 @@ async function reactivateWithPhone(req, res) {
     try {
         const { phoneNumber, userId } = req.body;
         console.log('Attempting reactivation for:', { userId, phoneNumber });
-        
+
         const user = await User.findById(userId);
 
         if (!user) {
@@ -444,15 +485,15 @@ async function reactivateWithPhone(req, res) {
             res.json({ message: 'Verification code sent successfully' });
         } catch (twilioError) {
             console.error('Twilio error:', twilioError);
-            
+
             if (process.env.NODE_ENV === 'development') {
                 console.log('Development mode - verification code (SMS failed):', verificationCode);
-                return res.json({ 
+                return res.json({
                     message: 'SMS failed but code generated (development mode)',
-                    verificationCode: verificationCode 
+                    verificationCode: verificationCode
                 });
             }
-            
+
             res.status(500).json({ message: 'Failed to send verification code' });
         }
     } catch (error) {

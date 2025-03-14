@@ -60,7 +60,7 @@ const SignUp = () => {
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    
+
     if (type === 'file') {
       handleFileChange(name, files[0]);
     } else if (name === 'password') {
@@ -123,7 +123,7 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!recaptchaValue) {
       toast.error("Please complete the reCAPTCHA verification");
       return;
@@ -139,6 +139,12 @@ const SignUp = () => {
       return;
     }
 
+    if (formData.role === 'teacher' && !formData.certificationFile) {
+      toast.error("Certification file is required for teachers.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const userData = new FormData();
@@ -149,19 +155,25 @@ const SignUp = () => {
       userData.append('lastName', formData.lastName);
       userData.append('phoneNumber', formData.phoneNumber);
       userData.append('role', formData.role);
-      
+
       if (formData.role === 'teacher') {
         userData.append('teachingSubjects', JSON.stringify(formData.teachingSubjects));
         if (formData.certificationFile) {
           userData.append('certificationFile', formData.certificationFile);
         }
       }
-      
+
       if (formData.photo) {
         userData.append('photo', formData.photo);
       }
-
-      const response = await axios.post('http://localhost:5000/api/auth/signup', 
+      console.log('Submitting signup data:', {
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+        hasCertificate: !!formData.certificationFile,
+        certificateName: formData.certificationFile?.name
+    });
+      const response = await axios.post('http://localhost:5000/api/auth/signup',
         userData,
         {
           headers: {
@@ -170,10 +182,16 @@ const SignUp = () => {
           withCredentials: true
         }
       );
-
+      console.log('Signup response:', response.data);
       if (response.data.success) {
         toast.success('Successfully signed up!');
         updateUser(response.data.user);
+        if (response.data.user.role === 'teacher' && response.data.user.certificationStatus === 'pending') {
+          toast('Your certificate is under review by an admin.');
+        } else if (response.data.user.role === 'teacher' && response.data.user.certificationStatus === 'invalid') {
+          toast.error('Invalid certificate. Please upload a valid one.');
+        }
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Signup error:', error);
@@ -197,7 +215,7 @@ const SignUp = () => {
 
   const PasswordRequirements = () => {
     if (!showPasswordRequirements) return null;
-    
+
     const requirements = [
       { label: 'At least 8 characters', met: formData.password.length >= 8 },
       { label: 'One uppercase letter (A-Z)', met: /[A-Z]/.test(formData.password) },
@@ -432,7 +450,7 @@ const SignUp = () => {
           {formData.role === 'teacher' && (
             <div className="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Teacher Information</h3>
-              
+
               <div className="form-control">
                 <label className="label">
                   <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Teaching Subjects</span>
@@ -461,7 +479,7 @@ const SignUp = () => {
                     Add Subject
                   </button>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.teachingSubjects.map((subject, index) => (
                     <div

@@ -6,13 +6,12 @@ const passport = require('passport');
 require('dotenv').config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const dbConfig = require('./config/db.json');
-
 
 require('./config/passport');
 
@@ -30,7 +29,7 @@ app.use(cors({
 // Parse cookies before session middleware
 app.use(cookieParser());
 
-// Parse JSON and URL-encoded bodies
+// Parse JSON and URL-encoded bodies (needed for form data)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

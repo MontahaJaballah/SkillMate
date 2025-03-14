@@ -62,13 +62,17 @@ const userSchema = new mongoose.Schema({
     }],
     certification: {
         type: String,
-        // Required only if role is teacher
         required: function() {
             return this.role === 'teacher';
         }
     },
     certificationFile: {
-        type: String, // This will store the file path
+        type: String,
+    },
+    certificationStatus: { 
+        type: String,
+        enum: ['pending', 'valid', 'invalid'],
+        default: 'pending',
     },
     isBlocked: {
         type: Boolean,
