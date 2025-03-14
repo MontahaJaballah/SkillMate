@@ -20,8 +20,14 @@ const AuthProvider = ({ children }) => {
       });
       setUser(response.data.user);
     } catch (error) {
-      if (error.response?.status !== 401) {
-        toast.error("Authentication check failed");
+      if (error.response) {
+        if (error.response.status !== 401) {
+          console.error('Auth check error (non-401):', error);
+          toast.error("Authentication check failed");
+        }
+      } else {
+        console.error('Auth check error (network issue):', error);
+        toast.error("Network error during authentication check");
       }
       setUser(null);
     } finally {
@@ -47,12 +53,27 @@ const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Skip auth check on landing page
+    const isPublicRoute = window.location.pathname === '/';
+    if (isPublicRoute) {
+      setLoading(false);
+      return;
+    }
+
     checkAuthStatus();
 
-    const onFocus = () => checkAuthStatus();
+    const onFocus = () => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus();
+      }
+    };
     window.addEventListener('focus', onFocus);
 
-    const interval = setInterval(checkAuthStatus, 5 * 60 * 1000);
+    const interval = setInterval(() => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus();
+      }
+    }, 5 * 60 * 1000);
 
     return () => {
       window.removeEventListener('focus', onFocus);
@@ -127,7 +148,7 @@ const AuthProvider = ({ children }) => {
     handleLinkedInLogin,
     handleLinkedInSignUp,
     handleGoogleSignUp,
-    updateUser // Added updateUser to context
+    updateUser
   };
 
   return (
