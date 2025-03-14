@@ -7,6 +7,8 @@ import { Toaster } from "react-hot-toast";
 import Auth from "./layouts/Auth.jsx";
 import Client from "./layouts/Client.jsx";
 import Admin from "./layouts/Admin.jsx";
+import ResetPassword from "./views/auth/ResetPassword/ResetPassword.jsx";
+import ForgotPassword from "./views/auth/ForgetPassword/ForgotPassword.jsx";
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
           <Route path="/auth/*" element={<Auth />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/*" element={<Client />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
