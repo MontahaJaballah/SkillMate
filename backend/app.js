@@ -15,6 +15,7 @@ const authRoutes = require('./routes/authRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const friendRoutes = require('./routes/friendRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 const dbConfig = require('./config/db.json');
 
 require('./config/passport');
@@ -97,6 +98,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

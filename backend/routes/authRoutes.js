@@ -5,7 +5,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const upload = require('../middleware/upload');
 const jwt = require('jsonwebtoken');
-const { sendWelcomeEmail } = require('../services/emailService');
+const { sendWelcomeEmail } = require('../services/emailServiceUser');
 const { sendSMS } = require('../services/smsService');
 
 // Debug middleware for all routes
@@ -78,7 +78,7 @@ router.post('/signup', upload.fields([
 
         // Generate JWT token
         const token = jwt.sign(
-            { 
+            {
                 id: user._id,
                 email: user.email,
                 username: user.username,
@@ -126,26 +126,26 @@ router.get('/linkedin', passport.authenticate('linkedin'));
 router.get('/linkedin/callback', (req, res, next) => {
     passport.authenticate('linkedin', async (err, user, info) => {
         const frontendUrl = req.headers.referer?.includes('5174') ? 'http://localhost:5174' : 'http://localhost:5173';
-        
+
         if (err) {
             console.error('LinkedIn Auth Error:', err);
             return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
         }
-        
+
         if (!user) {
             console.error('LinkedIn Auth: No user data');
             return res.redirect(`${frontendUrl}/auth/signin?error=no_user`);
         }
-        
+
         try {
             // Generate JWT token
             const token = jwt.sign(
-                { 
+                {
                     id: user._id,
                     email: user.email,
                     username: user.username,
                     photoURL: user.photoURL
-                }, 
+                },
                 process.env.JWT_SECRET || 'your-secret-key',
                 { expiresIn: '30d' }
             );
@@ -176,29 +176,29 @@ router.get('/google', passport.authenticate('google', {
 router.get('/google/callback', (req, res, next) => {
     passport.authenticate('google', async (err, user, info) => {
         const frontendUrl = req.headers.referer?.includes('5174') ? 'http://localhost:5174' : 'http://localhost:5173';
-        
+
         if (err) {
             console.error('Google Auth Error:', err);
             return res.redirect(`${frontendUrl}/auth/signin?error=auth_failed`);
         }
-        
+
         if (!user) {
             console.error('Google Auth: No user data');
             return res.redirect(`${frontendUrl}/auth/signin?error=no_user`);
         }
-        
+
         try {
             // Check if this is a new user
             const isNewUser = info && info.isNewUser;
 
             // Generate JWT token
             const token = jwt.sign(
-                { 
+                {
                     id: user._id,
                     email: user.email,
                     username: user.username,
                     role: user.role
-                }, 
+                },
                 process.env.JWT_SECRET || 'your-secret-key',
                 { expiresIn: '30d' }
             );
@@ -239,19 +239,19 @@ router.post('/signin', async (req, res) => {
         });
 
         const { email, password } = req.body;
-        
+
         if (!email || !password) {
             console.log('Missing credentials:', { email: !!email, password: !!password });
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Email and password are required' 
+            return res.status(400).json({
+                success: false,
+                error: 'Email and password are required'
             });
         }
 
         // Find user by email
         console.log('Finding user with email:', email);
         const user = await User.findOne({ email });
-        
+
         if (!user) {
             console.log('User not found with email:', email);
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
@@ -260,18 +260,18 @@ router.post('/signin', async (req, res) => {
         // Check if account is deactivated
         if (user.status === 'deactivated') {
             console.log('Deactivated account attempted login:', user.email);
-            return res.status(403).json({ 
+            return res.status(403).json({
                 success: false,
                 error: 'Account is deactivated. Please reactivate it using your phone number.',
                 deactivated: true,
-                userId: user._id 
+                userId: user._id
             });
         }
 
         // Check password
         console.log('Checking password for user:', user.email);
         const isMatch = await bcrypt.compare(password, user.password);
-        
+
         if (!isMatch) {
             console.log('Password does not match for user:', user.email);
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
@@ -280,7 +280,7 @@ router.post('/signin', async (req, res) => {
         console.log('Password matched, generating token for user:', user.email);
         // Generate JWT token
         const token = jwt.sign(
-            { 
+            {
                 id: user._id,
                 email: user.email,
                 username: user.username,
@@ -311,7 +311,7 @@ router.post('/signin', async (req, res) => {
         };
 
         console.log('Login successful for user:', user.email);
-        res.json({ 
+        res.json({
             success: true,
             user: userResponse
         });
@@ -325,36 +325,36 @@ router.post('/signin', async (req, res) => {
 router.get('/check', async (req, res) => {
     try {
         const token = req.cookies.token;
-        
+
         if (!token) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 error: 'Not authenticated',
-                isAuthenticated: false 
+                isAuthenticated: false
             });
         }
 
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        
+
         // Get fresh user data from database
         const user = await User.findById(decoded.id).select('-password');
-        
+
         if (!user) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 error: 'User not found',
-                isAuthenticated: false 
+                isAuthenticated: false
             });
         }
 
-        res.json({ 
+        res.json({
             user,
             isAuthenticated: true
         });
     } catch (error) {
         console.error('Auth Check Error:', error);
-        res.status(401).json({ 
+        res.status(401).json({
             error: 'Invalid token',
-            isAuthenticated: false 
+            isAuthenticated: false
         });
     }
 });
@@ -369,26 +369,33 @@ router.get('/status', (req, res) => {
 });
 
 // Logout route
-router.post('/logout', (req, res) => {
-    res.clearCookie('token');
-    res.json({ success: true });
+router.post('/signout', (req, res) => {
+    // Clear the authentication cookie
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/'
+    });
+    
+    res.json({ success: true, message: 'Logged out successfully' });
 });
 
 // Account deactivation route
 router.post('/deactivate', async (req, res) => {
     try {
         const { userId, phoneNumber } = req.body;
-        
+
         if (!phoneNumber) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Phone number is required for account deactivation' 
+                error: 'Phone number is required for account deactivation'
             });
         }
 
         // Validate phone number format
         if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
                 error: 'Invalid phone number format. Please use international format (e.g., +1234567890)'
             });
@@ -396,28 +403,28 @@ router.post('/deactivate', async (req, res) => {
 
         const user = await User.findByIdAndUpdate(
             userId,
-            { 
+            {
                 phoneNumber: phoneNumber,
                 status: 'deactivated'
             },
             { new: true }
         );
-        
+
         if (!user) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                error: 'User not found' 
+                error: 'User not found'
             });
         }
 
-        res.json({ 
+        res.json({
             success: true,
-            message: 'Account deactivated successfully' 
+            message: 'Account deactivated successfully'
         });
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            error: error.message 
+            error: error.message
         });
     }
 });
@@ -426,20 +433,20 @@ router.post('/deactivate', async (req, res) => {
 router.post('/reactivate/request', async (req, res) => {
     try {
         const { phoneNumber, userId } = req.body;
-        
+
         const user = await User.findById(userId);
 
         if (!user) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                error: 'User not found' 
+                error: 'User not found'
             });
         }
 
         if (user.phoneNumber !== phoneNumber) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Phone number does not match our records' 
+                error: 'Phone number does not match our records'
             });
         }
 
@@ -458,9 +465,9 @@ router.post('/reactivate/request', async (req, res) => {
         );
 
         if (!updatedUser) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                error: 'User not found' 
+                error: 'User not found'
             });
         }
 
@@ -473,23 +480,23 @@ router.post('/reactivate/request', async (req, res) => {
             console.log('\n=== Account Reactivation ===');
             console.log('Verification code:', verificationCode);
             console.log('==========================\n');
-            
-            return res.json({ 
+
+            return res.json({
                 success: true,
                 message: 'Verification code sent (development mode)',
-                verificationCode: verificationCode 
+                verificationCode: verificationCode
             });
         }
 
-        res.json({ 
+        res.json({
             success: true,
-            message: 'Verification code sent successfully' 
+            message: 'Verification code sent successfully'
         });
     } catch (error) {
         console.error('Reactivation request error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            error: error.message 
+            error: error.message
         });
     }
 });
@@ -501,30 +508,30 @@ router.post('/reactivate/verify', async (req, res) => {
         const user = await User.findById(userId);
 
         if (!user) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                error: 'User not found' 
+                error: 'User not found'
             });
         }
 
         if (!user.verificationCode || !user.verificationCodeExpires) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'No verification code requested' 
+                error: 'No verification code requested'
             });
         }
 
         if (Date.now() > user.verificationCodeExpires) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Verification code expired' 
+                error: 'Verification code expired'
             });
         }
 
         if (user.verificationCode !== verificationCode) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Invalid verification code' 
+                error: 'Invalid verification code'
             });
         }
 
@@ -540,15 +547,15 @@ router.post('/reactivate/verify', async (req, res) => {
         );
 
         if (!updatedUser) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                error: 'User not found' 
+                error: 'User not found'
             });
         }
 
         // Generate new JWT token for the reactivated user
         const token = jwt.sign(
-            { 
+            {
                 id: updatedUser._id,
                 email: updatedUser.email,
                 username: updatedUser.username,
@@ -575,15 +582,15 @@ router.post('/reactivate/verify', async (req, res) => {
             photoURL: updatedUser.photoURL
         };
 
-        res.json({ 
+        res.json({
             success: true,
-            user: userData, 
-            message: 'Account reactivated successfully' 
+            user: userData,
+            message: 'Account reactivated successfully'
         });
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            error: error.message 
+            error: error.message
         });
     }
 });

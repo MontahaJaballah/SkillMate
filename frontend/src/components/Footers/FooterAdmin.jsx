@@ -1,23 +1,23 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-export default function FooterAdmin({ absolute }) {
+export default function FooterAdmin({ absolute = false }) {
   return (
     <>
       <footer className={
         (absolute
           ? "absolute w-full bottom-0"
-          : "relative") + " block py-4"
+          : "relative") + " block py-4 bg-gray-100 dark:bg-gray-900"
       }>
         <div className="container mx-auto px-4">
-          <hr className="mb-4 border-b-1 border-gray-300" />
+          <hr className="mb-4 border-b-1 border-gray-300 dark:border-gray-600" />
           <div className="flex flex-wrap items-center md:justify-between justify-center">
             <div className="w-full md:w-4/12 px-4">
-              <div className="text-sm text-gray-600 font-semibold py-1 text-center md:text-left">
+              <div className="text-sm text-gray-600 dark:text-gray-400 font-semibold py-1 text-center md:text-left">
                 Copyright {new Date().getFullYear()}{" "}
                 <a
                   href="/"
-                  className="text-gray-600 hover:text-gray-800 text-sm font-semibold py-1"
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white text-sm font-semibold py-1"
                 >
                   SkillMate
                 </a>
@@ -28,7 +28,7 @@ export default function FooterAdmin({ absolute }) {
                 <li>
                   <a
                     href="/"
-                    className="text-gray-700 hover:text-gray-900 text-sm font-semibold block py-1 px-3"
+                    className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-semibold block py-1 px-3"
                   >
                     SkillMate
                   </a>
@@ -36,7 +36,7 @@ export default function FooterAdmin({ absolute }) {
                 <li>
                   <a
                     href="#"
-                    className="text-gray-700 hover:text-gray-900 text-sm font-semibold block py-1 px-3"
+                    className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-semibold block py-1 px-3"
                   >
                     About Us
                   </a>
@@ -44,7 +44,7 @@ export default function FooterAdmin({ absolute }) {
                 <li>
                   <a
                     href="#"
-                    className="text-gray-700 hover:text-gray-900 text-sm font-semibold block py-1 px-3"
+                    className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-semibold block py-1 px-3"
                   >
                     Blog
                   </a>
@@ -57,10 +57,6 @@ export default function FooterAdmin({ absolute }) {
     </>
   );
 }
-
-FooterAdmin.defaultProps = {
-  absolute: false,
-};
 
 FooterAdmin.propTypes = {
   absolute: PropTypes.bool,

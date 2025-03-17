@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
 import AOS from "aos";
 import "aos/dist/aos.css";
 
 const SignIn = () => {
-  const { signInUser, sendReactivationCode, verifyAndReactivate, user, handleGoogleSignIn, handleLinkedInSignIn } = useAuth();
+  const { signInUser, sendReactivationCode, verifyAndReactivate, handleGoogleSignIn, handleLinkedInSignIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -23,6 +23,11 @@ const SignIn = () => {
   const [verificationCode, setVerificationCode] = useState("");
   const [showVerificationForm, setShowVerificationForm] = useState(false);
 
+  // Initialize AOS once on mount
+  useEffect(() => {
+    AOS.init();
+  }, []);
+
   const handleTogglePassword = () => {
     setShowPassword(!showPassword);
   };
@@ -32,22 +37,24 @@ const SignIn = () => {
     setIsLoading(true);
 
     try {
-      await signInUser({ email, password });
-      toast.success("Login Successful");
-      const redirectPath = location.state?.from || "/";
-      navigate(redirectPath, { replace: true });
-    } catch (error) {
-      console.error("Login error:", error);
-      
-      // Check if account is deactivated
-      if (error.response?.data?.deactivated) {
-        setIsDeactivated(true);
-        setUserId(error.response.data.userId);
-        toast.error("Your account is deactivated. Please reactivate it using your phone number.");
+      const { user } = await signInUser({
+        email: email,
+        password: password,
+      });
+
+      toast.success("Signed in successfully");
+
+      // Redirect based on user role
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (['user', 'student', 'teacher'].includes(user.role)) {
+        navigate('/client/landing', { replace: true });
       } else {
-        toast.error(error.response?.data?.error || "Invalid email or password");
+        navigate('/', { replace: true });
       }
-    } finally {
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.error || 'Invalid email or password');
       setIsLoading(false);
     }
   };
@@ -77,8 +84,10 @@ const SignIn = () => {
       toast.success("Account reactivated successfully");
       setIsDeactivated(false);
       setShowVerificationForm(false);
-      const redirectPath = location.state?.from || "/";
-      navigate(redirectPath, { replace: true });
+      
+      // Redirect to login form after reactivation
+      setEmail("");
+      setPassword("");
     } catch (error) {
       console.error("Verification error:", error);
       toast.error(error.response?.data?.error || "Failed to verify code");
@@ -86,13 +95,6 @@ const SignIn = () => {
       setIsLoading(false);
     }
   };
-
-  AOS.init();
-
-  if (user) {
-    navigate("/");
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 py-12 px-4 sm:px-6 lg:px-8">

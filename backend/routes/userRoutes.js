@@ -37,17 +37,22 @@ router.post('/updateuser/:id', upload.fields([
     { name: 'certificationFile', maxCount: 1 }
 ]), userController.update);
 
-router.get("/allusers", userController.getAll);
 router.get("/user/:id", userController.getById);
 router.post('/deactivate', userController.deactivate);
 router.post('/reactivate/send-code', userController.reactivateWithPhone);
 router.post('/reactivate/verify', userController.verifyAndReactivate);
 
 // Sub-admin and user blocking routes
+router.get("/alladmins", userController.getAllAdmins);
+router.get("/allusers", userController.getAllUsers);
 router.post("/addsubadmin", userController.addSubAdmin);
+router.put("/updateadmin/:id", userController.updateAdmin);
 router.put("/blockuser/:id", userController.blockUser);
 router.put("/unblockuser/:id", userController.unblockUser);
-router.get("/searchuser/:username", userController.searchByUsername);
+router.post('/update/:id', userController.update);
+
+// Search users
+router.get("/searchuser/:query", userController.searchByUsername);
 
 // Chat route
 router.post("/chat", chatController.chat);

@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Context } from "../../components/AuthProvider/AuthProvider";
+import { Context } from "../AuthProvider/AuthProvider";
 import { useEffect, useState } from "react";
 import UserMenu from "../UserMenu/UserMenu";
 import { FaSun, FaMoon, FaSearch } from "react-icons/fa";
@@ -89,7 +89,7 @@ const Navbar = () => {
 
   const handleSignOut = () => {
     signOut()
-      .then(() => {})
+      .then(() => { })
       .catch((error) => console.log(error));
   };
 
@@ -113,8 +113,8 @@ const Navbar = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-violet-600"
               >
                 <FaSearch />
@@ -141,7 +141,7 @@ const Navbar = () => {
                 </Link>
               </div>
             )}
-            
+
             <label className="swap swap-rotate">
               <input
                 type="checkbox"

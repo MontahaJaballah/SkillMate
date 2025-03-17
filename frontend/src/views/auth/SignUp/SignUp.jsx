@@ -6,7 +6,7 @@ import { GoEye, GoEyeClosed } from 'react-icons/go';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import useAuth from "../../../hooks/useAuth";
 import AOS from "aos";
 import "aos/dist/aos.css";
