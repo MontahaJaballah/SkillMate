@@ -53,7 +53,7 @@ async function chat(req, res) {
     
     try {
         // Generate a unique session ID for each user or use their user ID if authenticated
-        const sessionId = req.user ? req.user._id.toString() : uuid.v4();
+        const sessionId = req.user && req.user._id ? req.user._id.toString() : uuid.v4();
         
         // Call our detectIntent function
         const response = await detectIntent(message, sessionId);
