@@ -16,6 +16,7 @@ const certificateRoutes = require('./routes/certificateRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const compilerRoutes = require('./routes/compilerRoutes');
 const dbConfig = require('./config/db.json');
 
 require('./config/passport');
@@ -93,12 +94,13 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = dialogflowCredentialsPath;
 console.log('Setting Dialogflow credentials path:', dialogflowCredentialsPath);
 
 // Routes
-app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/compiler', compilerRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

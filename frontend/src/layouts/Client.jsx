@@ -13,6 +13,7 @@ import Profile from "../views/client/Profile.jsx";
 import SearchResults from "../views/client/SearchResults.jsx";
 import ChatPage from "../views/client/ChatPage/ChatPage";
 import AccountSettings from "../views/client/AccountSettings/AccountSettings";
+import CodeCompilerPage from "../views/client/CodeCompilerPage/CodeCompilerPage.jsx";
 
 export default function Client() {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ export default function Client() {
           <Route path="search/:query" element={<SearchResults />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="settings" element={<AccountSettings />} />
+          <Route path="code-compiler" element={<CodeCompilerPage />} />
           <Route path="courses" element={<div>Courses Page</div>} />
           <Route path="teachers" element={<div>Teachers Page</div>} />
           <Route path="blogs" element={<div>Blogs Page</div>} />

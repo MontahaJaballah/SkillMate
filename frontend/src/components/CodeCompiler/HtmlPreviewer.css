@@ -1,0 +1,125 @@
+.html-previewer {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.framework-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.framework-selector label {
+  font-weight: bold;
+  color: #333;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+.framework-selector select {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.framework-selector select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-section label {
+  font-weight: bold;
+  color: #333;
+  font-size: 14px;
+}
+
+.code-input {
+  width: 100%;
+  height: 150px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  background-color: #282c34;
+  color: #abb2bf;
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.preview-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preview-container h3 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.preview-frame {
+  width: 100%;
+  height: 500px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .html-previewer {
+    flex-direction: column;
+  }
+  
+  .code-input {
+    height: 120px;
+  }
+  
+  .preview-frame {
+    height: 300px;
+  }
+  
+  .framework-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .framework-selector label {
+    margin-bottom: 5px;
+  }
+}
