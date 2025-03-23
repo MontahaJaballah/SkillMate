@@ -78,6 +78,12 @@ const AuthProvider = ({ children }) => {
     window.location.href = 'http://localhost:5000/api/auth/google';
   };
 
+  const handleGoogleSignIn = () => {
+    // Store the current URL to redirect back after signin
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
+
   const signUpUser = async (userData) => {
     try {
       const response = await axios.post('http://localhost:5000/api/auth/signup', userData, {
@@ -125,9 +131,9 @@ const AuthProvider = ({ children }) => {
   // Account deactivation
   const deactivateAccount = async (userId, phoneNumber) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/deactivate', 
+      const response = await axios.post('http://localhost:5000/api/auth/deactivate',
         { userId, phoneNumber },
-        { 
+        {
           withCredentials: true,
           headers: {
             'Accept': 'application/json',
@@ -147,9 +153,9 @@ const AuthProvider = ({ children }) => {
   // Request reactivation code
   const sendReactivationCode = async (userId, phoneNumber) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/reactivate/request', 
+      const response = await axios.post('http://localhost:5000/api/auth/reactivate/request',
         { userId, phoneNumber },
-        { 
+        {
           withCredentials: true,
           headers: {
             'Accept': 'application/json',
@@ -157,14 +163,14 @@ const AuthProvider = ({ children }) => {
           }
         }
       );
-      
+
       // In development mode, show the verification code
       if (response.data.verificationCode) {
         toast.success(`Development mode - Verification code: ${response.data.verificationCode}`, {
           duration: 10000 // Show for 10 seconds
         });
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('Send reactivation code error:', error);
@@ -174,9 +180,9 @@ const AuthProvider = ({ children }) => {
 
   // Verify code and reactivate account
   const verifyAndReactivate = async (userId, verificationCode) => {
-    const response = await axios.post('http://localhost:5000/api/auth/reactivate/verify', 
+    const response = await axios.post('http://localhost:5000/api/auth/reactivate/verify',
       { userId, verificationCode },
-      { 
+      {
         withCredentials: true,
         headers: {
           'Accept': 'application/json',
@@ -199,6 +205,7 @@ const AuthProvider = ({ children }) => {
     handleLinkedInLogin,
     handleLinkedInSignUp,
     handleGoogleSignUp,
+    handleGoogleSignIn,
     deactivateAccount,
     sendReactivationCode,
     verifyAndReactivate
