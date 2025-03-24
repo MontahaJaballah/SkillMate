@@ -9,7 +9,6 @@ import { Helmet } from "react-helmet-async";
 import useAuth from "../../../hooks/useAuth";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import axios from 'axios';
 import { config } from '../../../config/config';
 
 const SignUp = () => {
@@ -166,36 +165,34 @@ const SignUp = () => {
       if (formData.photo) {
         userData.append('photo', formData.photo);
       }
+
       console.log('Submitting signup data:', {
         username: formData.username,
         email: formData.email,
         role: formData.role,
         hasCertificate: !!formData.certificationFile,
         certificateName: formData.certificationFile?.name
-    });
-      const response = await axios.post('http://localhost:5000/api/auth/signup',
-        userData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
-          withCredentials: true
-        }
-      );
-      console.log('Signup response:', response.data);
-      if (response.data.success) {
+      });
+
+      const response = await signUpUser(userData); // Use signUpUser from useAuth
+      console.log('Signup response:', response);
+
+      if (response.success) {
         toast.success('Successfully signed up!');
-        updateUser(response.data.user);
-        if (response.data.user.role === 'teacher' && response.data.user.certificationStatus === 'pending') {
+        updateUser(response.user);
+        if (response.user.role === 'teacher' && response.user.certificationStatus === 'pending') {
           toast('Your certificate is under review by an admin.');
-        } else if (response.data.user.role === 'teacher' && response.data.user.certificationStatus === 'invalid') {
+        } else if (response.user.role === 'teacher' && response.user.certificationStatus === 'invalid') {
           toast.error('Invalid certificate. Please upload a valid one.');
         }
         navigate('/dashboard');
       }
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error(error.response?.data?.error || 'Error during signup');
+      // Only show toast for unexpected errors, not validation errors already handled
+      if (!error.response?.data?.error.includes('required') && !error.response?.data?.error.includes('already exists')) {
+        toast.error(error.response?.data?.error || 'Error during signup');
+      }
     } finally {
       setLoading(false);
     }

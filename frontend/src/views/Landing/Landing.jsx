@@ -66,6 +66,7 @@ const Landing = () => {
   // Show/hide "Back to Top" button based on scroll position
   useEffect(() => {
     const handleScroll = () => {
+      console.log('Scroll position:', window.scrollY); // Debug scroll position
       if (window.scrollY > 500) {
         setShowBackToTop(true);
       } else {
@@ -375,7 +376,7 @@ const Landing = () => {
       {showBackToTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 right-8 p-3 bg-violet-500 text-white rounded-full shadow-lg hover:bg-violet-600 transition-all duration-300"
+          className="fixed bottom-8 right-8 p-3 bg-violet-500 text-white rounded-full shadow-lg hover:bg-violet-600 transition-all duration-300 z-50"
           aria-label="Back to Top"
         >
           ↑

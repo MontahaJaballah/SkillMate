@@ -126,14 +126,13 @@ const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       if (error.response) {
-        if (error.response.status !== 401) {
+        if (error.response.status !== 401 && showErrors) {
           console.error('Auth check error (non-401):', error);
           toast.error("Authentication check failed");
         }
-      } else {
+      } else if (showErrors) {
         console.error('Auth check error (network issue):', error);
         toast.error("Network error during authentication check");
-
       }
       
       localStorage.removeItem('user');
@@ -149,6 +148,14 @@ const AuthProvider = ({ children }) => {
   const signUpUser = async (userData) => {
     try {
       const response = await axios.post('/auth/signup', userData);
+      const { user } = response.data;
+      localStorage.setItem('user', JSON.stringify(user));
+      setAuthState(prev => ({ 
+        ...prev, 
+        user,
+        loading: false,
+        isNavigating: true 
+      }));
       return response.data;
     } catch (error) {
       throw error;
@@ -270,22 +277,22 @@ const AuthProvider = ({ children }) => {
 
     const onFocus = () => {
       if (window.location.pathname !== '/') {
-        checkAuthStatus();
+        checkAuthStatus(true); // Only show errors on focus
       }
     };
     window.addEventListener('focus', onFocus);
 
     const interval = setInterval(() => {
       if (window.location.pathname !== '/') {
-        checkAuthStatus();
+        checkAuthStatus(); // No errors shown for periodic checks
       }
-    }, 5 * 60 * 1000);
+    }, 15 * 60 * 1000); // Increase interval to 15 minutes
 
     return () => {
       window.removeEventListener('focus', onFocus);
       clearInterval(interval);
     };
-  }, []);
+  }, [checkAuthStatus]);
 
   const contextValue = useMemo(() => ({
     ...authState,
@@ -301,14 +308,14 @@ const AuthProvider = ({ children }) => {
     checkAuthStatus
   }), [authState, signInUser, signOut, sendReactivationCode, verifyAndReactivate, checkAuthStatus]);
 
-// Show loading spinner while checking auth status on initial load
-if (authState.loading && !authState.initialized) {
-  return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
-    </div>
-  );
-}
+  // Show loading spinner while checking auth status on initial load
+  if (authState.loading && !authState.initialized) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <Context.Provider value={contextValue}>

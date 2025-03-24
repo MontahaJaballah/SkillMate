@@ -11,6 +11,9 @@ import Auth from "./layouts/Auth.jsx";
 import Client from "./layouts/Client.jsx";
 import Admin from "./layouts/Admin.jsx";
 
+// Views
+import Landing from "./views/Landing/Landing.jsx";
+
 // Root component to handle redirects based on auth state
 const RootRedirect = () => {
   const { user, loading } = useAuth();
@@ -23,21 +26,14 @@ const RootRedirect = () => {
     
     if (loading) return;
 
-    // Only redirect if we're at the exact root path
-    if (location.pathname === '/') {
-      if (user) {
-        // Redirect based on user role
-        if (user.role === 'admin') {
-          console.log("Redirecting admin to admin dashboard");
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          console.log("Redirecting client user to client landing");
-          navigate('/client/landing', { replace: true });
-        }
+    // Redirect authenticated users based on role, but only if they're not on the landing page
+    if (user && location.pathname !== '/') {
+      if (user.role === 'admin') {
+        console.log("Redirecting admin to admin dashboard");
+        navigate('/admin/dashboard', { replace: true });
       } else {
-        // Redirect to signin if not authenticated
-        console.log("No user, redirecting to signin");
-        navigate('/auth/signin', { replace: true });
+        console.log("Redirecting client user to client landing");
+        navigate('/client/landing', { replace: true });
       }
     }
   }, [user, loading, navigate, location]);
@@ -51,7 +47,8 @@ const RootRedirect = () => {
     );
   }
 
-  return null;
+  // Render the Landing page for the root path
+  return <Landing />;
 };
 
 // Main App component
@@ -62,6 +59,7 @@ const AppContent = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/auth/*" element={<Auth />} />
+      <Route path="/" element={<RootRedirect />} /> {/* Render Landing for unauthenticated users */}
 
       {/* Protected routes */}
       <Route
@@ -85,9 +83,6 @@ const AppContent = () => {
         }
       />
 
-      {/* Root redirect based on auth state */}
-      <Route path="/" element={<RootRedirect />} />
-      
       {/* Redirect non-client paths to client paths */}
       <Route path="/profile" element={<Navigate to="/client/profile" replace />} />
       <Route path="/dashboard" element={<Navigate to="/client/dashboard" replace />} />
