@@ -55,7 +55,7 @@ const sendWelcomeEmail = async (user) => {
     }
 };
 
-const sendBlockNotification = async (userEmail, reason) => {
+const sendBlockNotificationUser = async (userEmail, reason) => {
     try {
         const mailOptions = {
             from: {
@@ -89,6 +89,6 @@ const sendBlockNotification = async (userEmail, reason) => {
 };
 
 module.exports = {
-    sendBlockNotification,
+    sendBlockNotificationUser,
     sendWelcomeEmail
 };

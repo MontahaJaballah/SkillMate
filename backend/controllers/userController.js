@@ -2,7 +2,8 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const { sendBlockNotification } = require('../services/emailService');
+const { sendBlockNotificationUser } = require('../services/emailServiceUser');
+const { sendBlockNotificationAdmin, sendAdminCredentials, generateSecurePassword } = require('../services/emailServiceAdmin');
 const twilio = require('twilio');
 const CertificateValidationService = require('../services/certificateValidation');
 const validator = new CertificateValidationService();
@@ -42,7 +43,9 @@ async function add(req, res) {
         if (req.files && req.files.photo) {
             const photoFile = req.files.photo;
             const fileName = `${Date.now()}-${photoFile.name}`;
+ 
             const filePath = path.join(photosDir, fileName);
+
 
             await photoFile.mv(filePath);
             photoURL = `/uploads/photos/${fileName}`;
@@ -67,6 +70,7 @@ async function add(req, res) {
                 path: filePath,
                 hash: fileHash
             });
+
 
             await certFile.mv(filePath);
             certificationFile = `/uploads/certifications/${fileName}`;
@@ -152,6 +156,7 @@ async function add(req, res) {
 
         cleanupFiles.forEach(filePath => {
             fs.unlink(filePath, (err) => {
+
                 if (err) console.error('Error deleting file:', err);
             });
         });
@@ -179,10 +184,19 @@ async function add(req, res) {
     }
 }
 
-async function getAll(req, res) {
+async function getAllUsers(req, res) {
     try {
-        const users = await User.find();
+        const users = await User.find({ role: { $in: ['student', 'teacher'] } });
         res.status(200).send(users);
+    } catch (error) {
+        res.status(500).send({ error: error.toString() });
+    }
+}
+
+async function getAllAdmins(req, res) {
+    try {
+        const admins = await User.find({ role: 'admin' });
+        res.status(200).send(admins);
     } catch (error) {
         res.status(500).send({ error: error.toString() });
     }
@@ -209,6 +223,7 @@ async function update(req, res) {
             const photoFile = req.files.photo;
             const fileName = `${Date.now()}-${photoFile.name}`;
             const filePath = path.join(photosDir, fileName);
+
 
             await photoFile.mv(filePath);
             photoURL = `/uploads/photos/${fileName}`;
@@ -287,38 +302,186 @@ async function remove(req, res) {
 
 async function addSubAdmin(req, res) {
     try {
-        const { username, email, password } = req.body;
+        const { username, firstName, lastName, email, sendCredentials } = req.body;
+
+        // Check if required fields are present
+        if (!username || !firstName || !lastName || !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields (username, firstName, lastName, email) are required'
+            });
+        }
+
+        // Check if username or email already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: `${existingUser.username === username ? 'Username' : 'Email'} already exists`
+            });
+        }
+
+        // Generate a secure password
+        const generatedPassword = generateSecurePassword();
+
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(generatedPassword, salt);
+
         const subAdmin = new User({
             username,
+            firstName,
+            lastName,
             email,
-            password,
+            password: hashedPassword,
             role: 'admin'
         });
+
         await subAdmin.save();
-        res.status(201).json({ message: 'Sub-admin created successfully', subAdmin });
+
+        // Send credentials via email
+        const emailSent = await sendAdminCredentials(email, username, generatedPassword);
+
+        res.status(201).json({
+            message: 'Sub-admin created successfully' + (emailSent ? '. Credentials sent via email.' : ''),
+            success: true,
+            emailSent
+        });
     } catch (error) {
-        res.status(400).send({ error: error.toString() });
+        console.error('Error creating sub-admin:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Failed to create sub-admin account'
+        });
+    }
+}
+
+async function updateAdmin(req, res) {
+    try {
+        const { username, firstName, lastName, email, phoneNumber } = req.body;
+
+        // Check if required fields are present
+        if (!username || !firstName || !lastName || !email || !phoneNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields (username, firstName, lastName, email, phoneNumber) are required'
+            });
+        }
+
+        // Check if username or email already exists for other users
+        const existingUser = await User.findOne({
+            $and: [
+                { _id: { $ne: req.params.id } },
+                {
+                    $or: [
+                        { username },
+                        { email },
+                        { phoneNumber }
+                    ]
+                }
+            ]
+        });
+
+        if (existingUser) {
+            let errorMessage = '';
+            if (existingUser.username === username) {
+                errorMessage = 'Username already exists';
+            } else if (existingUser.email === email) {
+                errorMessage = 'Email already exists';
+            } else if (existingUser.phoneNumber === phoneNumber) {
+                errorMessage = 'Phone number already in use';
+            }
+
+            return res.status(400).json({
+                success: false,
+                message: errorMessage
+            });
+        }
+
+
+        const updatedAdmin = await User.findByIdAndUpdate(
+            req.params.id,
+            {
+                username,
+                firstName,
+                lastName,
+                email,
+                phoneNumber
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedAdmin) {
+            return res.status(404).json({
+                success: false,
+                message: 'Admin not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Admin updated successfully',
+            admin: updatedAdmin
+        });
+    } catch (error) {
+        console.error('Error updating admin:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Failed to update admin'
+        });
+    }
+}
+
+async function updateA(req, res) {
+    try {
+        const { id } = req.params;
+
+        // Validate required fields
+        if (!id) {
+            return res.status(400).send({ error: "Admin ID is required" });
+        }
+
+        // Update the user by ID with the provided data
+        const updatedUser = await User.findByIdAndUpdate(id, req.body, { new: true });
+
+        if (!updatedUser) {
+            return res.status(404).send({ error: "User not found" });
+        }
+
+        // Return the updated user
+        res.status(200).send(updatedUser);
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send({ error: error.toString() });
     }
 }
 
 async function blockUser(req, res) {
     try {
+        // Only retrieve the user by ID
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        if (user.role === 'admin') {
-            return res.status(403).json({ error: 'Cannot block an admin user' });
-        }
+
+        console.log('📧user found:', user.username);
+        // Block the user and set the reason
 
         user.isBlocked = true;
         user.blockReason = req.body.reason;
-        await user.save();
+        user.status = 'deactivated'
+        await user.save({ validateModifiedOnly: true }); // ✅ Only validates changed fields
 
+        // Optionally send an email notification if required
         if (req.body.sendEmail) {
             console.log('📧 Sending block notification email to user:', user.email);
-            await sendBlockNotification(user.email, req.body.reason);
+            if (user.role === 'user') {
+                await sendBlockNotificationUser(user.email, req.body.reason);
+            }
+            else {
+                await sendBlockNotificationAdmin(user.email, req.body.reason);
+            }
         }
 
         res.status(200).json({
@@ -339,7 +502,10 @@ async function unblockUser(req, res) {
         }
 
         user.isBlocked = false;
-        await user.save();
+        user.blockReason = null
+        user.status = 'active'
+
+        await user.save({ validateModifiedOnly: true }); // ✅ Only validates changed fields
         res.status(200).json({ message: 'User unblocked successfully' });
     } catch (error) {
         res.status(500).send({ error: error.toString() });
@@ -385,10 +551,21 @@ async function login(req, res) {
 
 async function searchByUsername(req, res) {
     try {
-        const users = await User.find({ username: new RegExp(req.params.username, 'i') });
-        res.status(200).send(users);
+        const query = req.params.query;
+        const users = await User.find({
+            $or: [
+                { username: new RegExp(query, 'i') },
+                { firstName: new RegExp(query, 'i') },
+                { lastName: new RegExp(query, 'i') },
+                { email: new RegExp(query, 'i') }
+            ],
+            role: { $ne: 'admin' } // Exclude admin users from search
+        }).select('-password -verificationCode'); // Exclude sensitive fields
+        
+        res.status(200).json(users);
     } catch (error) {
-        res.status(500).send({ error: error.toString() });
+        console.error('Search error:', error);
+        res.status(500).json({ error: "Error searching users" });
     }
 }
 
@@ -486,6 +663,8 @@ async function reactivateWithPhone(req, res) {
         } catch (twilioError) {
             console.error('Twilio error:', twilioError);
 
+
+            // In development mode, return the code even if SMS fails
             if (process.env.NODE_ENV === 'development') {
                 console.log('Development mode - verification code (SMS failed):', verificationCode);
                 return res.json({
@@ -556,7 +735,10 @@ module.exports = {
     add,
     remove,
     update,
-    getAll,
+    updateAdmin,
+    updateA,
+    getAllAdmins,
+    getAllUsers,
     getById,
     login,
     searchByUsername,

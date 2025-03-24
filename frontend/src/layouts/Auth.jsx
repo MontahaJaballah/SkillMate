@@ -1,12 +1,22 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "../components/Navbar/Navbar";
+import React, { useEffect } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import Navbar from "../components/Navbars/Navbar";
 
 // Auth pages
 import SignIn from "../views/auth/SignIn/SignIn";
 import SignUp from "../views/auth/SignUp/SignUp";
 
 export default function Auth() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle default route only on initial render
+  useEffect(() => {
+    if (location.pathname === "/auth" || location.pathname === "/auth/") {
+      navigate("signin", { replace: true });
+    }
+  }, []);
+
   return (
     <>
       <Navbar />
@@ -16,7 +26,6 @@ export default function Auth() {
             <Routes>
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
-              <Route path="/" element={<Navigate to="/auth/signin" replace />} />
             </Routes>
           </div>
         </div>

@@ -1,165 +1,284 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import useAxios from "../../hooks/useAxios";
+import { useContext } from "react";
+import { Context } from "../../components/AuthProvider/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
+  const { user } = useContext(Context);
+
+  // Debug logging for user context
+  useEffect(() => {
+    console.log('Current user context:', user);
+    if (!user) {
+      console.warn('User context is null or undefined');
+    }
+  }, [user]);
+
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    phoneNumber: '',
+    firstName: '',
+    lastName: '',
+  });
+  const [notification, setNotification] = useState(null);
+  const axiosInstance = useAxios();
+  const navigate = useNavigate();
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!user || !user._id) {
+      setNotification({
+        message: 'User not found. Please log in again.',
+        type: "error"
+      });
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.put(`/users/updateadmin/${user._id}`, formData);
+
+      setNotification({
+        message: response.data.message || 'Profile updated successfully!',
+        type: "success"
+      });
+
+      // Optional: Update user context or reload user data
+      // You might want to implement a method in AuthProvider to update user data
+
+      // Optional redirect or refresh
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update profile.';
+      setNotification({
+        message: errorMessage,
+        type: "error"
+      });
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-wrap">
+      <div className="flex flex-wrap bg-gray-100 dark:bg-gray-900 min-h-screen py-4">
         <div className="w-full lg:w-8/12 px-4">
-          <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded-lg bg-white border-0">
-            <div className="rounded-t bg-white mb-0 px-6 py-6">
+          <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded-lg bg-white dark:bg-gray-800 border-0">
+            <div className="rounded-t bg-white dark:bg-gray-800 mb-0 px-6 py-6">
               <div className="text-center flex justify-between">
-                <h6 className="text-gray-800 text-xl font-bold">System Settings</h6>
-                <button
-                  className="bg-blue-500 text-white active:bg-blue-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 ease-linear transition-all duration-150"
-                  type="button"
-                >
-                  Save Changes
-                </button>
+                <h6 className="text-gray-900 dark:text-white text-xl font-heading font-bold">My Account</h6>
               </div>
             </div>
+
+            {notification && (
+              <div className={`mb-4 mx-4 p-4 rounded ${notification.type === 'success'
+                ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                }`}>
+                {notification.message}
+              </div>
+            )}
+
             <div className="flex-auto px-4 lg:px-10 py-10 pt-0">
-              <form>
-                <h6 className="text-gray-500 text-sm mt-3 mb-6 font-bold uppercase">
-                  General Configuration
+              <form onSubmit={handleSubmit}>
+                <h6 className="text-gray-600 dark:text-gray-400 text-sm mt-3 mb-6 font-heading font-bold uppercase">
+                  User Information
                 </h6>
                 <div className="flex flex-wrap">
                   <div className="w-full lg:w-6/12 px-4">
                     <div className="relative w-full mb-3">
                       <label
-                        className="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        htmlFor="site-name"
+                        className="block uppercase text-gray-600 dark:text-gray-400 text-xs font-heading font-bold mb-2"
+                        htmlFor="username"
                       >
-                        Site Name
+                        Username
                       </label>
                       <input
                         type="text"
-                        id="site-name"
-                        className="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        defaultValue="SkillMate"
+                        id="username"
+                        name="username"
+                        className="border-0 px-3 py-3 placeholder-gray-300 dark:placeholder-gray-500 text-gray-600 dark:text-white bg-white dark:bg-gray-700 rounded text-sm shadow focus:outline-none focus:ring-2 focus:ring-primary w-full ease-linear transition-all duration-150"
+                        value={formData.username}
+                        onChange={handleChange}
+                        required
                       />
                     </div>
                   </div>
                   <div className="w-full lg:w-6/12 px-4">
                     <div className="relative w-full mb-3">
                       <label
-                        className="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        htmlFor="admin-email"
+                        className="block uppercase text-gray-600 dark:text-gray-400 text-xs font-heading font-bold mb-2"
+                        htmlFor="email"
                       >
-                        Admin Email
+                        Email address
                       </label>
                       <input
                         type="email"
-                        id="admin-email"
-                        className="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        defaultValue="admin@skillmate.com"
+                        id="email"
+                        name="email"
+                        className="border-0 px-3 py-3 placeholder-gray-300 dark:placeholder-gray-500 text-gray-600 dark:text-white bg-white dark:bg-gray-700 rounded text-sm shadow focus:outline-none focus:ring-2 focus:ring-primary w-full ease-linear transition-all duration-150"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full lg:w-6/12 px-4">
+                    <div className="relative w-full mb-3">
+                      <label
+                        className="block uppercase text-gray-600 dark:text-gray-400 text-xs font-heading font-bold mb-2"
+                        htmlFor="firstName"
+                      >
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        id="firstName"
+                        name="firstName"
+                        className="border-0 px-3 py-3 placeholder-gray-300 dark:placeholder-gray-500 text-gray-600 dark:text-white bg-white dark:bg-gray-700 rounded text-sm shadow focus:outline-none focus:ring-2 focus:ring-primary w-full ease-linear transition-all duration-150"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full lg:w-6/12 px-4">
+                    <div className="relative w-full mb-3">
+                      <label
+                        className="block uppercase text-gray-600 dark:text-gray-400 text-xs font-heading font-bold mb-2"
+                        htmlFor="lastName"
+                      >
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        id="lastName"
+                        name="lastName"
+                        className="border-0 px-3 py-3 placeholder-gray-300 dark:placeholder-gray-500 text-gray-600 dark:text-white bg-white dark:bg-gray-700 rounded text-sm shadow focus:outline-none focus:ring-2 focus:ring-primary w-full ease-linear transition-all duration-150"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full lg:w-6/12 px-4">
+                    <div className="relative w-full mb-3">
+                      <label
+                        className="block uppercase text-gray-600 dark:text-gray-400 text-xs font-heading font-bold mb-2"
+                        htmlFor="phoneNumber"
+                      >
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        className="border-0 px-3 py-3 placeholder-gray-300 dark:placeholder-gray-500 text-gray-600 dark:text-white bg-white dark:bg-gray-700 rounded text-sm shadow focus:outline-none focus:ring-2 focus:ring-primary w-full ease-linear transition-all duration-150"
+                        value={formData.phoneNumber}
+                        onChange={handleChange}
+                        pattern="^\+?[0-9\s\-]+$"
                       />
                     </div>
                   </div>
                 </div>
-
-                <hr className="mt-6 border-b-1 border-gray-400" />
-
-                <h6 className="text-gray-500 text-sm mt-3 mb-6 font-bold uppercase">
-                  System Preferences
-                </h6>
-                <div className="flex flex-wrap">
-                  <div className="w-full lg:w-12/12 px-4">
-                    <div className="relative w-full mb-3">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox border-0 rounded text-gray-800 ml-1 w-5 h-5"
-                          defaultChecked
-                        />
-                        <span className="ml-2 text-sm font-semibold text-gray-700">
-                          Enable Email Notifications
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="w-full lg:w-12/12 px-4">
-                    <div className="relative w-full mb-3">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox border-0 rounded text-gray-800 ml-1 w-5 h-5"
-                          defaultChecked
-                        />
-                        <span className="ml-2 text-sm font-semibold text-gray-700">
-                          Allow New Registrations
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <hr className="mt-6 border-b-1 border-gray-400" />
-
-                <h6 className="text-gray-500 text-sm mt-3 mb-6 font-bold uppercase">
-                  Maintenance Mode
-                </h6>
-                <div className="flex flex-wrap">
-                  <div className="w-full lg:w-12/12 px-4">
-                    <div className="relative w-full mb-3">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox border-0 rounded text-gray-800 ml-1 w-5 h-5"
-                        />
-                        <span className="ml-2 text-sm font-semibold text-gray-700">
-                          Enable Maintenance Mode
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="w-full lg:w-12/12 px-4">
-                    <div className="relative w-full mb-3">
-                      <label
-                        className="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        htmlFor="maintenance-message"
-                      >
-                        Maintenance Message
-                      </label>
-                      <textarea
-                        id="maintenance-message"
-                        className="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        rows="4"
-                        defaultValue="We are currently performing maintenance. Please check back later."
-                      ></textarea>
-                    </div>
-                  </div>
+                <div className="flex justify-end px-4 lg:px-10 py-4">
+                  <button
+                    type="submit"
+                    className="bg-primary text-white active:bg-primary-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 ease-linear transition-all duration-150"
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </form>
             </div>
           </div>
         </div>
+
         <div className="w-full lg:w-4/12 px-4">
-          <div className="relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded-lg">
+          <div className="relative flex flex-col min-w-0 break-words bg-white dark:bg-gray-800 w-full mb-6 shadow-lg rounded-lg">
             <div className="px-6">
-              <div className="text-center mt-12">
-                <h3 className="text-xl font-semibold leading-normal mb-2 text-gray-800">
-                  System Information
-                </h3>
-                <div className="text-sm leading-normal mt-0 mb-2 text-gray-500 font-bold uppercase">
-                  <i className="fas fa-server mr-2 text-lg text-gray-500"></i>
-                  Version 1.0.0
+              <div className="flex flex-wrap justify-center">
+                <div className="w-full px-4 flex justify-center">
+                  <div className="relative">
+                    <img
+                      alt="..."
+                      src={user?.photo || "/img/team-2-800x800.jpg"}
+                      className="shadow-xl rounded-full h-auto align-middle border-none absolute -m-16 -ml-20 lg:-ml-16 max-w-150-px"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-10 py-10 border-t border-gray-300 text-center">
-                <div className="flex flex-wrap justify-center">
-                  <div className="w-full lg:w-9/12 px-4">
-                    <p className="mb-4 text-lg leading-relaxed text-gray-800">
-                      Last backup: 2 hours ago
-                    </p>
-                    <button
-                      className="bg-gray-800 text-white active:bg-gray-700 text-xs font-bold uppercase px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 ease-linear transition-all duration-150"
-                      type="button"
-                    >
-                      Create Backup
-                    </button>
+                <div className="w-full px-4 text-center mt-20">
+                  <div className="flex justify-center py-4 lg:pt-4 pt-8">
+                    <div className="mr-4 p-3 text-center">
+                      <span className="text-xl font-bold block uppercase tracking-wide text-gray-600 dark:text-gray-300">{user?.role}</span>
+                      <span className="text-sm text-gray-400 dark:text-gray-500">Role</span>
+                    </div>
+                    <div className="mr-4 p-3 text-center">
+                      <span className="text-xl font-bold block uppercase tracking-wide text-gray-600 dark:text-gray-300">{user?.status}</span>
+                      <span className="text-sm text-gray-400 dark:text-gray-500">Status</span>
+                    </div>
                   </div>
                 </div>
               </div>
+              <div className="text-center mt-12">
+                <h3 className="text-xl font-heading font-semibold leading-normal mb-2 text-gray-700 dark:text-gray-300">
+                  {user?.firstName} {user?.lastName}
+                </h3>
+                <div className="text-sm leading-normal mt-0 mb-2 text-gray-400 dark:text-gray-500 font-bold uppercase">
+                  <i className="fas fa-user mr-2 text-lg text-gray-400 dark:text-gray-500"></i>{" "}
+                  {user?.username}
+                </div>
+                <div className="mb-2 text-gray-600 dark:text-gray-400">
+                  <i className="fas fa-envelope mr-2 text-lg text-gray-400 dark:text-gray-500"></i>
+                  {user?.email}
+                </div>
+                {user?.phoneNumber && (
+                  <div className="mb-2 text-gray-600 dark:text-gray-400">
+                    <i className="fas fa-phone mr-2 text-lg text-gray-400 dark:text-gray-500"></i>
+                    {user?.phoneNumber}
+                  </div>
+                )}
+              </div>
+              {user?.role === 'teacher' && user?.certificationFile && (
+                <div className="mt-10 py-10 border-t border-gray-200 dark:border-gray-600 text-center">
+                  <div className="flex flex-wrap justify-center">
+                    <div className="w-full lg:w-9/12 px-4">
+                      <p className="mb-4 text-lg leading-relaxed text-gray-700 dark:text-gray-400">
+                        Teacher Certification
+                      </p>
+                      <a
+                        href={user.certificationFile}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-normal text-primary hover:text-primary-600 transition-colors duration-300"
+                      >
+                        Show more
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,9 +1,14 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Chart from "chart.js";
 
 export default function CardBarChart() {
-  React.useEffect(() => {
-    let config = {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+
+    const chartConfig = {
       type: "bar",
       data: {
         labels: [
@@ -18,17 +23,17 @@ export default function CardBarChart() {
         datasets: [
           {
             label: "2024",
-            backgroundColor: "#4c51bf",
-            borderColor: "#4c51bf",
+            backgroundColor: isDarkMode ? "#3182ce" : "#3182ce",
+            borderColor: isDarkMode ? "#4299e1" : "#29C098",
             data: [27, 68, 86, 74, 10, 4, 87],
             fill: false,
             barThickness: 8,
           },
           {
             label: "2025",
-            backgroundColor: "#ed64a6",
-            borderColor: "#ed64a6",
-            data: [30, 78, 56, 34, 100, 45, 13],
+            backgroundColor: isDarkMode ? "#29C098" : "#29C098",
+            borderColor: isDarkMode ? "#007456" : "#007456",
+            data: [27, 68, 86, 74, 10, 4, 87],
             fill: false,
             barThickness: 8,
           },
@@ -40,87 +45,103 @@ export default function CardBarChart() {
         title: {
           display: false,
           text: "Orders Chart",
-        },
-        tooltips: {
-          mode: "index",
-          intersect: false,
-        },
-        hover: {
-          mode: "nearest",
-          intersect: true,
+          fontColor: isDarkMode ? "#e2e8f0" : "#0F1729",
         },
         legend: {
           labels: {
-            fontColor: "rgba(0,0,0,.4)",
+            fontColor: isDarkMode ? "#e2e8f0" : "#0F1729",
           },
           align: "end",
           position: "bottom",
         },
+        tooltips: {
+          mode: "index",
+          intersect: false,
+          backgroundColor: isDarkMode ? "#2d3748" : "#ffffff",
+          titleFontColor: isDarkMode ? "#e2e8f0" : "#0F1729",
+          bodyFontColor: isDarkMode ? "#e2e8f0" : "#0F1729",
+        },
         scales: {
-          xAxes: [
-            {
-              display: false,
-              scaleLabel: {
-                display: true,
-                labelString: "Month",
-              },
-              gridLines: {
-                borderDash: [2],
-                borderDashOffset: [2],
-                color: "rgba(33, 37, 41, 0.3)",
-                zeroLineColor: "rgba(33, 37, 41, 0.3)",
-                zeroLineBorderDash: [2],
-                zeroLineBorderDashOffset: [2],
-              },
-            },
-          ],
-          yAxes: [
-            {
+          xAxes: [{
+            display: false,
+            scaleLabel: {
               display: true,
-              scaleLabel: {
-                display: false,
-                labelString: "Value",
-              },
-              gridLines: {
-                borderDash: [2],
-                drawBorder: false,
-                borderDashOffset: [2],
-                color: "rgba(33, 37, 41, 0.2)",
-                zeroLineColor: "rgba(33, 37, 41, 0.15)",
-                zeroLineBorderDash: [2],
-                zeroLineBorderDashOffset: [2],
-              },
+              labelString: "Month",
             },
-          ],
+            gridLines: {
+              borderDash: [2],
+              borderDashOffset: [2],
+              color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(33, 37, 41, 0.3)",
+              zeroLineColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(33, 37, 41, 0.3)",
+              zeroLineBorderDash: [2],
+              zeroLineBorderDashOffset: [2],
+            },
+            ticks: {
+              fontColor: isDarkMode ? "#e2e8f0" : "#0F1729",
+            },
+          }],
+          yAxes: [{
+            display: true,
+            scaleLabel: {
+              display: false,
+              labelString: "Value",
+              fontFamily: "'Inter', sans-serif",
+            },
+            gridLines: {
+              borderDash: [2],
+              drawBorder: false,
+              borderDashOffset: [2],
+              color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(33, 37, 41, 0.2)",
+              zeroLineColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(33, 37, 41, 0.15)",
+              zeroLineBorderDash: [2],
+              zeroLineBorderDashOffset: [2],
+            },
+            ticks: {
+              fontColor: isDarkMode ? "#e2e8f0" : "#0F1729",
+              beginAtZero: true,
+            },
+          }],
         },
       },
     };
-    let ctx = document.getElementById("bar-chart").getContext("2d");
-    window.myBar = new Chart(ctx, config);
-  }, []);
+
+    if (chartRef.current) {
+      // Destroy existing chart if it exists
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+
+      // Create new chart
+      chartInstance.current = new Chart(chartRef.current, chartConfig);
+    }
+
+    // Cleanup function
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [document.documentElement.classList]);
 
   return (
-    <>
-      <div className="relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded">
-        <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
-          <div className="flex flex-wrap items-center">
-            <div className="relative w-full max-w-full flex-grow flex-1">
-              <h6 className="uppercase text-gray-500 mb-1 text-xs font-semibold">
-                Performance
-              </h6>
-              <h2 className="text-gray-800 text-xl font-semibold">
-                Total orders
-              </h2>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 flex-auto">
-          {/* Chart */}
-          <div className="relative h-350-px">
-            <canvas id="bar-chart"></canvas>
+    <div className="relative flex flex-col min-w-0 break-words bg-white dark:bg-gray-800 w-full mb-6 shadow-lg rounded">
+      <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
+        <div className="flex flex-wrap items-center">
+          <div className="relative w-full max-w-full flex-grow flex-1">
+            <h6 className="uppercase text-gray-500 dark:text-gray-300 mb-1 text-xs font-semibold font-heading">
+              Performance
+            </h6>
+            <h2 className="text-dark-900 dark:text-white text-xl font-bold font-heading">
+              Total orders
+            </h2>
           </div>
         </div>
       </div>
-    </>
+      <div className="p-4 flex-auto">
+        <div className="relative h-350-px">
+          <canvas ref={chartRef} height={350}></canvas>
+        </div>
+      </div>
+    </div>
   );
 }

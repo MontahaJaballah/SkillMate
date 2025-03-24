@@ -1,44 +1,100 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GoEye, GoEyeClosed } from "react-icons/go";
-import { Link, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
 import AOS from "aos";
 import "aos/dist/aos.css";
 
 const SignIn = () => {
-  const { signInUser, user, handleGoogleSignIn, handleLinkedInSignIn } = useAuth();
-  const [showP, setShowp] = useState(false);
+  const { signInUser, sendReactivationCode, verifyAndReactivate, handleGoogleSignIn, handleLinkedInSignIn } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSignIn = (e) => {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const email = form.get("email");
-    const password = form.get("password");
-    
-    signInUser({ email, password })  
-      .then(() => {
-        toast.success('Successfully signed in!');
-        navigate("/");
-      })
-      .catch((error) => {
-        console.error('Sign in error:', error);
-        if (error.response?.data?.error) {
-          toast.error(error.response.data.error);
-        } else {
-          toast.error("An error occurred while signing in");
-        }
-      });
+  // States for account deactivation/reactivation flow
+  const [isDeactivated, setIsDeactivated] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showVerificationForm, setShowVerificationForm] = useState(false);
+
+  // Initialize AOS once on mount
+  useEffect(() => {
+    AOS.init();
+  }, []);
+
+  const handleTogglePassword = () => {
+    setShowPassword(!showPassword);
   };
 
-  AOS.init();
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  if (user) {
-    navigate("/");
-    return null;
-  }
+    try {
+      const { user } = await signInUser({
+        email: email,
+        password: password,
+      });
+
+      toast.success("Signed in successfully");
+
+      // Redirect based on user role
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (['user', 'student', 'teacher'].includes(user.role)) {
+        navigate('/client/landing', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.error || 'Invalid email or password');
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendVerificationCode = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await sendReactivationCode(userId, phoneNumber);
+      toast.success("Verification code sent to your phone");
+      setShowVerificationForm(true);
+    } catch (error) {
+      console.error("Send code error:", error);
+      toast.error(error.response?.data?.error || "Failed to send verification code");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyAndReactivate = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await verifyAndReactivate(userId, verificationCode);
+      toast.success("Account reactivated successfully");
+      setIsDeactivated(false);
+      setShowVerificationForm(false);
+      
+      // Redirect to login form after reactivation
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      console.error("Verification error:", error);
+      toast.error(error.response?.data?.error || "Failed to verify code");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -55,82 +111,156 @@ const SignIn = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSignIn} className="space-y-6">
-          <div className="space-y-4">
-            {/* Email field */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Email</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
-                required
-              />
-            </div>
+        <div className="card w-96">
+          <div className="card-body p-0">
+            {!isDeactivated && (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Email</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email"
+                    className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Password</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="password"
+                      className="input w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 pr-10"
+                      required
+                    />
+                    <button
+                      onClick={handleTogglePassword}
+                      type="button"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-purple-500"
+                    >
+                      {showPassword ? <GoEyeClosed size={20} /> : <GoEye size={20} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="form-control">
+                  <button 
+                    className="w-full btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Loading..." : "Login"}
+                  </button>
+                </div>
+              </form>
+            )}
 
-            {/* Password field */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Password</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showP ? "text" : "password"}
-                  name="password"
-                  placeholder="Enter your password"
-                  className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 pr-10"
-                  required
-                />
+            {isDeactivated && !showVerificationForm && (
+              <form onSubmit={handleSendVerificationCode} className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  Your account is deactivated. Enter your phone number to reactivate it.
+                </p>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Phone Number</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="+1234567890"
+                    className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  <span className="text-xs text-gray-500 mt-1">
+                    Enter in international format (e.g., +1234567890)
+                  </span>
+                </div>
+                <div className="form-control">
+                  <button 
+                    className="w-full btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Sending..." : "Send Verification Code"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {isDeactivated && showVerificationForm && (
+              <form onSubmit={handleVerifyAndReactivate} className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  A verification code has been sent to your phone. Enter it below to reactivate your account.
+                </p>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-gray-700 dark:text-gray-300 font-medium">Verification Code</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="123456"
+                    className="input input-bordered w-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div className="form-control">
+                  <button 
+                    className="w-full btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Verifying..." : "Verify & Reactivate"}
+                  </button>
+                </div>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationCode}
+                    className="text-purple-600 hover:underline"
+                    disabled={isLoading}
+                  >
+                    Resend verification code
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {!isDeactivated && (
+              <>
+                <div className="divider text-gray-500 dark:text-gray-400">OR</div>
                 <button
                   type="button"
-                  onClick={() => setShowp(!showP)}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-purple-500"
+                  onClick={handleGoogleSignIn}
+                  className="btn btn-outline w-full border-purple-600 hover:bg-purple-600 hover:border-purple-600"
                 >
-                  {showP ? <GoEyeClosed size={20} /> : <GoEye size={20} />}
+                  <img src="/assets/images/google.svg" alt="Google" className="w-5 h-5" />
+                  Sign in with Google
                 </button>
-              </div>
-            </div>
+                <button
+                  type="button"
+                  onClick={handleLinkedInSignIn}
+                  className="btn btn-outline w-full border-blue-600 hover:bg-blue-600 hover:border-blue-600"
+                >
+                  <img src="/assets/images/linkedin.svg" alt="LinkedIn" className="w-5 h-5" />
+                  Sign in with LinkedIn
+                </button>
+                <p className="text-center text-gray-600 dark:text-gray-400">
+                  Don't have an account?{" "}
+                  <Link to="/signup" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium">
+                    Sign Up
+                  </Link>
+                </p>
+              </>
+            )}
           </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-300"
-          >
-            Sign In
-          </button>
-        </form>
-
-        {/* Social Sign In Options */}
-        <div className="divider text-gray-500 dark:text-gray-400">OR</div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            className="btn btn-outline flex-1 gap-2 hover:bg-red-600 hover:border-red-600"
-          >
-            <img src="/assets/images/google.svg" alt="Google" className="w-5 h-5" />
-            Sign in with Google
-          </button>
-          <button
-            type="button"
-            onClick={handleLinkedInSignIn}
-            className="btn btn-outline flex-1 gap-2 hover:bg-blue-600 hover:border-blue-600"
-          >
-            <img src="/assets/images/linkedin.svg" alt="LinkedIn" className="w-5 h-5" />
-            Sign in with LinkedIn
-          </button>
         </div>
-
-        <p className="text-center text-gray-600 dark:text-gray-400">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium">
-            Sign Up
-          </Link>
-        </p>
       </div>
     </div>
   );

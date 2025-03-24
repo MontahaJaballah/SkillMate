@@ -1,12 +1,14 @@
 import React, { useContext } from "react";
-import { Link, NavLink } from "react-router-dom";
-import { Context } from "../../components/AuthProvider/AuthProvider";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Context } from "../AuthProvider/AuthProvider";
 import { useEffect, useState } from "react";
 import UserMenu from "../UserMenu/UserMenu";
-import { FaSun, FaMoon } from "react-icons/fa";
+import { FaSun, FaMoon, FaSearch } from "react-icons/fa";
 
 const Navbar = () => {
   const { user, signOut } = useContext(Context);
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
   const [theme, setTheme] = useState(
     localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
   );
@@ -14,6 +16,14 @@ const Navbar = () => {
   const handleToggle = (e) => {
     const newTheme = e.target.checked ? "dark" : "light";
     setTheme(newTheme);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search/${searchQuery}`);
+      setSearchQuery("");
+    }
   };
 
   useEffect(() => {
@@ -79,7 +89,7 @@ const Navbar = () => {
 
   const handleSignOut = () => {
     signOut()
-      .then(() => {})
+      .then(() => { })
       .catch((error) => console.log(error));
   };
 
@@ -92,6 +102,25 @@ const Navbar = () => {
               SkillMate
             </Link>
           </div>
+
+          {/* Search Form */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 justify-center px-8">
+            <div className="relative w-full max-w-md">
+              <input
+                type="text"
+                placeholder="Search users..."
+                className="w-full px-4 py-2 text-gray-800 bg-white/90 rounded-full focus:outline-none focus:ring-2 focus:ring-violet-300"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-violet-600"
+              >
+                <FaSearch />
+              </button>
+            </div>
+          </form>
 
           <div className="flex items-center space-x-4">
             {user ? (
@@ -112,7 +141,7 @@ const Navbar = () => {
                 </Link>
               </div>
             )}
-            
+
             <label className="swap swap-rotate">
               <input
                 type="checkbox"

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
-import { Context } from "../components/AuthProvider/AuthProvider";
+import { Context } from "../../components/AuthProvider/AuthProvider";
 import {
   getProfilePhotoUrl,
   validateProfilePhoto,
@@ -11,7 +11,7 @@ import {
   formatRole,
   getFieldDisplayValue,
   formatStats
-} from "../components/Profile/ProfileUtils";
+} from "../../components/Profile/ProfileUtils";
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("info");
@@ -23,10 +23,10 @@ export default function Profile() {
   const [isHoveringPhoto, setIsHoveringPhoto] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  
+
   // Get authenticated user from context
   const { user } = useContext(Context);
-  
+
   // Get ID from URL params if provided, otherwise use authenticated user's ID
   const { id } = useParams();
   const userId = id || user?._id;
@@ -159,7 +159,7 @@ export default function Profile() {
 
   const renderTableCell = (label, field, type = "text") => {
     const nonEditableFields = ['wallets', 'createdAt', 'role', 'status'];
-    
+
     return (
       <tr className="hover:bg-gray-50">
         <td className="px-6 py-4 bg-gray-50 w-1/3">
@@ -184,19 +184,19 @@ export default function Profile() {
             )
           ) : (
             <div className="text-sm text-gray-900 py-2">
-              {field === 'createdAt' 
+              {field === 'createdAt'
                 ? formatDate(userData[field])
                 : field === 'wallets'
                   ? `${getFieldDisplayValue(userData[field], 0)} credits`
                   : field === 'status'
                     ? (() => {
-                        const status = formatStatus(userData[field]);
-                        return (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>
-                            {status.text}
-                          </span>
-                        );
-                      })()
+                      const status = formatStatus(userData[field]);
+                      return (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>
+                          {status.text}
+                        </span>
+                      );
+                    })()
                     : field === 'role'
                       ? <span className="capitalize">{formatRole(userData[field])}</span>
                       : getFieldDisplayValue(userData[field])}
@@ -211,17 +211,17 @@ export default function Profile() {
     <>
       <main className="profile-page">
         <section className="relative block h-[500px]">
-        <div
-  className="absolute top-0 w-full h-full bg-center bg-cover"
-  style={{
-    backgroundImage: "url('http://localhost:5000/uploads/background/backgound.jpeg')",
-  }}
->
-  <span
-    id="blackOverlay"
-    className="w-full h-full absolute opacity-50 bg-black"
-  ></span>
-</div>
+          <div
+            className="absolute top-0 w-full h-full bg-center bg-cover"
+            style={{
+              backgroundImage: "url('http://localhost:5000/uploads/background/backgound.jpeg')",
+            }}
+          >
+            <span
+              id="blackOverlay"
+              className="w-full h-full absolute opacity-50 bg-black"
+            ></span>
+          </div>
           <div
             className="top-auto bottom-0 left-0 right-0 w-full absolute pointer-events-none overflow-hidden h-[70px]"
             style={{ transform: "translateZ(0)" }}
@@ -248,14 +248,14 @@ export default function Profile() {
               <div className="px-6">
                 <div className="flex flex-wrap justify-center">
                   <div className="w-full lg:w-3/12 px-4 lg:order-2 flex justify-center">
-                    <div 
+                    <div
                       className="relative"
                       onMouseEnter={() => isOwnProfile && setIsHoveringPhoto(true)}
                       onMouseLeave={() => isOwnProfile && setIsHoveringPhoto(false)}
                     >
                       <img
                         alt="Profile"
-                        src={userData?.photoURL 
+                        src={userData?.photoURL
                           ? `http://localhost:5000/${userData.photoURL}`
                           : "https://demos.creative-tim.com/notus-react/static/media/team-2-800x800.3e08ef14.jpg"
                         }
@@ -268,7 +268,7 @@ export default function Profile() {
                       {isOwnProfile && (
                         <>
                           {isHoveringPhoto && (
-                            <div 
+                            <div
                               className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full cursor-pointer h-[150px] w-[150px] -m-16 -ml-20 lg:-ml-16"
                               onClick={() => fileInputRef.current?.click()}
                             >
@@ -359,41 +359,37 @@ export default function Profile() {
                 <div className="mt-10 border-t border-gray-200">
                   <div className="flex justify-center mt-6">
                     <button
-                      className={`px-4 py-2 mx-2 font-semibold ${
-                        activeTab === "info"
+                      className={`px-4 py-2 mx-2 font-semibold ${activeTab === "info"
                           ? "text-blue-500 border-b-2 border-blue-500"
                           : "text-gray-500"
-                      }`}
+                        }`}
                       onClick={() => setActiveTab("info")}
                     >
                       Information
                     </button>
                     <button
-                      className={`px-4 py-2 mx-2 font-semibold ${
-                        activeTab === "skills"
+                      className={`px-4 py-2 mx-2 font-semibold ${activeTab === "skills"
                           ? "text-blue-500 border-b-2 border-blue-500"
                           : "text-gray-500"
-                      }`}
+                        }`}
                       onClick={() => setActiveTab("skills")}
                     >
                       Skills
                     </button>
                     <button
-                      className={`px-4 py-2 mx-2 font-semibold ${
-                        activeTab === "availability"
+                      className={`px-4 py-2 mx-2 font-semibold ${activeTab === "availability"
                           ? "text-blue-500 border-b-2 border-blue-500"
                           : "text-gray-500"
-                      }`}
+                        }`}
                       onClick={() => setActiveTab("availability")}
                     >
                       Availability
                     </button>
                     <button
-                      className={`px-4 py-2 mx-2 font-semibold ${
-                        activeTab === "reviews"
+                      className={`px-4 py-2 mx-2 font-semibold ${activeTab === "reviews"
                           ? "text-blue-500 border-b-2 border-blue-500"
                           : "text-gray-500"
-                      }`}
+                        }`}
                       onClick={() => setActiveTab("reviews")}
                     >
                       Reviews
