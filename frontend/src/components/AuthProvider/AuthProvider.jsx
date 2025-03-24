@@ -143,11 +143,37 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const updateUser = (userData) => {
-    setUser(userData);
+    setAuthState(prev => ({ ...prev, user: userData }));
   };
 
-  const logout = async () => {
+  const signUpUser = async (userData) => {
+    try {
+      const response = await axios.post('/auth/signup', userData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
 
+  const logout = useCallback(async () => {
+    try {
+      await axios.post('/auth/signout');
+    } catch (error) {
+      console.error('Signout error:', error);
+    } finally {
+      localStorage.removeItem('user');
+      setAuthState(prev => ({ 
+        ...prev, 
+        user: null,
+        loading: false,
+        isNavigating: true 
+      }));
+      navigate('/auth/signin', { replace: true });
+    }
+  }, [navigate]);
+
+  const signInUser = useCallback(async (email, password) => {
+    setAuthState(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.post('/auth/signin', {
         email,
@@ -155,53 +181,31 @@ const AuthProvider = ({ children }) => {
       });
 
       const { user } = response.data;
-      
-      // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(user));
-      
       setAuthState(prev => ({ 
         ...prev, 
         user,
         loading: false,
         isNavigating: true 
       }));
-      
       return { user };
     } catch (error) {
       setAuthState(prev => ({ ...prev, loading: false }));
       throw error;
     }
-
-  };
-
-  useEffect(() => {
-    // Skip auth check on landing page
-    const isPublicRoute = window.location.pathname === '/';
-    if (isPublicRoute) {
-      setLoading(false);
-      return;
-    }
-
-    checkAuthStatus();
-
-    const onFocus = () => {
-      if (window.location.pathname !== '/') {
-        checkAuthStatus();
-      }
-    };
-    window.addEventListener('focus', onFocus);
-
-    const interval = setInterval(() => {
-      if (window.location.pathname !== '/') {
-        checkAuthStatus();
-      }
-    }, 5 * 60 * 1000);
-
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      clearInterval(interval);
-    };
   }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Error signing out');
+      setAuthState(prev => ({ ...prev, user: null }));
+      window.location.href = '/';
+    }
+  }, [logout]);
 
   const handleLinkedInLogin = () => {
     sessionStorage.setItem('redirectUrl', window.location.pathname);
@@ -217,27 +221,6 @@ const AuthProvider = ({ children }) => {
     sessionStorage.setItem('redirectUrl', window.location.pathname);
     window.location.href = 'http://localhost:5000/api/auth/google';
   };
-
-  const signUpUser = async (userData) => {
-
-    try {
-      await axios.post('/auth/signout');
-    } catch (error) {
-      console.error('Signout error:', error);
-    } finally {
-      // Clear user data
-      localStorage.removeItem('user');
-      
-      setAuthState(prev => ({ 
-        ...prev, 
-        user: null,
-        loading: false,
-        isNavigating: true 
-      }));
-      
-      navigate('/auth/signin', { replace: true });
-    }
-  }, [navigate]);
 
   const sendReactivationCode = useCallback(async (userId, phoneNumber) => {
     try {
@@ -275,21 +258,36 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-
-  const signOut = async () => {
-    try {
-      await logout();
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Error signing out');
-      setUser(null);
-      window.location.href = '/';
-
+  useEffect(() => {
+    // Skip auth check on landing page
+    const isPublicRoute = window.location.pathname === '/';
+    if (isPublicRoute) {
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return;
     }
-  }, [authState.isNavigating]);
 
- const contextValue = useMemo(() => ({
+    checkAuthStatus();
+
+    const onFocus = () => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+
+    const interval = setInterval(() => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus();
+      }
+    }, 5 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const contextValue = useMemo(() => ({
     ...authState,
     signInUser,
     signOut,
@@ -297,6 +295,7 @@ const AuthProvider = ({ children }) => {
     handleLinkedInSignUp,
     handleGoogleSignUp,
     updateUser,
+    signUpUser,
     sendReactivationCode,
     verifyAndReactivate,
     checkAuthStatus
@@ -310,7 +309,6 @@ if (authState.loading && !authState.initialized) {
     </div>
   );
 }
-
 
   return (
     <Context.Provider value={contextValue}>
