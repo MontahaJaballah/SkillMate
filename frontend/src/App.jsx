@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import AuthProvider from "./components/AuthProvider/AuthProvider";
@@ -10,6 +11,9 @@ import useAuth from "./hooks/useAuth";
 import Auth from "./layouts/Auth.jsx";
 import Client from "./layouts/Client.jsx";
 import Admin from "./layouts/Admin.jsx";
+
+// Views
+import PublicLanding from "./views/Landing/Landing"; // Import PublicLanding
 
 // Root component to handle redirects based on auth state
 const RootRedirect = () => {
@@ -34,11 +38,8 @@ const RootRedirect = () => {
           console.log("Redirecting client user to client landing");
           navigate('/client/landing', { replace: true });
         }
-      } else {
-        // Redirect to signin if not authenticated
-        console.log("No user, redirecting to signin");
-        navigate('/auth/signin', { replace: true });
       }
+      // If no user, do nothing here; we'll render the PublicLanding below
     }
   }, [user, loading, navigate, location]);
 
@@ -51,7 +52,9 @@ const RootRedirect = () => {
     );
   }
 
-  return null;
+  // If the user is not authenticated, render the PublicLanding page
+  // If the user is authenticated, they will be redirected by the useEffect above
+  return <PublicLanding />;
 };
 
 // Main App component
