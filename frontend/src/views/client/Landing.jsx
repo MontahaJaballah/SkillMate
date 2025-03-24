@@ -57,11 +57,26 @@ const Landing = () => {
   ];
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [users, setUsers] = useState([
+    // Mock user data (in a real app, fetch this from an API)
+    { id: 1, name: 'Alice', skills: ['Chess', 'IT'] },
+    { id: 2, name: 'Bob', skills: ['Music', 'Cooking'] },
+    { id: 3, name: 'Charlie', skills: ['Art', 'Language'] },
+  ]);
 
   // Filter skills based on search query
   const filteredSkills = skills.filter(skill =>
     skill.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Filter users based on user search query
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    user.skills.some(skill => skill.toLowerCase().includes(userSearchQuery.toLowerCase()))
   );
 
   // Show/hide "Back to Top" button based on scroll position
@@ -76,6 +91,15 @@ const Landing = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handle sending a chat message (mock implementation)
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (newMessage.trim()) {
+      setChatMessages([...chatMessages, { id: chatMessages.length + 1, text: newMessage, sender: user?.email || 'You' }]);
+      setNewMessage('');
+    }
+  };
 
   // Enhanced animation variants
   const containerVariants = {
@@ -140,7 +164,7 @@ const Landing = () => {
       {/* Enhanced Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden py-20">
         {/* Gradient Background with subtle animation */}
-        <motion.div
+        <motion.div 
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
@@ -158,7 +182,7 @@ const Landing = () => {
             className="backdrop-blur-xl bg-white/20 p-8 sm:p-12 rounded-3xl shadow-2xl border border-white/30 max-w-2xl w-full"
           >
             {/* Welcome Text with Hover Effect */}
-            <motion.div
+            <motion.div 
               className="flex flex-wrap justify-center mb-8 gap-x-2"
               variants={containerVariants}
             >
@@ -172,7 +196,7 @@ const Landing = () => {
                 >
                   {letter === " " ? "\u00A0" : letter}
                   {/* Subtle underline effect on hover */}
-                  <motion.span
+                  <motion.span 
                     className="absolute bottom-0 left-0 w-full h-1 bg-pink-400 rounded-full"
                     initial={{ scaleX: 0 }}
                     whileHover={{ scaleX: 1 }}
@@ -203,7 +227,7 @@ const Landing = () => {
             </motion.div>
 
             {/* Enhanced Buttons */}
-            <motion.div
+            <motion.div 
               className="flex flex-col sm:flex-row gap-4 justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -254,7 +278,7 @@ const Landing = () => {
               src="http://localhost:5000/uploads/pics/home.png"
               alt="SkillMate Community"
               className="w-full max-w-[500px] object-cover"
-              whileHover={{
+              whileHover={{ 
                 scale: 1.05,
                 rotate: 2,
                 transition: { duration: 0.4 }
@@ -262,12 +286,12 @@ const Landing = () => {
               loading="lazy"
             />
             {/* Enhanced Hover Overlay */}
-            <motion.div
+            <motion.div 
               className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-violet-500/50 to-pink-500/50 opacity-0 rounded-xl overflow-hidden"
               whileHover={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <motion.p
+              <motion.p 
                 className="text-white text-xl sm:text-2xl font-bold text-center px-6"
                 initial={{ y: 20, opacity: 0 }}
                 whileHover={{ y: 0, opacity: 1 }}
@@ -277,7 +301,7 @@ const Landing = () => {
               </motion.p>
             </motion.div>
             {/* Animated Decorative Elements */}
-            <motion.div
+            <motion.div 
               className="absolute -top-6 -right-6 w-28 h-28 bg-violet-400/30 rounded-full blur-2xl"
               animate={{
                 scale: [1, 1.2, 1],
@@ -285,7 +309,7 @@ const Landing = () => {
               }}
               transition={{ duration: 3, repeat: Infinity }}
             />
-            <motion.div
+            <motion.div 
               className="absolute -bottom-6 -left-6 w-36 h-36 bg-pink-400/30 rounded-full blur-2xl"
               animate={{
                 scale: [1, 1.15, 1],
@@ -297,10 +321,67 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* User Search Section (Authenticated Users Only) */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-100 dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            className="text-center mb-20"
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Find Users to Connect With
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Search for other users by name or skills to connect and exchange knowledge.
+            </p>
+          </motion.div>
+
+          {/* User Search Bar */}
+          <div className="flex justify-center mb-12">
+            <input
+              type="text"
+              placeholder="Search users by name or skill..."
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+              aria-label="Search users"
+            />
+          </div>
+
+          {/* Users Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredUsers.map((user, index) => (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4 transform hover:scale-105 hover:shadow-lg transition-all duration-300"
+              >
+                <h3 className="text-xl font-semibold">{user.name}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">
+                  Skills: {user.skills.join(', ')}
+                </p>
+                <Link
+                  to={`/client/chat/${user.id}`} // Example link to a chat with the user
+                  className="mt-4 inline-block px-4 py-2 bg-violet-500 text-white rounded-lg font-semibold hover:bg-violet-600 transition-all duration-300"
+                >
+                  Chat
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Skills Showcase */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto">
-          <motion.div
+          <motion.div 
             className="text-center mb-20"
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
@@ -316,7 +397,7 @@ const Landing = () => {
             </p>
           </motion.div>
 
-          {/* Search Bar */}
+          {/* Search Bar (for skills) */}
           <div className="flex justify-center mb-12">
             <input
               type="text"
@@ -342,6 +423,63 @@ const Landing = () => {
                 <SkillCard {...skill} />
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Chat Section (Authenticated Users Only) */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-100 dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            className="text-center mb-20"
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Chat with Other Users
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Connect with other learners and teachers through our chat feature.
+            </p>
+          </motion.div>
+
+          {/* Chat Window */}
+          <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4 max-w-2xl mx-auto">
+            <div className="h-64 overflow-y-auto mb-4 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
+              {chatMessages.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-center">No messages yet. Start a conversation!</p>
+              ) : (
+                chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`mb-2 ${message.sender === (user?.email || 'You') ? 'text-right' : 'text-left'}`}
+                  >
+                    <span className="inline-block px-4 py-2 rounded-lg bg-violet-500 text-white">
+                      {message.text}
+                    </span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{message.sender}</p>
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                aria-label="Type a message"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-violet-500 text-white rounded-lg font-semibold hover:bg-violet-600 transition-all duration-300"
+              >
+                Send
+              </button>
+            </form>
           </div>
         </div>
       </section>
