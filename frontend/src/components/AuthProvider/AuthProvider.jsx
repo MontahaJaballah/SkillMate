@@ -125,8 +125,15 @@ const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      if (showErrors) {
-        toast.error(error.response?.data?.error || 'Authentication failed');
+      if (error.response) {
+        if (error.response.status !== 401) {
+          console.error('Auth check error (non-401):', error);
+          toast.error("Authentication check failed");
+        }
+      } else {
+        console.error('Auth check error (network issue):', error);
+        toast.error("Network error during authentication check");
+
       }
       
       localStorage.removeItem('user');
@@ -135,8 +142,12 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const signInUser = useCallback(async ({ email, password }) => {
-    setAuthState(prev => ({ ...prev, loading: true }));
+  const updateUser = (userData) => {
+    setUser(userData);
+  };
+
+  const logout = async () => {
+
     try {
       const response = await axios.post('/auth/signin', {
         email,
@@ -160,10 +171,55 @@ const AuthProvider = ({ children }) => {
       setAuthState(prev => ({ ...prev, loading: false }));
       throw error;
     }
+
+  };
+
+  useEffect(() => {
+    // Skip auth check on landing page
+    const isPublicRoute = window.location.pathname === '/';
+    if (isPublicRoute) {
+      setLoading(false);
+      return;
+    }
+
+    checkAuthStatus();
+
+    const onFocus = () => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+
+    const interval = setInterval(() => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus();
+      }
+    }, 5 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
   }, []);
 
-  const signOut = useCallback(async () => {
-    setAuthState(prev => ({ ...prev, loading: true }));
+  const handleLinkedInLogin = () => {
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
+  const handleLinkedInSignUp = () => {
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
+  const handleGoogleSignUp = () => {
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
+
+  const signUpUser = async (userData) => {
+
     try {
       await axios.post('/auth/signout');
     } catch (error) {
@@ -219,30 +275,42 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Reset navigation state after navigation is complete
-  useEffect(() => {
-    if (authState.isNavigating) {
-      setAuthState(prev => ({ ...prev, isNavigating: false }));
+
+  const signOut = async () => {
+    try {
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Error signing out');
+      setUser(null);
+      window.location.href = '/';
+
     }
   }, [authState.isNavigating]);
 
-  const contextValue = useMemo(() => ({
+ const contextValue = useMemo(() => ({
     ...authState,
     signInUser,
     signOut,
+    handleLinkedInLogin,
+    handleLinkedInSignUp,
+    handleGoogleSignUp,
+    updateUser,
     sendReactivationCode,
     verifyAndReactivate,
     checkAuthStatus
   }), [authState, signInUser, signOut, sendReactivationCode, verifyAndReactivate, checkAuthStatus]);
 
-  // Show loading spinner while checking auth status on initial load
-  if (authState.loading && !authState.initialized) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
-      </div>
-    );
-  }
+// Show loading spinner while checking auth status on initial load
+if (authState.loading && !authState.initialized) {
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+    </div>
+  );
+}
+
 
   return (
     <Context.Provider value={contextValue}>

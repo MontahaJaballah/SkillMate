@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SkillCard from '../../components/SkillCard/SkillCard';
+import useAuth from '../../hooks/useAuth'; // Import useAuth to check user state
 
 const Landing = () => {
+  const { user } = useAuth(); // Get user from Auth context
+
   const skills = [
     {
       image: 'http://localhost:5000/uploads/pics/chess.jpeg',
@@ -214,15 +217,28 @@ const Landing = () => {
                   Get Started
                 </Link>
               </motion.div>
-              <motion.div variants={buttonVariants} whileHover="hover">
-                <Link
-                  to="/auth/signin"
-                  className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
-                  aria-label="Sign In to SkillMate"
-                >
-                  Sign In
-                </Link>
-              </motion.div>
+              {!user && ( // Only show "Sign In" if user is not logged in
+                <motion.div variants={buttonVariants} whileHover="hover">
+                  <Link
+                    to="/auth/signin"
+                    className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
+                    aria-label="Sign In to SkillMate"
+                  >
+                    Sign In
+                  </Link>
+                </motion.div>
+              )}
+              {user && ( // Show "Dashboard" button if user is logged in
+                <motion.div variants={buttonVariants} whileHover="hover">
+                  <Link
+                    to="/dashboard"
+                    className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
+                    aria-label="Go to Dashboard"
+                  >
+                    Dashboard
+                  </Link>
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
 

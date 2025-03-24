@@ -6,6 +6,7 @@ const passport = require('passport');
 require('dotenv').config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
+
 const jwt = require('jsonwebtoken'); 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -36,7 +37,7 @@ app.use(cors(corsOptions));
 // Parse cookies before session middleware
 app.use(cookieParser());
 
-// Parse JSON and URL-encoded bodies
+// Parse JSON and URL-encoded bodies (needed for form data)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

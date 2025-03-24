@@ -1,3 +1,4 @@
+// controllers/certificateController.js
 const CertificateValidationService = require('../services/certificateValidation');
 const validator = new CertificateValidationService();
 
