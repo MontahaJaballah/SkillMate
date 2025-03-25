@@ -37,10 +37,7 @@ const SignIn = () => {
     setIsLoading(true);
 
     try {
-      const { user } = await signInUser({
-        email: email,
-        password: password,
-      });
+      const { user } = await signInUser(email, password);
 
       toast.success("Signed in successfully");
 
@@ -54,7 +51,13 @@ const SignIn = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error.response?.data?.error || 'Invalid email or password');
+      if (error.response?.status === 403 && error.response?.data?.deactivated) {
+        setIsDeactivated(true);
+        setUserId(error.response.data.userId);
+        toast.error("Account is deactivated. Please reactivate it using your phone number.");
+      } else {
+        toast.error(error.response?.data?.error || 'Invalid email or password');
+      }
       setIsLoading(false);
     }
   };
@@ -253,7 +256,7 @@ const SignIn = () => {
                 </button>
                 <p className="text-center text-gray-600 dark:text-gray-400">
                   Don't have an account?{" "}
-                  <Link to="/signup" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium">
+                  <Link to="/auth/signup" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium">
                     Sign Up
                   </Link>
                 </p>

@@ -1,3 +1,4 @@
+// controllers/certificateController.js
 const CertificateValidationService = require('../services/certificateValidation');
 const validator = new CertificateValidationService();
 
@@ -6,24 +7,25 @@ exports.validateCertificate = async (req, res) => {
         if (!req.file) {
             return res.status(400).json({
                 success: false,
-                error: 'No file uploaded'
+                error: 'No file uploaded',
             });
         }
 
-        const validationResult = await validator.validateCertificate(req.file.path);
+        const validationResult = await validator.validateCertificate(req.file.path, req.file.mimetype);
         
         if (!validationResult.isValid) {
             await validator.cleanupFile(req.file.path);
             return res.status(400).json({
                 success: false,
-                error: validationResult.message
+                error: validationResult.message,
+                status: validationResult.status,
             });
         }
 
         res.json({
             success: true,
             message: validationResult.message,
-            fileInfo: validationResult.fileInfo
+            fileInfo: validationResult.fileInfo,
         });
     } catch (error) {
         console.error('Certificate validation error:', error);
@@ -32,7 +34,7 @@ exports.validateCertificate = async (req, res) => {
         }
         res.status(500).json({
             success: false,
-            error: error.message || 'Error validating certificate'
+            error: error.message || 'Error validating certificate',
         });
     }
 };

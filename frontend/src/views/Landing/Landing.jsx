@@ -1,9 +1,13 @@
+// src/views/Landing/Landing.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SkillCard from '../../components/SkillCard/SkillCard';
+import useAuth from '../../hooks/useAuth'; // Import useAuth to check user state
 
 const Landing = () => {
+  const { user } = useAuth(); // Get user from Auth context
+
   const skills = [
     {
       image: 'http://localhost:5000/uploads/pics/chess.jpeg',
@@ -136,7 +140,7 @@ const Landing = () => {
       {/* Enhanced Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden py-20">
         {/* Gradient Background with subtle animation */}
-        <motion.div
+        <motion.div 
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
@@ -154,7 +158,7 @@ const Landing = () => {
             className="backdrop-blur-xl bg-white/20 p-8 sm:p-12 rounded-3xl shadow-2xl border border-white/30 max-w-2xl w-full"
           >
             {/* Welcome Text with Hover Effect */}
-            <motion.div
+            <motion.div 
               className="flex flex-wrap justify-center mb-8 gap-x-2"
               variants={containerVariants}
             >
@@ -168,7 +172,7 @@ const Landing = () => {
                 >
                   {letter === " " ? "\u00A0" : letter}
                   {/* Subtle underline effect on hover */}
-                  <motion.span
+                  <motion.span 
                     className="absolute bottom-0 left-0 w-full h-1 bg-pink-400 rounded-full"
                     initial={{ scaleX: 0 }}
                     whileHover={{ scaleX: 1 }}
@@ -199,7 +203,7 @@ const Landing = () => {
             </motion.div>
 
             {/* Enhanced Buttons */}
-            <motion.div
+            <motion.div 
               className="flex flex-col sm:flex-row gap-4 justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -214,15 +218,28 @@ const Landing = () => {
                   Get Started
                 </Link>
               </motion.div>
-              <motion.div variants={buttonVariants} whileHover="hover">
-                <Link
-                  to="/auth/signin"
-                  className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
-                  aria-label="Sign In to SkillMate"
-                >
-                  Sign In
-                </Link>
-              </motion.div>
+              {!user && ( // Only show "Sign In" if user is not logged in
+                <motion.div variants={buttonVariants} whileHover="hover">
+                  <Link
+                    to="/auth/signin"
+                    className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
+                    aria-label="Sign In to SkillMate"
+                  >
+                    Sign In
+                  </Link>
+                </motion.div>
+              )}
+              {user && ( // Show "Dashboard" button if user is logged in
+                <motion.div variants={buttonVariants} whileHover="hover">
+                  <Link
+                    to="/dashboard"
+                    className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
+                    aria-label="Go to Dashboard"
+                  >
+                    Dashboard
+                  </Link>
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
 
@@ -237,7 +254,7 @@ const Landing = () => {
               src="http://localhost:5000/uploads/pics/home.png"
               alt="SkillMate Community"
               className="w-full max-w-[500px] object-cover"
-              whileHover={{
+              whileHover={{ 
                 scale: 1.05,
                 rotate: 2,
                 transition: { duration: 0.4 }
@@ -245,12 +262,12 @@ const Landing = () => {
               loading="lazy"
             />
             {/* Enhanced Hover Overlay */}
-            <motion.div
+            <motion.div 
               className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-violet-500/50 to-pink-500/50 opacity-0 rounded-xl overflow-hidden"
               whileHover={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <motion.p
+              <motion.p 
                 className="text-white text-xl sm:text-2xl font-bold text-center px-6"
                 initial={{ y: 20, opacity: 0 }}
                 whileHover={{ y: 0, opacity: 1 }}
@@ -260,7 +277,7 @@ const Landing = () => {
               </motion.p>
             </motion.div>
             {/* Animated Decorative Elements */}
-            <motion.div
+            <motion.div 
               className="absolute -top-6 -right-6 w-28 h-28 bg-violet-400/30 rounded-full blur-2xl"
               animate={{
                 scale: [1, 1.2, 1],
@@ -268,7 +285,7 @@ const Landing = () => {
               }}
               transition={{ duration: 3, repeat: Infinity }}
             />
-            <motion.div
+            <motion.div 
               className="absolute -bottom-6 -left-6 w-36 h-36 bg-pink-400/30 rounded-full blur-2xl"
               animate={{
                 scale: [1, 1.15, 1],
@@ -283,7 +300,7 @@ const Landing = () => {
       {/* Skills Showcase */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto">
-          <motion.div
+          <motion.div 
             className="text-center mb-20"
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
@@ -299,7 +316,7 @@ const Landing = () => {
             </p>
           </motion.div>
 
-          {/* Search Bar */}
+          {/* Search Bar (for skills only) */}
           <div className="flex justify-center mb-12">
             <input
               type="text"

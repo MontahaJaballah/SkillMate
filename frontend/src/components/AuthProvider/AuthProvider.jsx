@@ -10,6 +10,9 @@ export const Context = createContext();
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = 'http://localhost:5000/api';
 
+// Define public routes at the top level so they can be used throughout the component
+const publicRoutes = ['/auth/signin', '/auth/signup', '/client/landing'];
+
 // Initialize auth state from localStorage
 const getInitialState = () => {
   try {
@@ -43,12 +46,15 @@ const AuthProvider = ({ children }) => {
       (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
-          // Only clear if not already on signin page
-          if (window.location.pathname !== '/auth/signin') {
+          const currentPath = window.location.pathname;
+          
+          // Don't show error or redirect on auth/check for public routes
+          const isAuthCheck = error.config.url === '/auth/check';
+          if (!publicRoutes.includes(currentPath) && !isAuthCheck) {
             localStorage.removeItem('user');
             setAuthState(prev => ({ ...prev, user: null }));
             navigate('/auth/signin', { replace: true });
-            toast.error('Session expired. Please sign in again.');
+            toast.error('Please sign in to access this feature.');
           }
         }
         return Promise.reject(error);
@@ -60,9 +66,11 @@ const AuthProvider = ({ children }) => {
     };
   }, [navigate]);
 
-  // Verify token on mount
+  // Verify token on mount but don't redirect if on public routes
   useEffect(() => {
     const verifyToken = async () => {
+      const currentPath = window.location.pathname;
+
       try {
         console.log('Verifying token...');
         const response = await axios.get('/auth/check');
@@ -86,6 +94,11 @@ const AuthProvider = ({ children }) => {
             loading: false,
             initialized: true
           }));
+          
+          // Only redirect if not on public routes
+          if (!publicRoutes.includes(currentPath)) {
+            navigate('/auth/signin', { replace: true });
+          }
         }
       } catch (error) {
         console.error('Token verification failed:', error);
@@ -96,14 +109,21 @@ const AuthProvider = ({ children }) => {
           loading: false,
           initialized: true
         }));
+        
+        // Do not redirect on 401 errors for public routes
+        if (!publicRoutes.includes(currentPath) && error.response?.status === 401) {
+          navigate('/auth/signin', { replace: true });
+        }
       }
     };
 
     verifyToken();
-  }, []);
+  }, [navigate]);
 
   const checkAuthStatus = useCallback(async (showErrors = false) => {
+    const currentPath = window.location.pathname;
     setAuthState(prev => ({ ...prev, loading: true }));
+    
     try {
       const response = await axios.get('/auth/check');
       
@@ -117,7 +137,7 @@ const AuthProvider = ({ children }) => {
         }));
         return true;
       } else {
-        if (showErrors) {
+        if (showErrors && !publicRoutes.includes(currentPath)) {
           toast.error('Authentication failed');
         }
         localStorage.removeItem('user');
@@ -125,8 +145,14 @@ const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      if (showErrors) {
-        toast.error(error.response?.data?.error || 'Authentication failed');
+      if (error.response) {
+        if (error.response.status !== 401 && showErrors && !publicRoutes.includes(currentPath)) {
+          console.error('Auth check error (non-401):', error);
+          toast.error("Authentication check failed");
+        }
+      } else if (showErrors && !publicRoutes.includes(currentPath)) {
+        console.error('Auth check error (network issue):', error);
+        toast.error("Network error during authentication check");
       }
       
       localStorage.removeItem('user');
@@ -135,7 +161,46 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const signInUser = useCallback(async ({ email, password }) => {
+  const updateUser = (userData) => {
+    setAuthState(prev => ({ ...prev, user: userData }));
+  };
+
+  const signUpUser = async (userData) => {
+    try {
+      const response = await axios.post('/auth/signup', userData);
+      const { user } = response.data;
+      localStorage.setItem('user', JSON.stringify(user));
+      setAuthState(prev => ({ 
+        ...prev, 
+        user,
+        loading: false,
+        isNavigating: true 
+      }));
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const logout = useCallback(async () => {
+    try {
+      await axios.post('/auth/signout');
+      toast.success('Successfully signed out');
+    } catch (error) {
+      console.error('Signout error:', error);
+    } finally {
+      localStorage.removeItem('user');
+      setAuthState(prev => ({ 
+        ...prev, 
+        user: null,
+        loading: false,
+        isNavigating: true 
+      }));
+      navigate('/client/landing', { replace: true });
+    }
+  }, [navigate]);
+
+  const signInUser = useCallback(async (email, password) => {
     setAuthState(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.post('/auth/signin', {
@@ -144,17 +209,13 @@ const AuthProvider = ({ children }) => {
       });
 
       const { user } = response.data;
-      
-      // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(user));
-      
       setAuthState(prev => ({ 
         ...prev, 
         user,
         loading: false,
         isNavigating: true 
       }));
-      
       return { user };
     } catch (error) {
       setAuthState(prev => ({ ...prev, loading: false }));
@@ -163,25 +224,31 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const signOut = useCallback(async () => {
-    setAuthState(prev => ({ ...prev, loading: true }));
     try {
-      await axios.post('/auth/signout');
+      await logout();
+      window.location.href = '/';
     } catch (error) {
-      console.error('Signout error:', error);
-    } finally {
-      // Clear user data
-      localStorage.removeItem('user');
-      
-      setAuthState(prev => ({ 
-        ...prev, 
-        user: null,
-        loading: false,
-        isNavigating: true 
-      }));
-      
-      navigate('/auth/signin', { replace: true });
+      console.error('Logout error:', error);
+      toast.error('Error signing out');
+      setAuthState(prev => ({ ...prev, user: null }));
+      window.location.href = '/';
     }
-  }, [navigate]);
+  }, [logout]);
+
+  const handleLinkedInLogin = () => {
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
+  const handleLinkedInSignUp = () => {
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/linkedin';
+  };
+
+  const handleGoogleSignUp = () => {
+    sessionStorage.setItem('redirectUrl', window.location.pathname);
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
 
   const sendReactivationCode = useCallback(async (userId, phoneNumber) => {
     try {
@@ -219,17 +286,44 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Reset navigation state after navigation is complete
   useEffect(() => {
-    if (authState.isNavigating) {
-      setAuthState(prev => ({ ...prev, isNavigating: false }));
+    // Skip auth check on landing page
+    const isPublicRoute = window.location.pathname === '/';
+    if (isPublicRoute) {
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return;
     }
-  }, [authState.isNavigating]);
+
+    checkAuthStatus();
+
+    const onFocus = () => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus(true); // Only show errors on focus
+      }
+    };
+    window.addEventListener('focus', onFocus);
+
+    const interval = setInterval(() => {
+      if (window.location.pathname !== '/') {
+        checkAuthStatus(); // No errors shown for periodic checks
+      }
+    }, 15 * 60 * 1000); // Increase interval to 15 minutes
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
+  }, [checkAuthStatus]);
 
   const contextValue = useMemo(() => ({
     ...authState,
     signInUser,
     signOut,
+    handleLinkedInLogin,
+    handleLinkedInSignUp,
+    handleGoogleSignUp,
+    updateUser,
+    signUpUser,
     sendReactivationCode,
     verifyAndReactivate,
     checkAuthStatus

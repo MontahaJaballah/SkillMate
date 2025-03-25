@@ -5,6 +5,9 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const upload = require('../middleware/upload');
 const jwt = require('jsonwebtoken');
+const CertificateValidationService = require('../services/certificateValidation');
+const validator = new CertificateValidationService();
+
 const { sendWelcomeEmail } = require('../services/emailServiceUser');
 const { sendSMS } = require('../services/smsService');
 
@@ -53,10 +56,13 @@ router.post('/signup', upload.fields([
             lastName,
             phoneNumber,
             role,
-            teachingSubjects: role === 'teacher' ? JSON.parse(teachingSubjects) : undefined
+            teachingSubjects: role === 'teacher' ? JSON.parse(teachingSubjects) : undefined,
+            certification: role === 'teacher' ? (req.files?.certificationFile?.[0]?.originalname || 'Uploaded Certificate') : undefined // Set certification field
         };
 
-        // Add certification path only for teachers
+        // Handle certification file validation for teachers
+        let certificationFile = '';
+        let certificationStatus = 'pending';
         if (role === 'teacher') {
             if (!req.files?.certificationFile?.[0]) {
                 return res.status(400).json({
@@ -64,7 +70,19 @@ router.post('/signup', upload.fields([
                     error: 'Certification file is required for teachers'
                 });
             }
-            userData.certification = req.files.certificationFile[0].path.replace(/\\/g, '/');
+            const certFile = req.files.certificationFile[0];
+            certificationFile = certFile.path.replace(/\\/g, '/');
+            const validationResult = await validator.validateCertificate(certificationFile, certFile.mimetype);
+            certificationStatus = validationResult.fileInfo.status;
+            if (!validationResult.isValid) {
+                await validator.cleanupFile(certificationFile);
+                return res.status(400).json({
+                    success: false,
+                    error: validationResult.message
+                });
+            }
+            userData.certificationFile = certificationFile;
+            userData.certificationStatus = certificationStatus;
         }
 
         // Add photo if provided
@@ -107,11 +125,25 @@ router.post('/signup', upload.fields([
                 lastName: user.lastName,
                 role: user.role,
                 photoURL: user.photoURL,
-                teachingSubjects: user.teachingSubjects
+                teachingSubjects: user.teachingSubjects,
+                certificationFile: user.certificationFile || '',
+                certificationStatus: user.certificationStatus || null
             }
         });
     } catch (error) {
         console.error('Signup Error:', error);
+        // Clean up uploaded files if user creation fails
+        const fs = require('fs'); // Import fs module here
+        if (req.files?.photo?.[0]) {
+            fs.unlink(req.files.photo[0].path, (err) => {
+                if (err) console.error('Error deleting photo:', err);
+            });
+        }
+        if (req.files?.certificationFile?.[0]) {
+            fs.unlink(req.files.certificationFile[0].path, (err) => {
+                if (err) console.error('Error deleting certificate:', err);
+            });
+        }
         res.status(500).json({
             success: false,
             error: error.message

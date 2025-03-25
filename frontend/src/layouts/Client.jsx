@@ -48,6 +48,7 @@ export default function Client() {
           <Route path="contact" element={<div>Contact Page</div>} />
           <Route path="dashboard" element={<div>Dashboard Page</div>} />
 
+
           {/* Catch-all route to handle any other paths */}
           <Route path="*" element={<Landing />} />
         </Routes>
