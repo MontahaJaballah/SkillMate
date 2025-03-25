@@ -9,6 +9,7 @@ import Client from "./layouts/Client.jsx";
 import Admin from "./layouts/Admin.jsx";
 import ResetPassword from "./views/auth/ResetPassword/ResetPassword.jsx";
 import ForgotPassword from "./views/auth/ForgetPassword/ForgotPassword.jsx";
+import CourseGenerator from "./components/CourseGenerator/CourseGenerator.jsx";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/*" element={<Client />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/course-generator" element={<CourseGenerator />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
