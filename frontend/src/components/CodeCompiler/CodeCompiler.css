@@ -1,82 +1,116 @@
 .code-compiler-container {
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: #1e1e1e;
+  min-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .compiler-header {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #333;
 }
 
-.compiler-title {
-  color: #333;
-  margin-bottom: 20px;
-  text-align: center;
+.header-content {
+  flex: 1;
+}
+
+.header-content h2 {
+  color: #fff;
+  margin: 0 0 8px 0;
   font-size: 24px;
+  font-weight: 600;
+}
+
+.header-content p {
+  color: #888;
+  margin: 0;
+  font-size: 14px;
 }
 
 .compiler-tabs {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
-  justify-content: center;
 }
 
 .tab-button {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
-  background-color: #e9ecef;
-  color: #495057;
+  background-color: #2d2d2d;
+  color: #fff;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tab-button:hover {
-  background-color: #dee2e6;
+  background-color: #3d3d3d;
 }
 
 .tab-button.active {
   background-color: #4CAF50;
-  color: white;
+  font-weight: 500;
 }
 
 .backend-compiler {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: calc(100vh - 220px);
 }
 
 .compiler-controls {
   display: flex;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 10px;
+  align-items: center;
 }
 
 .language-selector {
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: white;
+  border: 1px solid #3d3d3d;
+  background-color: #2d2d2d;
+  color: #fff;
   font-size: 14px;
   min-width: 180px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.language-selector:hover {
+  border-color: #4CAF50;
+}
+
+.language-selector:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
 .run-button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
   background-color: #4CAF50;
   color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
   cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s;
+  font-size: 14px;
+  transition: all 0.2s;
   min-width: 120px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .run-button:hover {
@@ -84,79 +118,149 @@
 }
 
 .run-button:disabled {
-  background-color: #cccccc;
+  background-color: #666;
   cursor: not-allowed;
 }
 
-.code-editor-container {
-  margin-bottom: 20px;
+.run-button .run-icon {
+  font-size: 12px;
 }
 
-.code-editor {
-  width: 100%;
-  min-height: 300px;
-  padding: 15px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  font-family: 'Courier New', Courier, monospace;
+.run-button.loading .run-icon {
+  animation: spin 1s linear infinite;
+}
+
+.code-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+
+.code-editor-container {
+  background: #252526;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-header, .output-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+.editor-header label, .output-header h3 {
+  font-weight: 600;
+  color: #fff;
   font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-  background-color: #282c34;
-  color: #abb2bf;
+  margin: 0;
+}
+
+.editor-header small, .output-header small {
+  color: #888;
+  font-size: 12px;
 }
 
 .output-container {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 15px;
-}
-
-.output-container h3 {
-  margin-top: 0;
-  color: #333;
-  font-size: 18px;
-  margin-bottom: 10px;
+  background: #252526;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .output-display {
-  background-color: #f5f5f5;
-  padding: 15px;
-  border-radius: 4px;
-  font-family: 'Courier New', Courier, monospace;
+  flex: 1;
+  margin: 0;
+  padding: 16px;
   white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 300px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d4d4d4;
   overflow-y: auto;
-  color: #333;
+  background: #1e1e1e;
 }
 
 .error-message {
-  color: #d9534f;
-  margin-bottom: 10px;
-  padding: 8px;
-  background-color: #f8d7da;
-  border-radius: 4px;
-  border: 1px solid #f5c6cb;
+  color: #ff6b6b;
+  margin: 0;
+  padding: 10px 16px;
+  background-color: rgba(255, 107, 107, 0.1);
+  border-bottom: 1px solid #333;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-message {
+  color: #4CAF50;
+  margin: 0;
+  padding: 10px 16px;
+  background-color: rgba(76, 175, 80, 0.1);
+  border-bottom: 1px solid #333;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-output {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 14px;
+  background: #1e1e1e;
+  padding: 20px;
+  text-align: center;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
+  .compiler-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
   .compiler-tabs {
-    flex-direction: column;
+    justify-content: stretch;
   }
-  
-  .compiler-controls {
-    flex-direction: column;
+
+  .tab-button {
+    flex: 1;
   }
-  
-  .language-selector,
-  .run-button {
-    width: 100%;
+
+  .code-section {
+    grid-template-columns: 1fr;
+    height: auto;
   }
-  
-  .code-editor {
-    min-height: 200px;
+
+  .code-editor-container, .output-container {
+    height: 400px;
   }
 }
