@@ -66,18 +66,10 @@ const AppContent = () => {
       {/* Public routes */}
       <Route path="/auth/*" element={<Auth />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/admin/*"
-        element={
-          <PrivateRoute
-            component={Admin}
-            roles={["admin"]}
-          />
-        }
-      />
-      
-      {/* Client routes */}
+      {/* Client landing page - publicly accessible */}
+      <Route path="/client/landing/*" element={<Client />} />
+
+      {/* Protected client routes */}
       <Route
         path="/client/*"
         element={
@@ -88,21 +80,26 @@ const AppContent = () => {
         }
       />
 
-      {/* Root redirect based on auth state */}
-      <Route path="/" element={<RootRedirect />} />
-      
+      {/* Protected admin routes */}
+      <Route
+        path="/admin/*"
+        element={
+          <PrivateRoute
+            component={Admin}
+            roles={["admin"]}
+          />
+        }
+      />
+
       {/* Redirect non-client paths to client paths */}
       <Route path="/profile" element={<Navigate to="/client/profile" replace />} />
-      <Route path="/dashboard" element={<Navigate to="/client/dashboard" replace />} />
       <Route path="/chat" element={<Navigate to="/client/chat" replace />} />
       <Route path="/settings" element={<Navigate to="/client/settings" replace />} />
-      <Route path="/courses" element={<Navigate to="/client/courses" replace />} />
-      <Route path="/teachers" element={<Navigate to="/client/teachers" replace />} />
-      <Route path="/blogs" element={<Navigate to="/client/blogs" replace />} />
-      <Route path="/contact" element={<Navigate to="/client/contact" replace />} />
-      <Route path="/search/:query" element={<Navigate to={`/client/search/${location.pathname.split('/').pop()}`} replace />} />
 
-      {/* Catch-all redirect to client landing */}
+      {/* Root redirect to client landing */}
+      <Route path="/" element={<Navigate to="/client/landing" replace />} />
+      
+      {/* Catch all other routes */}
       <Route path="*" element={<Navigate to="/client/landing" replace />} />
     </Routes>
   );

@@ -40,11 +40,6 @@ export default function Client() {
           <Route path="search/:query" element={<SearchResults />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="settings" element={<AccountSettings />} />
-          <Route path="courses" element={<div>Courses Page</div>} />
-          <Route path="teachers" element={<div>Teachers Page</div>} />
-          <Route path="blogs" element={<div>Blogs Page</div>} />
-          <Route path="contact" element={<div>Contact Page</div>} />
-          <Route path="dashboard" element={<div>Dashboard Page</div>} />
 
           {/* Catch-all route to handle any other paths */}
           <Route path="*" element={<Landing />} />

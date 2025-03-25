@@ -10,6 +10,9 @@ export const Context = createContext();
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = 'http://localhost:5000/api';
 
+// Define public routes at the top level so they can be used throughout the component
+const publicRoutes = ['/auth/signin', '/auth/signup', '/client/landing'];
+
 // Initialize auth state from localStorage
 const getInitialState = () => {
   try {
@@ -43,12 +46,15 @@ const AuthProvider = ({ children }) => {
       (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
-          // Only clear if not already on signin page
-          if (window.location.pathname !== '/auth/signin') {
+          const currentPath = window.location.pathname;
+          
+          // Don't show error or redirect on auth/check for public routes
+          const isAuthCheck = error.config.url === '/auth/check';
+          if (!publicRoutes.includes(currentPath) && !isAuthCheck) {
             localStorage.removeItem('user');
             setAuthState(prev => ({ ...prev, user: null }));
             navigate('/auth/signin', { replace: true });
-            toast.error('Session expired. Please sign in again.');
+            toast.error('Please sign in to access this feature.');
           }
         }
         return Promise.reject(error);
@@ -60,9 +66,11 @@ const AuthProvider = ({ children }) => {
     };
   }, [navigate]);
 
-  // Verify token on mount
+  // Verify token on mount but don't redirect if on public routes
   useEffect(() => {
     const verifyToken = async () => {
+      const currentPath = window.location.pathname;
+
       try {
         console.log('Verifying token...');
         const response = await axios.get('/auth/check');
@@ -86,6 +94,11 @@ const AuthProvider = ({ children }) => {
             loading: false,
             initialized: true
           }));
+          
+          // Only redirect if not on public routes
+          if (!publicRoutes.includes(currentPath)) {
+            navigate('/auth/signin', { replace: true });
+          }
         }
       } catch (error) {
         console.error('Token verification failed:', error);
@@ -96,14 +109,21 @@ const AuthProvider = ({ children }) => {
           loading: false,
           initialized: true
         }));
+        
+        // Do not redirect on 401 errors for public routes
+        if (!publicRoutes.includes(currentPath) && error.response?.status === 401) {
+          navigate('/auth/signin', { replace: true });
+        }
       }
     };
 
     verifyToken();
-  }, []);
+  }, [navigate]);
 
   const checkAuthStatus = useCallback(async (showErrors = false) => {
+    const currentPath = window.location.pathname;
     setAuthState(prev => ({ ...prev, loading: true }));
+    
     try {
       const response = await axios.get('/auth/check');
       
@@ -117,7 +137,7 @@ const AuthProvider = ({ children }) => {
         }));
         return true;
       } else {
-        if (showErrors) {
+        if (showErrors && !publicRoutes.includes(currentPath)) {
           toast.error('Authentication failed');
         }
         localStorage.removeItem('user');
@@ -126,11 +146,11 @@ const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       if (error.response) {
-        if (error.response.status !== 401 && showErrors) {
+        if (error.response.status !== 401 && showErrors && !publicRoutes.includes(currentPath)) {
           console.error('Auth check error (non-401):', error);
           toast.error("Authentication check failed");
         }
-      } else if (showErrors) {
+      } else if (showErrors && !publicRoutes.includes(currentPath)) {
         console.error('Auth check error (network issue):', error);
         toast.error("Network error during authentication check");
       }
@@ -165,6 +185,7 @@ const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await axios.post('/auth/signout');
+      toast.success('Successfully signed out');
     } catch (error) {
       console.error('Signout error:', error);
     } finally {
@@ -175,7 +196,7 @@ const AuthProvider = ({ children }) => {
         loading: false,
         isNavigating: true 
       }));
-      navigate('/auth/signin', { replace: true });
+      navigate('/client/landing', { replace: true });
     }
   }, [navigate]);
 
