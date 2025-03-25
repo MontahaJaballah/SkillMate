@@ -50,6 +50,9 @@ export default {
           900: '#701a75',
         },
         main: "#007456",
+        // Add chess-specific colors
+        'chess-pink': '#ff69b4', // Pink from the artwork
+        'chess-blue': '#00bfff', // Blue from the artwork
       },
       minHeight: {
         "screen-75": "75vh",
@@ -106,6 +109,22 @@ export default {
       },
       backgroundSize: {
         full: "100%",
+      },
+      // Add chess-specific animation
+      animation: {
+        'glow': 'glow 2s ease-in-out infinite alternate',
+      },
+      keyframes: {
+        glow: {
+          'from': {
+            'text-shadow': '0 0 5px #ff69b4, 0 0 10px #00bfff',
+            'box-shadow': '0 0 10px #ff69b4, 0 0 20px #00bfff',
+          },
+          'to': {
+            'text-shadow': '0 0 10px #ff69b4, 0 0 20px #00bfff',
+            'box-shadow': '0 0 20px #ff69b4, 0 0 30px #00bfff',
+          },
+        },
       },
     },
   },

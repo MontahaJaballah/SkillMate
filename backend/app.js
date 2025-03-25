@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const { Server } = require('socket.io');
 const session = require('express-session');
 const passport = require('passport');
 require('dotenv').config();
@@ -11,12 +12,19 @@ const jwt = require('jsonwebtoken');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const chessRoutes = require('./routes/chessRoutes');
 const dbConfig = require('./config/db.json');
 
 require('./config/passport');
 
 const app = express();
-
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: ['http://localhost:5173', 'http://localhost:5174'],
+        credentials: true
+    }
+});
 // Middleware
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174'],
@@ -90,7 +98,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/certificates', certificateRoutes);
-
+app.use('/api/chess', chessRoutes);
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
