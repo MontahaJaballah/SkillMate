@@ -1,54 +1,46 @@
-const axios = require("axios");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+// Initialisation avec votre clé
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 const generateCourse = async (req, res) => {
-    const { topic } = req.body;
+    // Spécifiez le modèle (gratuit)
+    const model = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+            maxOutputTokens: 1000,  // Limite de tokens
+            temperature: 0.5       // Contrôle la créativité (0=précis, 1=créatif)
+        }
+    });
 
-    if (!topic) {
-        return res.status(400).json({ error: "Le sujet est requis" });
-    }
+    // Prompt optimisé pour les cours
+    const prompt = `[ROLE] Tu es un professeur de musique expert.
+[INSTRUCTIONS] Génère un cours sur "${req.body.topic}" en français avec :
+1. Une introduction simple
+2. 3 concepts clés avec exemples
+3. Un exercice pratique
+[FORMAT] Utilise Markdown avec ## Titres et - listes`;
 
     try {
-        const response = await axios.post(
-            "https://api-inference.huggingface.co/models/google/flan-t5-base", // Modèle plus stable
-            {
-                inputs: `Crée un cours en français sur "${topic}" avec cette structure :
-1. [Introduction] 
-2. [Exemples] 
-3. [Exercice pratique]
-4. [Résumé]`,
-                parameters: {
-                    max_length: 800,
-                    temperature: 0.7
-                }
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.HF_API_KEY}`,
-                    "Content-Type": "application/json"
-                }
-            }
-        );
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
 
-        // Nettoyage du texte généré
-        const generatedText = response.data[0]?.generated_text || "Erreur de génération";
-        const cleanedText = generatedText
-            .replace(/\[.*?\]/g, "") // Retire les balises non fermées
-            .replace(/(\n\s*){3,}/g, "\n\n"); // Réduit les sauts de ligne multiples
+        // Nettoyage du texte
+        const cleanText = text
+            .replace(/```markdown/g, "")  // Retire les blocs de code
+            .replace(/```/g, "");
 
         res.json({
-            course: cleanedText || "Erreur lors de la génération",
-            fullResponse: response.data
+            course: cleanText,
+            modelUsed: "gemini-1.5-flash"
         });
-
     } catch (error) {
-        console.error("Erreur complète :", error.response?.data || error.message);
+        console.error("Erreur Gemini:", error);
         res.status(500).json({
-            error: "Erreur lors de la génération du cours",
-            details: error.response?.data || error.message
+            error: "Erreur de génération",
+            solution: "Vérifiez votre quota sur AI Studio"
         });
     }
 };
 
 module.exports = { generateCourse };
-
