@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
+const http = require('http'); // Add this import for creating the server
 const session = require('express-session');
 const passport = require('passport');
 require('dotenv').config();
@@ -18,13 +19,14 @@ const dbConfig = require('./config/db.json');
 require('./config/passport');
 
 const app = express();
-const server = http.createServer(app);
+const server = http.createServer(app); // Create HTTP server for Socket.IO
 const io = new Server(server, {
     cors: {
         origin: ['http://localhost:5173', 'http://localhost:5174'],
         credentials: true
     }
 });
+
 // Middleware
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174'],
@@ -99,12 +101,15 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/chess', chessRoutes);
+
+// Socket.IO setup
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });
 });
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -120,7 +125,7 @@ mongoose.connect(dbConfig.mongodb.url)
     .catch(err => console.error('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => { // Use server.listen instead of app.listen
     console.log(`Server is running on port ${PORT}`);
 });
 
