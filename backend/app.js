@@ -17,6 +17,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const dbConfig = require('./config/db.json');
 const courseRoutes = require('./routes/courseRoutes');
+const singRoutes = require('./routes/singRoutes');
 
 require('./config/passport');
 
@@ -92,14 +93,6 @@ const dialogflowCredentialsPath = path.resolve(__dirname, 'config', 'skillmateBo
 process.env.GOOGLE_APPLICATION_CREDENTIALS = dialogflowCredentialsPath;
 console.log('Setting Dialogflow credentials path:', dialogflowCredentialsPath);
 
-
-app.use(express.json());
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
-}));
-
-
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
@@ -107,7 +100,7 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/courses', courseRoutes);
-
+app.use('/api/sing', singRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

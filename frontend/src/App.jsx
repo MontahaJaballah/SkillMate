@@ -12,6 +12,10 @@ import ForgotPassword from "./views/auth/ForgetPassword/ForgotPassword.jsx";
 import CourseGenerator from "./components/CourseGenerator/CourseGenerator.jsx";
 import MusicGenerator from "./components/MusicGenerator/MusicGenerator.jsx";
 
+import Sing from "./components/Sing/sing.jsx";
+
+
+
 export default function App() {
   return (
     <AuthProvider>
@@ -25,6 +29,8 @@ export default function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/course-generator" element={<CourseGenerator />} />
           <Route path="/music-generator" element={<MusicGenerator />} />
+
+          <Route path="/sing" element={<Sing />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
