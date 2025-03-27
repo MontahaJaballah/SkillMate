@@ -25,6 +25,7 @@
     "chess.js": "^1.1.0",
     "cors": "^2.8.5",
     "framer-motion": "^12.4.7",
+    "howler": "^2.2.4",
     "react": "^18.2.0",
     "react-card-flip": "^1.2.3",
     "react-chessboard": "^4.7.2",
