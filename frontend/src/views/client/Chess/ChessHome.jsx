@@ -8,7 +8,7 @@ const ChessHome = () => {
     {
       image: 'http://localhost:5000/uploads/pics/chess-mentor.jpg',
       title: 'Chess Mentor',
-      description: 'Learn chess with AI-driven guidance. Improve your strategy and tactics with personalized lessons.',
+      description: 'Learn chess with skilled mentors guidance. Improve your strategy and tactics with personalized lessons.',
       link: '/chess/mentor'
     },
     {
@@ -127,35 +127,54 @@ const ChessHome = () => {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {chessFeatures.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
-              >
-                <img
-                  src={feature.image}
-                  alt={feature.title}
-                  className="w-full h-48 object-cover"
-                  loading="lazy"
-                  onError={(e) => console.log(`Failed to load image: ${feature.image}`)}
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    {feature.description}
-                  </p>
-                  <Link
-                    to={feature.link}
-                    className="inline-block px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
-                  >
-                    Visit
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+            {chessFeatures.map((feature, index) => {
+              const [imageError, setImageError] = useState(false);
+
+              const handleImageError = () => {
+                console.error(`Failed to load image: ${feature.image}`);
+                setImageError(true);
+              };
+
+              return (
+                <motion.div
+                  key={index}
+                  variants={itemVariants}
+                  className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                >
+                  {!imageError ? (
+                    <img
+                      src={feature.image}
+                      alt={feature.title}
+                      className="w-full h-48 object-cover"
+                      loading="lazy"
+                      onError={handleImageError}
+                    />
+                  ) : (
+                    <div className="w-full h-48 flex items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500">
+                      <div className="text-center p-6">
+                        <div className="text-6xl mb-4">♟️</div>
+                        <h3 className="text-xl font-bold text-white">{feature.title}</h3>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                      {feature.description}
+                    </p>
+                    <Link
+                      to={feature.link}
+                      className="inline-block px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
+                      aria-label={`Visit ${feature.title} section`}
+                    >
+                      Visit
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>
@@ -180,6 +199,7 @@ const ChessHome = () => {
             <Link
               to="/chess/mentor"
               className="btn bg-white text-purple-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              aria-label="Get started with Chess Mentor"
             >
               Get Started
             </Link>
