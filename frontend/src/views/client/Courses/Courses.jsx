@@ -1,4 +1,5 @@
-import { useState, useContext, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Fragment } from 'react'
 import axios from 'axios'
 import {
   Dialog,
@@ -9,6 +10,8 @@ import {
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { ChevronDownIcon, FunnelIcon, MinusIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/20/solid'
 import CourseGrid from '../../../components/Course/CourseGrid'
+import CreateItCourseForm from './CreateItCourseForm'
+import './Courses.css'
 
 const sortOptions = [
   { name: 'Most Popular', value: 'popular', current: true },
@@ -61,7 +64,7 @@ const filters = [
 
 const classNames = (...classes) => classes.filter(Boolean).join(' ')
 
-export default function Courses() {
+const Courses = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -72,6 +75,14 @@ export default function Courses() {
     duration: [],
     price: [],
   })
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  
+  // Hardcoded user for demonstration
+  const user = {
+    _id: "65f9f13b9d85a40b8c5c81a1", // Replace with a valid MongoDB ObjectId
+    username: "teacher1",
+    role: "teacher"
+  }
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -137,6 +148,19 @@ export default function Courses() {
         return 0
     }
   })
+
+  const handleCreateCourseSuccess = () => {
+    setShowCreateForm(false)
+    const fetchCourses = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/courses/allcourses')
+        setCourses(response.data)
+      } catch (error) {
+        console.error('Error fetching courses:', error)
+      }
+    }
+    fetchCourses()
+  }
 
   if (loading) {
     return (
@@ -320,6 +344,14 @@ export default function Courses() {
                 <span className="sr-only">Filters</span>
                 <FunnelIcon className="h-5 w-5" aria-hidden="true" />
               </button>
+              {user?.role === 'teacher' && (
+                <button 
+                  className="create-course-btn ml-4"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  Create IT Course
+                </button>
+              )}
             </div>
           </div>
 
@@ -403,11 +435,25 @@ export default function Courses() {
               </form>
 
               {/* Course grid */}
-              <CourseGrid courses={sortedCourses} />
+              <div className="lg:col-span-3">
+                <CourseGrid courses={sortedCourses} />
+              </div>
             </div>
           </section>
         </main>
       </div>
+      
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <CreateItCourseForm
+            onClose={() => setShowCreateForm(false)}
+            onSuccess={handleCreateCourseSuccess}
+            user={user}
+          />
+        </div>
+      )}
     </div>
   )
 }
+
+export default Courses;
