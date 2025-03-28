@@ -19,6 +19,8 @@
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^7.0.0",
+    "@mui/material": "^7.0.0",
     "@popperjs/core": "^2.11.8",
     "aos": "^2.3.4",
     "axios": "^1.7.9",

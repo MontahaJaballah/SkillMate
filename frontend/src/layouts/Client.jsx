@@ -5,7 +5,6 @@ import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbars/Navbar.jsx";
 import Footer from "../components/Footers/Footer.jsx";
 import Chatbot from "../components/Chatbot/Chatbot.jsx";
-import PrivateRoute from "../components/PrivateRoute/PrivateRoute.jsx";
 
 // Views
 import Landing from "../views/Landing/Landing.jsx";
@@ -14,6 +13,7 @@ import SearchResults from "../views/client/SearchResults.jsx";
 import ChatPage from "../views/client/ChatPage/ChatPage";
 import AccountSettings from "../views/client/AccountSettings/AccountSettings";
 import CodeCompilerPage from "../views/client/CodeCompilerPage/CodeCompilerPage.jsx";
+import Courses from "../views/client/Courses/Courses.jsx";
 
 export default function Client() {
   const navigate = useNavigate();
@@ -42,13 +42,7 @@ export default function Client() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="settings" element={<AccountSettings />} />
           <Route path="code-compiler" element={<CodeCompilerPage />} />
-          <Route path="courses" element={<div>Courses Page</div>} />
-          <Route path="teachers" element={<div>Teachers Page</div>} />
-          <Route path="blogs" element={<div>Blogs Page</div>} />
-          <Route path="contact" element={<div>Contact Page</div>} />
-          <Route path="dashboard" element={<div>Dashboard Page</div>} />
-
-
+          <Route path="courses" element={<Courses />} />
           {/* Catch-all route to handle any other paths */}
           <Route path="*" element={<Landing />} />
         </Routes>
