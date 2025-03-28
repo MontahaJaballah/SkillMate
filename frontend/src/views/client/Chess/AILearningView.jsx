@@ -16,7 +16,7 @@ const AILearningView = () => {
 
         try {
             
-            const apiUrl = 'https://178c-34-83-179-95.ngrok-free.app/chessgpt'; // ngrok URL
+            const apiUrl = 'https://9697-34-87-139-234.ngrok-free.app/chessgpt'; // ngrok URL
             const res = await axios.post(apiUrl, { prompt });
             setResponse(res.data.response);
         } catch (err) {
