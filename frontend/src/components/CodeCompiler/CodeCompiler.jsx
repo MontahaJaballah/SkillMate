@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { config } from "../../config/config";
 import HtmlPreviewer from "./HtmlPreviewer";
@@ -8,122 +8,193 @@ import "./CodeCompiler.css";
 const LANGUAGES = {
   javascript: {
     name: "JavaScript (Node.js)",
-    template: `// Example: Simple function to calculate factorial
-function factorial(n) {
-  if (n === 0 || n === 1) return 1;
-  return n * factorial(n - 1);
-}
-
-console.log(factorial(5)); // Output: 120`
+    template: "// Write your JavaScript code here\n"
   },
   python: {
     name: "Python 3",
-    template: `# Example: Simple function to calculate factorial
-def factorial(n):
-    if n == 0 or n == 1:
-        return 1
-    return n * factorial(n - 1)
-
-print(factorial(5)) # Output: 120`
+    template: "# Write your Python code here\n"
   },
   java: {
     name: "Java",
-    template: `// Example: Simple program to calculate factorial
-public class Main {
-    public static int factorial(int n) {
-        if (n == 0 || n == 1) return 1;
-        return n * factorial(n - 1);
-    }
-    
+    template: `public class Main {
     public static void main(String[] args) {
-        System.out.println(factorial(5)); // Output: 120
+        // Write your Java code here
     }
 }`
   },
   cpp: {
     name: "C++",
-    template: `// Example: Simple program to calculate factorial
-#include <iostream>
+    template: `#include <iostream>
 using namespace std;
 
-int factorial(int n) {
-    if (n == 0 || n == 1) return 1;
-    return n * factorial(n - 1);
-}
-
 int main() {
-    cout << factorial(5) << endl; // Output: 120
+    // Write your C++ code here
     return 0;
 }`
-  },
-  c: {
-    name: "C",
-    template: `// Example: Simple program to calculate factorial
-#include <stdio.h>
-
-int factorial(int n) {
-    if (n == 0 || n == 1) return 1;
-    return n * factorial(n - 1);
-}
-
-int main() {
-    printf("%d\\n", factorial(5)); // Output: 120
-    return 0;
-}`
-  },
-  php: {
-    name: "PHP",
-    template: `<?php
-// Example: Simple function to calculate factorial
-function factorial($n) {
-    if ($n == 0 || $n == 1) return 1;
-    return $n * factorial($n - 1);
-}
-
-echo factorial(5); // Output: 120
-?>`
   }
 };
 
-const CodeCompiler = () => {
-  const [activeTab, setActiveTab] = useState("backend");
-  const [code, setCode] = useState(LANGUAGES.javascript.template);
-  const [language, setLanguage] = useState("javascript");
-  const [output, setOutput] = useState("");
+// Load saved state from localStorage
+const loadSavedState = () => {
+  try {
+    const savedTab = localStorage.getItem('activeTab') || 'backend';
+    const savedLanguage = localStorage.getItem('language') || 'javascript';
+    const savedBackendCode = localStorage.getItem('backendCode') || LANGUAGES[savedLanguage].template;
+    const savedFrontendCode = JSON.parse(localStorage.getItem('frontendCode')) || { html: "", css: "", js: "" };
+    const savedOutput = localStorage.getItem('output') || "";
+    const savedError = localStorage.getItem('error') || "";
+    const savedScore = localStorage.getItem('score') ? parseInt(localStorage.getItem('score')) : null;
+    const savedFeedback = JSON.parse(localStorage.getItem('feedback') || "[]");
+    
+    return {
+      activeTab: savedTab,
+      language: savedLanguage,
+      backendCode: savedBackendCode,
+      frontendCode: savedFrontendCode,
+      output: savedOutput,
+      error: savedError,
+      score: savedScore,
+      feedback: savedFeedback
+    };
+  } catch (error) {
+    console.error('Error loading saved state:', error);
+    return {
+      activeTab: 'backend',
+      language: 'javascript',
+      backendCode: LANGUAGES.javascript.template,
+      frontendCode: { html: "", css: "", js: "" },
+      output: "",
+      error: "",
+      score: null,
+      feedback: []
+    };
+  }
+};
+
+const CodeCompiler = ({ expectedOutput, testCases }) => {
+  // Initialize state from localStorage
+  const savedState = loadSavedState();
+  const [activeTab, setActiveTab] = useState(savedState.activeTab);
+  const [backendCode, setBackendCode] = useState(savedState.backendCode);
+  const [frontendCode, setFrontendCode] = useState(savedState.frontendCode);
+  const [language, setLanguage] = useState(savedState.language);
+  const [output, setOutput] = useState(savedState.output);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(savedState.error);
+  const [score, setScore] = useState(savedState.score);
+  const [feedback, setFeedback] = useState(savedState.feedback);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    const saveState = () => {
+      localStorage.setItem('activeTab', activeTab);
+      localStorage.setItem('language', language);
+      localStorage.setItem('backendCode', backendCode);
+      localStorage.setItem('frontendCode', JSON.stringify(frontendCode));
+      localStorage.setItem('output', output);
+      localStorage.setItem('error', error);
+      if (score !== null) localStorage.setItem('score', score.toString());
+      localStorage.setItem('feedback', JSON.stringify(feedback));
+    };
+
+    saveState();
+
+    // Add event listener for visibility change
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Reload state when tab becomes visible again
+        const newState = loadSavedState();
+        setOutput(newState.output);
+        setError(newState.error);
+        setScore(newState.score);
+        setFeedback(newState.feedback);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [activeTab, language, backendCode, frontendCode, output, error, score, feedback]);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setLanguage(newLang);
-    setCode(LANGUAGES[newLang].template);
+    // Only reset code if it's still the template
+    if (backendCode === LANGUAGES[language].template) {
+      setBackendCode(LANGUAGES[newLang].template);
+    }
     setOutput("");
     setError("");
+    setScore(null);
+    setFeedback([]);
+    
+    // Clear feedback from localStorage
+    localStorage.removeItem('output');
+    localStorage.removeItem('error');
+    localStorage.removeItem('score');
+    localStorage.removeItem('feedback');
   };
 
   const handleRunCode = async () => {
-    if (!code.trim()) {
-      setError("Please enter some code to run");
+    const codeToRun = activeTab === 'backend' ? backendCode : frontendCode;
+    
+    if (!codeToRun || (typeof codeToRun === 'string' && !codeToRun.trim())) {
+      const errorMsg = "Please enter some code to run";
+      setError(errorMsg);
+      localStorage.setItem('error', errorMsg);
       return;
     }
 
     setLoading(true);
     setError("");
     setOutput("");
+    setScore(null);
+    setFeedback([]);
+    
+    // Clear previous results from localStorage
+    localStorage.removeItem('output');
+    localStorage.removeItem('error');
+    localStorage.removeItem('score');
+    localStorage.removeItem('feedback');
     
     try {
       const { data } = await axios.post(`${config.API_URL}/compiler/run`, {
-        code,
+        code: backendCode,
         language,
+        expectedOutput
       });
       
       setOutput(data.output);
-      setError("");
+      setScore(data.score);
+      setFeedback(data.feedback);
+      
+      // Save results to localStorage
+      localStorage.setItem('output', data.output);
+      localStorage.setItem('score', data.score.toString());
+      localStorage.setItem('feedback', JSON.stringify(data.feedback));
+      
+      if (!data.isCorrect && expectedOutput) {
+        const errorMsg = "Your solution's output doesn't match the expected output. Keep trying!";
+        setError(errorMsg);
+        localStorage.setItem('error', errorMsg);
+      }
     } catch (error) {
       console.error("Error running code:", error);
-      setError(error.response?.data?.message || "Error executing code");
+      const errorMsg = error.response?.data?.message || "Error executing code";
+      setError(errorMsg);
+      localStorage.setItem('error', errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    // Save current state before switching
+    localStorage.setItem('activeTab', tab);
+    if (tab === 'backend') {
+      localStorage.setItem('backendCode', backendCode);
+    } else {
+      localStorage.setItem('frontendCode', JSON.stringify(frontendCode));
     }
   };
 
@@ -131,21 +202,21 @@ const CodeCompiler = () => {
     <div className="code-compiler-container">
       <div className="compiler-header">
         <div className="header-content">
-          <h2>Code Playground</h2>
-          <p>Write, test, and run your code in multiple programming languages</p>
+          <h2>Code Submission</h2>
+          <p>Write and submit your solution</p>
         </div>
         <div className="compiler-tabs">
           <button 
             className={`tab-button ${activeTab === 'backend' ? 'active' : ''}`}
-            onClick={() => setActiveTab('backend')}
+            onClick={() => handleTabChange('backend')}
           >
-            Backend Code (JDoodle)
+            Code Editor
           </button>
           <button 
             className={`tab-button ${activeTab === 'frontend' ? 'active' : ''}`}
-            onClick={() => setActiveTab('frontend')}
+            onClick={() => handleTabChange('frontend')}
           >
-            Frontend Code (HTML/CSS/JS)
+            HTML/CSS/JS Editor
           </button>
         </div>
       </div>
@@ -176,7 +247,7 @@ const CodeCompiler = () => {
               ) : (
                 <>
                   <span className="run-icon">▶</span>
-                  Run Code
+                  Submit Solution
                 </>
               )}
             </button>
@@ -185,44 +256,78 @@ const CodeCompiler = () => {
           <div className="code-section">
             <div className="code-editor-container">
               <div className="editor-header">
-                <label>Code Editor</label>
-                <small>Write your {LANGUAGES[language].name} code here</small>
+                <label>Solution Editor</label>
+                <small>Write your {LANGUAGES[language].name} solution here</small>
               </div>
               <MonacoEditor
                 language={language}
-                value={code}
-                onChange={setCode}
+                value={backendCode}
+                onChange={(newCode) => {
+                  setBackendCode(newCode);
+                  localStorage.setItem('backendCode', newCode);
+                }}
                 height="400px"
               />
             </div>
 
             <div className="output-container">
               <div className="output-header">
-                <h3>Output</h3>
-                <small>Program output will appear here</small>
+                <h3>Results & Feedback</h3>
+                <small>Execution results and code quality feedback</small>
               </div>
+              
               {error && <div className="error-message">{error}</div>}
+              
               {loading && !error && (
                 <div className="loading-message">
                   <span className="spinner"></span>
-                  Executing code...
+                  Evaluating your solution...
                 </div>
               )}
+
               {output && (
-                <pre className="output-display">
-                  <code>{output}</code>
-                </pre>
+                <div className="output-section">
+                  <h4>Program Output:</h4>
+                  <pre className="output-display">
+                    <code>{output}</code>
+                  </pre>
+                </div>
               )}
+
+              {score !== null && (
+                <div className={`score-section ${score >= 80 ? 'good' : score >= 60 ? 'average' : 'poor'}`}>
+                  <h4>Code Score: {score}/100</h4>
+                  {feedback.length > 0 && (
+                    <>
+                      <h4>Suggestions for Improvement:</h4>
+                      <ul className="feedback-list">
+                        {feedback.map((item, index) => (
+                          <li key={index} className={`feedback-item severity-${item.severity}`}>
+                            {item.line && <span className="line-number">Line {item.line}:</span>} {item.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
+
               {!output && !error && !loading && (
                 <div className="empty-output">
-                  Click the "Run Code" button to see your program output
+                  Click "Submit Solution" to evaluate your code
                 </div>
               )}
             </div>
           </div>
         </div>
       ) : (
-        <HtmlPreviewer />
+        <HtmlPreviewer 
+          code={frontendCode}
+          onChange={(newCode) => {
+            setFrontendCode(newCode);
+            localStorage.setItem('frontendCode', JSON.stringify(newCode));
+          }}
+        />
       )}
     </div>
   );
