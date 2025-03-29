@@ -1,0 +1,49 @@
+/* Piano.css */
+.piano {
+    display: flex;
+    position: relative;
+    margin: 50px auto;
+    width: max-content;
+    background: #333;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.piano-key {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+/* Touches blanches */
+.piano-key.white {
+    width: 60px;
+    height: 250px;
+    background: linear-gradient(to bottom, #fff 0%, #eee 100%);
+    border: 1px solid #999;
+    border-radius: 0 0 5px 5px;
+    z-index: 1;
+}
+
+/* Touches noires */
+.piano-key.black {
+    width: 36px;
+    height: 150px;
+    background: linear-gradient(to bottom, #222 0%, #000 100%);
+    margin-left: -18px;
+    margin-right: -18px;
+    z-index: 2;
+    border-radius: 0 0 3px 3px;
+}
+
+/* Effets de pression */
+.piano-key.white:active,
+.piano-key.white.active {
+    background: linear-gradient(to bottom, #ddd 0%, #ccc 100%);
+}
+
+.piano-key.black:active,
+.piano-key.black.active {
+    background: linear-gradient(to bottom, #111 0%, #000 100%);
+}
