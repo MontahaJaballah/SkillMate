@@ -1,9 +1,7 @@
-// src/components/piano/Piano.jsx
 import React, { useState, useEffect } from 'react';
 import { pianoController } from '../../../../backend/controllers/pianoController';
 import './Piano.css';
 
-// Dans Piano.jsx
 const notes = [
     // Octave 0 (A0 à B0) - Notes graves extrêmes
     { name: 'A0', frequency: 27.50, type: 'white', key: 'z' },
@@ -112,6 +110,9 @@ const notes = [
 
 const Piano = () => {
     const [activeNotes, setActiveNotes] = useState({});
+    const [currentSequence, setCurrentSequence] = useState([]);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     const handleKeyDown = (note) => {
         if (!activeNotes[note.name]) {
@@ -131,34 +132,102 @@ const Piano = () => {
         }
     };
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsAnalyzing(true);
+        try {
+            const detectedNotes = await pianoController.loadAudioFile(file);
+            setCurrentSequence(detectedNotes);
+        } catch (error) {
+            console.error("Erreur d'analyse:", error);
+        }
+        setIsAnalyzing(false);
+    };
+
+    const playDetectedSequence = () => {
+        if (currentSequence.length === 0) return;
+
+        setIsPlaying(true);
+        pianoController.playSequence(currentSequence, (frequency) => {
+            const note = notes.find(n => Math.abs(n.frequency - frequency) < 1);
+            if (note) {
+                setActiveNotes(prev => ({ ...prev, [note.name]: true }));
+                setTimeout(() => {
+                    setActiveNotes(prev => {
+                        const newActive = { ...prev };
+                        delete newActive[note.name];
+                        return newActive;
+                    });
+                }, 500);
+            }
+        });
+
+        const totalDuration = Math.max(...currentSequence.map(n => n.time + n.duration)) * 1000;
+        setTimeout(() => setIsPlaying(false), totalDuration);
+    };
+
+    const stopPlaying = () => {
+        pianoController.stopSequence();
+        setIsPlaying(false);
+        setActiveNotes({});
+    };
+
+    useEffect(() => {
+        return () => {
+            pianoController.stopSequence();
+        };
+    }, []);
+
     return (
         <div className="piano-container">
             <h1>Piano Avancé 🎹</h1>
+
+            <div className="audio-controls">
+                <div className="upload-section">
+                    <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleFileUpload}
+                        disabled={isAnalyzing}
+                        id="audio-upload"
+                    />
+                    <label htmlFor="audio-upload" className="upload-button">
+                        {isAnalyzing ? 'Analyse en cours...' : 'Choisir un fichier audio'}
+                    </label>
+                </div>
+
+                {currentSequence.length > 0 && (
+                    <div className="sequence-controls">
+                        <button
+                            onClick={playDetectedSequence}
+                            disabled={isPlaying}
+                            className="play-button"
+                        >
+                            ▶ Jouer la séquence
+                        </button>
+                        <button
+                            onClick={stopPlaying}
+                            className="stop-button"
+                        >
+                            ⏹ Arrêter
+                        </button>
+                        <span className="sequence-info">
+                            {currentSequence.length} notes détectées
+                        </span>
+                    </div>
+                )}
+            </div>
+
             <div className="piano">
                 {notes.map((note) => (
                     <button
                         key={note.name}
                         className={`piano-key ${note.type} ${activeNotes[note.name] ? 'active' : ''}`}
-                        onMouseDown={() => {
-                            pianoController.playNote(note.frequency);
-                            setActiveNotes((prev) => ({ ...prev, [note.name]: true }));
-                        }}
-                        onMouseUp={() => {
-                            setActiveNotes((prev) => {
-                                const newActive = { ...prev };
-                                delete newActive[note.name];
-                                return newActive;
-                            });
-                        }}
-                        onMouseLeave={() => {
-                            if (activeNotes[note.name]) {
-                                setActiveNotes((prev) => {
-                                    const newActive = { ...prev };
-                                    delete newActive[note.name];
-                                    return newActive;
-                                });
-                            }
-                        }}
+                        onMouseDown={() => handleKeyDown(note)}
+                        onMouseUp={() => handleKeyUp(note)}
+                        onMouseLeave={() => handleKeyUp(note)}
                     >
                         {note.type === 'white' && (
                             <span className="note-label">{note.name}</span>
@@ -166,12 +235,32 @@ const Piano = () => {
                     </button>
                 ))}
             </div>
+
             <div className="piano-display">
-                Notes jouées : {Object.keys(activeNotes).join(', ')}
+                {Object.keys(activeNotes).length > 0 ? (
+                    `Notes jouées: ${Object.keys(activeNotes).join(', ')}`
+                ) : (
+                    "Appuyez sur les touches ou importez un fichier audio"
+                )}
             </div>
+
+            {currentSequence.length > 0 && (
+                <div className="sequence-preview">
+                    <h3>Séquence détectée:</h3>
+                    <div className="notes-list">
+                        {currentSequence.slice(0, 20).map((note, index) => (
+                            <span key={index} className="sequence-note">
+                                {note.name} ({note.duration.toFixed(2)}s)
+                            </span>
+                        ))}
+                        {currentSequence.length > 20 && (
+                            <span>... et {currentSequence.length - 20} de plus</span>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
-
 
 export default Piano;
