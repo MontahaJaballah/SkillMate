@@ -1,6 +1,0 @@
-torch
-transformers
-flask
-flask-cors
-bitsandbytes
-gunicorn  # Required for Heroku to run the Flask app
