@@ -29,6 +29,7 @@
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.4.7",
+    "lucide-react": "^0.485.0",
     "react": "^18.2.0",
     "react-card-flip": "^1.2.3",
     "react-countup": "^6.5.3",

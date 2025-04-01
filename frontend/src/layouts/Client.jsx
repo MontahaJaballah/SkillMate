@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import React from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 // Components
 import Navbar from "../components/Navbars/Navbar.jsx";
@@ -14,20 +14,12 @@ import ChatPage from "../views/client/ChatPage/ChatPage";
 import AccountSettings from "../views/client/AccountSettings/AccountSettings";
 import CodeCompilerPage from "../views/client/CodeCompilerPage/CodeCompilerPage.jsx";
 import Courses from "../views/client/Courses/Courses.jsx";
+import CourseDetail from "../views/client/CourseDetail/CourseDetail";
+import CreateCourseView from "../views/client/CreateCourseView/CreateCourseView";
 
 export default function Client() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  console.log('Client layout rendered, path:', location.pathname);
-
-  // Only redirect if we're at exactly /client or /client/
-  useEffect(() => {
-    if (location.pathname === "/client" || location.pathname === "/client/") {
-      console.log('Redirecting to landing page from root client path');
-      navigate("landing", { replace: true });
-    }
-  }, [location.pathname, navigate]);
 
   return (
     <>
@@ -43,7 +35,8 @@ export default function Client() {
           <Route path="settings" element={<AccountSettings />} />
           <Route path="code-compiler" element={<CodeCompilerPage />} />
           <Route path="courses" element={<Courses />} />
-          {/* Catch-all route to handle any other paths */}
+          <Route path="course/:id" element={<CourseDetail />} />
+          <Route path="create-course" element={<CreateCourseView />} />          {/* Catch-all route to handle any other paths */}
           <Route path="*" element={<Landing />} />
         </Routes>
       </main>

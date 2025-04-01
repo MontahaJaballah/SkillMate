@@ -19,7 +19,7 @@ const courseSchema = new mongoose.Schema({
     skill: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Skill',
-        required: function() {
+        required: function () {
             return this.type === 'regular';
         }
     },
@@ -34,7 +34,7 @@ const courseSchema = new mongoose.Schema({
     }],
     schedule: {
         type: String,
-        required: function() {
+        required: function () {
             return this.type === 'regular';
         }
     },
@@ -59,6 +59,33 @@ const courseSchema = new mongoose.Schema({
             max: 5
         }
     }],
+    averageRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5
+    },
+    requirements: {
+        type: [String],
+        default: []
+    },
+    learningObjectives: {
+        type: [String],
+        default: []
+    },
+    curriculum: [{
+        title: String,
+        description: String,
+        duration: Number
+    }],
+    prerequisites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
+    }],
+    thumbnail: {
+        type: String,
+        required: [true, 'Thumbnail is required']
+    },
     status: {
         type: String,
         enum: ['active', 'inactive', 'completed'],
@@ -95,7 +122,11 @@ const courseSchema = new mongoose.Schema({
         }],
         solution: String
     },
-    createdate: {
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
         type: Date,
         default: Date.now
     }

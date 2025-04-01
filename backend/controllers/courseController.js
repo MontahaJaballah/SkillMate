@@ -1,15 +1,16 @@
 const Course = require('../models/Course');
 const Skill = require('../models/Skill');
+const mongoose = require('mongoose'); // mongoose is required for ObjectId validation
 
 // Get all courses
 const getCourses = async (req, res) => {
     try {
         const courses = await Course.find()
-            .populate({ 
+            .populate({
                 path: 'skill',
-                select: 'categorie proficiency' 
+                select: 'name category proficiency'
             })
-            .populate({ path: 'teacher_id', select: 'username' }) 
+            .populate({ path: 'teacher_id', select: 'name email' })
             .select('title description thumbnail createdate price teacher_id duration');
 
         res.status(200).json(courses);
@@ -101,4 +102,33 @@ const createItCourse = async (req, res) => {
     }
 };
 
-module.exports = { getCourses, addCourse, createItCourse };
+// Get a single course
+const getCourseById = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+
+        // Validate the course ID
+        if (!mongoose.Types.ObjectId.isValid(courseId)) {
+            return res.status(400).json({ message: 'Invalid course ID' });
+        }
+
+        const course = await Course.findById(courseId)
+            .populate('teacher_id', 'name email')
+            .populate('skill', 'name category proficiency')
+            .populate('prerequisites', 'title');
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        res.json(course);
+    } catch (error) {
+        console.error('Error fetching course:', error);
+        res.status(500).json({
+            message: 'Server error',
+            error: error.message || 'Failed to fetch course'
+        });
+    }
+};
+
+module.exports = { getCourses, addCourse, createItCourse, getCourseById };

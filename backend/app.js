@@ -104,8 +104,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/compiler', compilerRoutes);
-app.use('/api/courses', courseRoutes);
 app.use('/api/skills', skillRoutes);
+app.use('/api/courses', courseRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

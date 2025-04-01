@@ -1,9 +1,15 @@
 const express = require('express');
-const { getCourses, addCourse, createItCourse } = require('../controllers/courseController');
+const { getCourses, addCourse, createItCourse, getCourseById } = require('../controllers/courseController');
 
 const router = express.Router();
 
-router.get('/allcourses', getCourses);
+// Get all courses
+router.get('/browsecourses', getCourses);
+
+// Get a single course
+router.get('/:id', getCourseById);
+
+// Add new courses
 router.post('/addcourse', addCourse);
 router.post('/createItCourse', createItCourse);
 

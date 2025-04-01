@@ -6,6 +6,9 @@ import { Toaster } from "react-hot-toast";
 import PrivateRoute from "./components/PrivateRoute/PrivateRoute";
 import { HelmetProvider } from 'react-helmet-async';
 import useAuth from "./hooks/useAuth";
+import CourseDetail from "./views/client/CourseDetail/CourseDetail";
+import Courses from "./views/client/Courses/Courses"; // Import Courses
+import CreateCourseView from "./views/client/CreateCourseView/CreateCourseView"; // Import CreateCourseView
 
 // Layouts
 import Auth from "./layouts/Auth.jsx";
@@ -24,7 +27,7 @@ const RootRedirect = () => {
   useEffect(() => {
     console.log("RootRedirect - User:", user?.email, "Role:", user?.role, "Loading:", loading);
     console.log("Current location:", location.pathname);
-    
+
     if (loading) return;
 
     // Only redirect if we're at the exact root path
@@ -78,7 +81,11 @@ const AppContent = () => {
             roles={["user", "student", "teacher"]}
           />
         }
-      />
+      >
+        <Route path="courses" element={<Courses />} />
+        <Route path="courses/:id" element={<CourseDetail />} />
+        <Route path="create-course" element={<CreateCourseView />} />
+      </Route>
 
       {/* Protected admin routes */}
       <Route
@@ -98,7 +105,7 @@ const AppContent = () => {
 
       {/* Root redirect to client landing */}
       <Route path="/" element={<Navigate to="/client/landing" replace />} />
-      
+
       {/* Catch all other routes */}
       <Route path="*" element={<Navigate to="/client/landing" replace />} />
     </Routes>
