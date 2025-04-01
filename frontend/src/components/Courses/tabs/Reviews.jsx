@@ -13,6 +13,14 @@ const Reviews = ({ course }) => {
             1: 0
         };
 
+        if (!course.ratings || !Array.isArray(course.ratings)) {
+            return Object.entries(distribution).map(([rating]) => ({
+                rating: parseInt(rating),
+                count: 0,
+                percentage: 0
+            }));
+        }
+
         course.ratings.forEach(rating => {
             const roundedRating = Math.floor(rating.score);
             if (roundedRating >= 1 && roundedRating <= 5) {
@@ -46,6 +54,8 @@ const Reviews = ({ course }) => {
         return stars;
     };
 
+    const totalRatings = course.ratings && Array.isArray(course.ratings) ? course.ratings.length : 0;
+
     return (
         <div className="container mx-auto px-4">
             <div className="space-y-8">
@@ -59,27 +69,25 @@ const Reviews = ({ course }) => {
                             {renderStars(course.averageRating || 0)}
                         </div>
                         <p className="text-gray-500 dark:text-gray-400">
-                            Based on {course.ratings.length} reviews
+                            Based on {totalRatings} reviews
                         </p>
                     </div>
 
                     <div className="space-y-2">
                         {calculateRatingDistribution().map(({ rating, percentage }) => (
                             <div key={rating} className="flex items-center gap-4">
-                                <div className="w-full max-w-[200px]">
+                                <div className="w-12 text-sm text-gray-600 dark:text-gray-400">{rating} star</div>
+                                <div className="flex-1">
                                     <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
                                         <div
                                             className="h-2 bg-yellow-400 rounded-full"
                                             style={{ width: `${percentage}%` }}
-                                        ></div>
+                                        />
                                     </div>
                                 </div>
-                                <div className="flex">
-                                    {renderStars(rating)}
-                                </div>
-                                <span className="text-gray-500 dark:text-gray-400 ml-2">
+                                <div className="w-12 text-sm text-right text-gray-600 dark:text-gray-400">
                                     {percentage.toFixed(0)}%
-                                </span>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -87,84 +95,46 @@ const Reviews = ({ course }) => {
 
                 {/* Reviews List */}
                 <div className="space-y-6">
-                    {course.ratings.map((review, index) => (
-                        <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                            <div className="flex items-start gap-4">
-                                <img
-                                    src={review.user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e'}
-                                    alt={review.user?.name || 'Anonymous'}
-                                    className="w-12 h-12 rounded-full"
-                                />
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-medium text-gray-900 dark:text-white">
-                                            {review.user?.name || 'Anonymous User'}
-                                        </h3>
-                                        <div className="flex">
-                                            {renderStars(review.score || 0)}
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Student Reviews</h3>
+                    {(!course.ratings || !Array.isArray(course.ratings) || course.ratings.length === 0) ? (
+                        <p className="text-gray-500 dark:text-gray-400">No reviews yet. Be the first to review this course!</p>
+                    ) : (
+                        course.ratings.map((review, index) => (
+                            <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-4">
+                                        <img
+                                            src={review.user?.avatar || "https://ui-avatars.com/api/?name=Anonymous"}
+                                            alt={review.user?.name || "Anonymous"}
+                                            className="w-10 h-10 rounded-full"
+                                        />
+                                        <div>
+                                            <h4 className="font-medium text-gray-900 dark:text-white">
+                                                {review.user?.name || "Anonymous"}
+                                            </h4>
+                                            <div className="flex items-center gap-1">
+                                                {renderStars(review.score || 0)}
+                                            </div>
                                         </div>
-                                        <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                                            {(review.score || 0).toFixed(1)}
-                                        </span>
                                     </div>
-                                    <p className="mt-2 text-gray-600 dark:text-gray-300">{review.comment}</p>
-                                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                        <span>{new Date(review.createdAt).toLocaleDateString()}</span>
-                                        {review.helpful && (
-                                            <>
-                                                <ThumbsUp className="w-4 h-4 text-green-500" />
-                                                <span>Helpful</span>
-                                            </>
-                                        )}
-                                    </div>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                        {new Date(review.date).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <p className="text-gray-600 dark:text-gray-300">{review.comment}</p>
+                                <div className="flex items-center gap-4 mt-4">
+                                    <button className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                                        <ThumbsUp className="w-4 h-4" />
+                                        <span>{review.helpful || 0}</span>
+                                    </button>
+                                    <button className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                                        <ThumbsDown className="w-4 h-4" />
+                                        <span>{review.notHelpful || 0}</span>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-
-                    {/* No reviews message */}
-                    {course.ratings.length === 0 && (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500 dark:text-gray-400">No reviews yet</p>
-                        </div>
+                        ))
                     )}
-                </div>
-
-                {/* Review Form */}
-                <div>
-                    <h5 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Leave a Review</h5>
-                    <form className="space-y-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <input
-                                type="text"
-                                placeholder="Name"
-                                className="w-full px-4 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700"
-                            />
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                className="w-full px-4 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700"
-                            />
-                        </div>
-                        <select className="w-full px-4 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
-                            <option>★★★★★ (5/5)</option>
-                            <option>★★★★☆ (4/5)</option>
-                            <option>★★★☆☆ (3/5)</option>
-                            <option>★★☆☆☆ (2/5)</option>
-                            <option>★☆☆☆☆ (1/5)</option>
-                        </select>
-                        <textarea
-                            placeholder="Your review"
-                            rows={3}
-                            className="w-full px-4 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700"
-                        ></textarea>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-900"
-                        >
-                            Post Review
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>

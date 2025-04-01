@@ -1,5 +1,37 @@
 const mongoose = require('mongoose');
 
+const sectionSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: [true, 'Section title is required'],
+        trim: true
+    },
+    content: [{
+        type: {
+            type: String,
+            enum: ['video', 'quiz', 'assignment'],
+            required: true
+        },
+        title: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        duration: {
+            type: Number,
+            min: 0
+        },
+        resources: [String],
+        description: String,
+        videoUrl: String,
+        questions: [{
+            question: String,
+            options: [String],
+            correctAnswer: Number
+        }]
+    }]
+});
+
 const courseSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -15,6 +47,10 @@ const courseSchema = new mongoose.Schema({
         type: String,
         enum: ['regular', 'IT'],
         default: 'regular'
+    },
+    thumbnail: {
+        type: String,
+        required: [true, 'Course thumbnail is required']
     },
     skill: {
         type: mongoose.Schema.Types.ObjectId,
@@ -48,80 +84,56 @@ const courseSchema = new mongoose.Schema({
         default: 0,
         min: [0, 'Price cannot be negative']
     },
-    ratings: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        score: {
-            type: Number,
-            min: 0,
-            max: 5
-        }
-    }],
-    averageRating: {
+    originalPrice: {
         type: Number,
-        default: 0,
-        min: 0,
-        max: 5
+        min: [0, 'Original price cannot be negative']
     },
-    requirements: {
-        type: [String],
-        default: []
+    level: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced'],
+        required: [true, 'Course level is required']
     },
-    learningObjectives: {
-        type: [String],
-        default: []
+    language: {
+        type: String,
+        required: [true, 'Course language is required']
     },
-    curriculum: [{
-        title: String,
-        description: String,
-        duration: Number
-    }],
     prerequisites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     }],
-    thumbnail: {
-        type: String,
-        required: [true, 'Thumbnail is required']
+    sections: [sectionSchema],
+    ratings: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        rating: {
+            type: Number,
+            required: true,
+            min: 1,
+            max: 5
+        },
+        review: String,
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    totalRating: {
+        type: Number,
+        default: 0
+    },
+    numberOfRatings: {
+        type: Number,
+        default: 0
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'completed'],
-        default: 'active'
+        enum: ['draft', 'published', 'archived'],
+        default: 'draft'
     },
-    lessons: [{
-        title: String,
-        content: String,
-        duration: Number,
-        codeChallenge: {
-            description: String,
-            testCases: [{
-                input: String,
-                expectedOutput: String
-            }],
-            solution: String
-        }
-    }],
-    quiz: {
-        questions: [{
-            description: String,
-            testCases: [{
-                input: String,
-                expectedOutput: String
-            }],
-            solution: String
-        }]
-    },
-    finalExam: {
-        description: String,
-        testCases: [{
-            input: String,
-            expectedOutput: String
-        }],
-        solution: String
-    },
+    tags: [String],
     createdAt: {
         type: Date,
         default: Date.now
@@ -130,8 +142,24 @@ const courseSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+}, {
+    timestamps: true
 });
 
-const Course = mongoose.model('Course', courseSchema);
+// Virtual for average rating
+courseSchema.virtual('averageRating').get(function () {
+    if (this.numberOfRatings === 0) return 0;
+    return this.totalRating / this.numberOfRatings;
+});
 
-module.exports = Course;
+// Pre-save middleware to update rating stats
+courseSchema.pre('save', function (next) {
+    if (this.isModified('ratings')) {
+        const ratings = this.ratings || [];
+        this.numberOfRatings = ratings.length;
+        this.totalRating = ratings.reduce((sum, item) => sum + item.rating, 0);
+    }
+    next();
+});
+
+module.exports = mongoose.model('Course', courseSchema);

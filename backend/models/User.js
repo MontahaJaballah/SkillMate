@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: function() {
+        required: function () {
             return !this.linkedinId && !this.googleId; // Password only required if not using social login
         },
         minlength: 6
@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Last name is required'],
         trim: true
+    },
+    avatar: {
+        type: String,
+        default: 'https://ui-avatars.com/api/?background=random'
     },
     phoneNumber: {
         type: String,
@@ -62,14 +66,14 @@ const userSchema = new mongoose.Schema({
     }],
     certification: {
         type: String,
-        required: function() {
+        required: function () {
             return this.role === 'teacher';
         }
     },
     certificationFile: {
         type: String,
     },
-    certificationStatus: { 
+    certificationStatus: {
         type: String,
         enum: ['pending', 'valid', 'invalid'],
         default: 'pending',
@@ -118,13 +122,35 @@ const userSchema = new mongoose.Schema({
     },
     displayName: {
         type: String,
-        get: function() {
+        get: function () {
             return this.firstName + ' ' + this.lastName;
         }
     },
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    avatar: {
+        type: String,
+        default: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e'
+    },
+    bio: {
+        type: String,
+        default: 'Experienced instructor passionate about teaching'
+    },
+    rating: {
+        type: Number,
+        default: 4.5,
+        min: 0,
+        max: 5
+    },
+    reviewsCount: {
+        type: Number,
+        default: 0
+    },
+    coursesCount: {
+        type: Number,
+        default: 0
     },
     courses: [{
         type: mongoose.Schema.Types.ObjectId,

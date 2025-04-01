@@ -105,29 +105,69 @@ const createItCourse = async (req, res) => {
 // Get a single course
 const getCourseById = async (req, res) => {
     try {
-        const courseId = req.params.id;
+        const { id } = req.params;
 
-        // Validate the course ID
-        if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'Invalid course ID' });
         }
 
-        const course = await Course.findById(courseId)
-            .populate('teacher_id', 'name email')
-            .populate('skill', 'name category proficiency')
-            .populate('prerequisites', 'title');
+        const course = await Course.findById(id)
+            .populate({
+                path: 'skill',
+                select: 'name category proficiency'
+            })
+            .populate({
+                path: 'teacher_id',
+                select: 'username firstName lastName email avatar bio rating reviews courses students',
+                transform: doc => ({
+                    _id: doc._id, // Make sure we include the instructor's ID
+                    username: doc.username,
+                    name: `${doc.firstName} ${doc.lastName}`,
+                    email: doc.email,
+                    avatar: doc.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
+                    bio: doc.bio || 'Experienced instructor passionate about teaching',
+                    rating: doc.rating || 4.5,
+                    reviews: doc.reviews || 0,
+                    courses: doc.courses || 1,
+                    students: doc.students?.length || 0
+                })
+            })
+            .lean();
 
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
 
-        res.json(course);
+        console.log('Teacher ID:', course.teacher_id._id);
+
+        // Fetch other courses by the same instructor (excluding the current course)
+        const instructorCourses = await Course.find({
+            teacher_id: course.teacher_id._id,
+            _id: { $ne: id } // Use the course id from params
+        })
+            .select('title description thumbnail price')
+            .limit(3)
+            .lean();
+
+        console.log('Found instructor courses:', instructorCourses);
+
+        // Format the instructor data for the frontend
+        course.instructor = {
+            ...course.teacher_id,
+            instructorCourses: instructorCourses.map(c => ({
+                _id: c._id,
+                title: c.title,
+                description: c.description,
+                thumbnail: c.thumbnail || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f',
+                price: c.price
+            }))
+        };
+        delete course.teacher_id;
+
+        res.status(200).json(course);
     } catch (error) {
-        console.error('Error fetching course:', error);
-        res.status(500).json({
-            message: 'Server error',
-            error: error.message || 'Failed to fetch course'
-        });
+        console.error('Error in getCourseById:', error);
+        res.status(500).json({ message: 'Error fetching course', error: error.message });
     }
 };
 

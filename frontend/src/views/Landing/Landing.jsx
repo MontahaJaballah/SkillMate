@@ -232,9 +232,9 @@ const Landing = () => {
               {user && ( // Show "Dashboard" button if user is logged in
                 <motion.div variants={buttonVariants} whileHover="hover">
                   <Link
-                    to="/dashboard"
+                    to="/client/courses"
                     className="px-8 py-3 bg-transparent border-2 border-white/80 text-white rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-lg"
-                    aria-label="Go to Dashboard"
+                    aria-label="Go to Courses"
                   >
                     Our Courses
                   </Link>
