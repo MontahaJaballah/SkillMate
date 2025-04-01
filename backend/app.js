@@ -45,7 +45,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Add pre-flight OPTIONS handling
-app.options('*', cors(corsOptions));
+app.use(express.static(path.join(__dirname, 'uploads')));
 
 // Session middleware with secure configuration
 app.use(session({
@@ -124,14 +124,17 @@ mongoose.connect(dbConfig.mongodb.url)
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173', // Vite dev server port
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
     methods: ['GET', 'POST'],
-    credentials: true
-  }
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  },
+  transports: ['websocket', 'polling']
 });
 
 // Socket.io connection
 const connectedUsers = new Map();
+const codeRooms = new Map(); // Store code room information
 
 io.on('connection', (socket) => {
   console.log('A user connected: ' + socket.id);
@@ -161,6 +164,116 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Collaborative code editing events
+  socket.on('joinCodeRoom', async ({ roomId, username }) => {
+    try {
+      // Create room if it doesn't exist
+      if (!codeRooms.has(roomId)) {
+        codeRooms.set(roomId, {
+          users: new Map(),
+          code: '',
+          language: 'javascript'
+        });
+      }
+
+      const room = codeRooms.get(roomId);
+      room.users.set(socket.id, username);
+      socket.join(roomId);
+
+      // Load previous messages if storage is enabled
+      if (process.env.STORE_CODE_ROOM_MESSAGES === 'true') {
+        const Message = require('./models/Message');
+        const messages = await Message.find({ 
+          'metadata.roomId': roomId 
+        }).sort({ createdAt: 1 }).limit(100);
+        
+        // Send previous messages to the joining user
+        socket.emit('previousMessages', messages);
+      }
+
+      // Notify all users in the room
+      io.to(roomId).emit('codeRoomUserList', Array.from(room.users.values()));
+      console.log(`User ${username} joined code room ${roomId}`);
+    } catch (error) {
+      console.error('Error in joinCodeRoom:', error);
+      socket.emit('error', { message: 'Failed to join room' });
+    }
+  });
+
+  socket.on('codeChange', ({ roomId, code, language }) => {
+    // Update code in the room state
+    if (codeRooms.has(roomId)) {
+      const room = codeRooms.get(roomId);
+      room.code = { code, language };
+    }
+    
+    // Broadcast code changes to all users in the room except sender
+    socket.to(roomId).emit('codeUpdate', { code, language });
+  });
+  
+  socket.on('cursorMove', ({ roomId, username, position }) => {
+    // Broadcast cursor position to all users in the room except sender
+    socket.to(roomId).emit('cursorUpdate', { username, position });
+  });
+
+  socket.on('userTyping', ({ roomId, username, isTyping }) => {
+    // Broadcast typing status to all users in the room except sender
+    socket.to(roomId).emit('userTyping', { username, isTyping });
+  });
+  
+  // Handle chat messages in code rooms
+  socket.on('sendCodeRoomMessage', ({ roomId, sender, message, isCodeSnippet = false }) => {
+    // Create a timestamp for the message
+    const timestamp = new Date().toISOString();
+    
+    // Broadcast the message to all users in the room (including sender)
+    io.to(roomId).emit('codeRoomMessage', { 
+      sender, 
+      message, 
+      timestamp, 
+      isCodeSnippet 
+    });
+    
+    // If we want to store messages in the database for persistence
+    // We can use the existing Message model
+    if (process.env.STORE_CODE_ROOM_MESSAGES === 'true') {
+      try {
+        const Message = require('./models/Message');
+        const newMessage = new Message({ 
+          sender, 
+          receiver: `code-room-${roomId}`, 
+          message,
+          metadata: { isCodeSnippet, roomId }
+        });
+        newMessage.save();
+      } catch (error) {
+        console.error('Error saving code room message:', error);
+      }
+    }
+  });
+  
+  socket.on('leaveCodeRoom', ({ roomId }) => {
+    if (codeRooms.has(roomId)) {
+      const room = codeRooms.get(roomId);
+      
+      // Remove user from the room
+      const username = room.users.get(socket.id);
+      room.users.delete(socket.id);
+      
+      // Notify remaining users
+      io.to(roomId).emit('codeRoomUserList', Array.from(room.users.values()));
+      
+      // Clean up empty rooms
+      if (room.users.size === 0) {
+        codeRooms.delete(roomId);
+        console.log(`Code room ${roomId} deleted (empty)`);
+      }
+      
+      socket.leave(roomId);
+      console.log(`User ${username} left code room ${roomId}`);
+    }
+  });
+
   socket.on('disconnect', () => {
     // Remove user from connected users
     for (const [userId, socketId] of connectedUsers.entries()) {
@@ -169,6 +282,26 @@ io.on('connection', (socket) => {
         break;
       }
     }
+    
+    // Remove user from any code rooms they were in
+    for (const [roomId, room] of codeRooms.entries()) {
+      if (room.users.has(socket.id)) {
+        const username = room.users.get(socket.id);
+        room.users.delete(socket.id);
+        
+        // Notify remaining users
+        io.to(roomId).emit('codeRoomUserList', Array.from(room.users.values()));
+        
+        // Clean up empty rooms
+        if (room.users.size === 0) {
+          codeRooms.delete(roomId);
+          console.log(`Code room ${roomId} deleted (empty)`);
+        }
+        
+        console.log(`User ${username} disconnected from code room ${roomId}`);
+      }
+    }
+    
     console.log('User disconnected');
   });
 });

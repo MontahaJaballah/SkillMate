@@ -13,6 +13,7 @@ import SearchResults from "../views/client/SearchResults.jsx";
 import ChatPage from "../views/client/ChatPage/ChatPage";
 import AccountSettings from "../views/client/AccountSettings/AccountSettings";
 import CodeCompilerPage from "../views/client/CodeCompilerPage/CodeCompilerPage.jsx";
+import CodeCollaborationPage from "../views/client/CodeCollaborationPage/CodeCollaborationPage.jsx";
 import Courses from "../views/client/Courses/Courses.jsx";
 import CourseDetail from "../views/client/CourseDetail/CourseDetail";
 import CreateCourseView from "../views/client/CreateCourseView/CreateCourseView";
@@ -34,6 +35,8 @@ export default function Client() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="settings" element={<AccountSettings />} />
           <Route path="code-compiler" element={<CodeCompilerPage />} />
+          <Route path="code-collaboration" element={<CodeCollaborationPage />} />
+          <Route path="code-collaboration/:roomId" element={<CodeCollaborationPage />} />
           <Route path="courses" element={<Courses />} />
           <Route path="course/:id" element={<CourseDetail />} />
           <Route path="create-course" element={<CreateCourseView />} />          {/* Catch-all route to handle any other paths */}
