@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Chessboard } from 'react-chessboard';
-import { Chess } from 'chess.js';
+import * as ChessModule from 'chess.js';
+import ChessSidebar from '../../../components/Chess/ChessSidebar';
+import { Howl } from 'howler';
+import Particles from 'react-tsparticles';
+import { loadFull } from 'tsparticles';
 
 const AILearningView = () => {
-    const [game, setGame] = useState(new Chess()); // Chess.js instance for game state
-    const [fen, setFen] = useState(game.fen()); // Current FEN position
-    const [error, setError] = useState(''); // Track any errors
-    const stockfishRef = useRef(null); // Use a ref to store the Web Worker
-    const isUserTurnRef = useRef(true); // Use a ref to track whose turn it is
+    const [game, setGame] = useState(new ChessModule.Chess());
+    const [fen, setFen] = useState(game.fen());
+    const [error, setError] = useState('');
+    const [moveHistory, setMoveHistory] = useState([]);
+    const [gameStatus, setGameStatus] = useState('');
+    const stockfishRef = useRef(null);
 
-    // Initialize Stockfish Web Worker when the component mounts
+    const moveSound = new Howl({ src: ['/sounds/move.mp3'] });
+    const checkSound = new Howl({ src: ['/sounds/check.mp3'] });
+    const checkmateSound = new Howl({ src: ['/sounds/checkmate.mp3'] });
+
     useEffect(() => {
         const initStockfish = () => {
-            if (stockfishRef.current) {
-                console.log('Stockfish Web Worker already initialized, skipping...');
-                return;
-            }
-
             try {
                 console.log('Attempting to initialize Stockfish Web Worker...');
                 const worker = new Worker('/stockfish/stockfish-nnue-16-single.js', { type: 'module' });
@@ -33,16 +36,18 @@ const AILearningView = () => {
                     console.log('Stockfish message:', message);
                     if (message.startsWith('bestmove')) {
                         const bestMove = message.split(' ')[1];
-                        console.log('Best move received:', bestMove, 'isUserTurnRef.current:', isUserTurnRef.current);
-                        if (bestMove && !isUserTurnRef.current) {
+                        console.log('Best move received:', bestMove, 'game.turn():', game.turn());
+                        if (bestMove && game.turn() === 'b') {
                             console.log('Calling makeAIMove with bestMove:', bestMove);
                             makeAIMove(bestMove);
                         } else {
-                            console.log('makeAIMove not called. bestMove:', bestMove, '!isUserTurnRef.current:', !isUserTurnRef.current);
+                            console.log('makeAIMove not called. bestMove:', bestMove, 'game.turn():', game.turn());
                         }
                     } else if (message === 'readyok') {
                         console.log('Stockfish is ready');
                         worker.postMessage('ucinewgame');
+                        worker.postMessage('setoption name UCI_LimitStrength value true');
+                        worker.postMessage('setoption name UCI_Elo value 3190');
                     }
                 };
 
@@ -60,132 +65,329 @@ const AILearningView = () => {
 
         return () => {
             if (stockfishRef.current) {
-                console.log('Terminating Stockfish Web Worker...');
+                console.log('Terminating Stockfish Web Worker on unmount...');
                 stockfishRef.current.terminate();
                 stockfishRef.current = null;
             }
         };
-    }, []); // Empty dependency array ensures this runs only once on mount
+    }, []);
 
-    // Handle user moves
-    const onDrop = (sourceSquare, targetSquare) => {
-        if (!isUserTurnRef.current) return false; // Prevent user from moving during AI's turn
-
-        try {
-            const move = game.move({
-                from: sourceSquare,
-                to: targetSquare,
-                promotion: 'q', // Auto-promote to queen for simplicity
-            });
-
-            if (move === null) return false; // Invalid move
-
-            setFen(game.fen());
-            isUserTurnRef.current = false; // AI's turn
-            console.log('User move made, isUserTurnRef.current set to false:', isUserTurnRef.current);
-
-            // Trigger AI move after a short delay
-            setTimeout(() => {
-                if (stockfishRef.current) {
-                    console.log('Sending position to Stockfish:', game.fen());
-                    stockfishRef.current.postMessage(`position fen ${game.fen()}`);
-                    stockfishRef.current.postMessage('go movetime 1000'); // AI thinks for 1 second
-                } else {
-                    console.error('Stockfish is not initialized');
-                    setError('Stockfish is not initialized');
-                    isUserTurnRef.current = true; // Allow user to try again
-                }
-            }, 500);
-
-            return true;
-        } catch (e) {
-            return false; // Invalid move
-        }
-    };
-
-    // AI makes a move
     const makeAIMove = (bestMove) => {
-        console.log('AI best move:', bestMove);
+        console.log('makeAIMove called with bestMove:', bestMove, 'Current FEN:', game.fen(), 'Turn:', game.turn());
         try {
-            const move = game.move({
+            const tempGame = new ChessModule.Chess(game.fen());
+            console.log('Validating move in tempGame:', { from: bestMove.substring(0, 2), to: bestMove.substring(2, 4) });
+            const move = tempGame.move({
                 from: bestMove.substring(0, 2),
                 to: bestMove.substring(2, 4),
                 promotion: bestMove.length > 4 ? bestMove[4] : undefined,
             });
 
             if (move === null) {
-                console.error('AI suggested an invalid move:', bestMove);
+                console.error('AI suggested an invalid move:', bestMove, 'Current FEN:', game.fen());
                 setError('AI suggested an invalid move');
-                isUserTurnRef.current = true; // Allow user to continue
                 return;
             }
 
+            console.log('Applying valid move to game:', { from: bestMove.substring(0, 2), to: bestMove.substring(2, 4) });
+            const actualMove = game.move({
+                from: bestMove.substring(0, 2),
+                to: bestMove.substring(2, 4),
+                promotion: bestMove.length > 4 ? bestMove[4] : undefined,
+            });
+
+            console.log('AI move applied:', actualMove.san, 'New FEN:', game.fen(), 'Turn:', game.turn());
             setFen(game.fen());
-            isUserTurnRef.current = true; // User's turn
-            console.log('AI move made, isUserTurnRef.current set to true:', isUserTurnRef.current);
+            setMoveHistory([...game.history({ verbose: true })]);
+
+            if (game.inCheck()) {
+                checkSound.play();
+            } else {
+                moveSound.play();
+            }
+
+            if (game.isCheckmate()) {
+                setGameStatus('Checkmate! Game Over.');
+                checkmateSound.play();
+            } else if (game.isDraw()) {
+                setGameStatus('Draw! Game Over.');
+            }
         } catch (e) {
-            console.error('Error making AI move:', e);
-            setError('Error making AI move: ' + e.message);
-            isUserTurnRef.current = true; // Allow user to continue
+            console.error('Error making AI move:', e, 'Current FEN:', game.fen(), 'Turn:', game.turn());
+            setError('Error making AI move: Invalid move: ' + JSON.stringify({ from: bestMove.substring(0, 2), to: bestMove.substring(2, 4) }));
         }
     };
 
-    // Reset the board
+    const onDrop = (sourceSquare, targetSquare) => {
+        if (game.turn() !== 'w') {
+            console.log('Not White\'s turn, rejecting move. Current turn:', game.turn());
+            return false;
+        }
+
+        try {
+            console.log('User attempting move:', { from: sourceSquare, to: targetSquare });
+            const move = game.move({
+                from: sourceSquare,
+                to: targetSquare,
+                promotion: 'q',
+            });
+
+            if (move === null) {
+                console.log('Invalid user move:', { from: sourceSquare, to: targetSquare });
+                return false;
+            }
+
+            console.log('User move applied:', move.san, 'Current FEN:', game.fen(), 'Turn:', game.turn());
+            setFen(game.fen());
+            setMoveHistory([...game.history({ verbose: true })]);
+
+            if (game.inCheck()) {
+                checkSound.play();
+            } else {
+                moveSound.play();
+            }
+
+            if (game.isCheckmate()) {
+                setGameStatus('Checkmate! Game Over.');
+                checkmateSound.play();
+                return true;
+            } else if (game.isDraw()) {
+                setGameStatus('Draw! Game Over.');
+                return true;
+            }
+
+            if (game.turn() === 'b' && stockfishRef.current) {
+                const fenToSend = game.fen();
+                console.log('Sending position to Stockfish:', fenToSend);
+                stockfishRef.current.postMessage(`position fen ${fenToSend}`);
+                stockfishRef.current.postMessage('go movetime 1000');
+            } else {
+                console.log('Not Black\'s turn after user move, or Stockfish not initialized. Current turn:', game.turn());
+            }
+
+            return true;
+        } catch (e) {
+            console.error('Error making user move:', e, 'Current FEN:', game.fen(), 'Turn:', game.turn());
+            return false;
+        }
+    };
+
     const resetBoard = () => {
-        const newGame = new Chess();
+        const newGame = new ChessModule.Chess();
         setGame(newGame);
         setFen(newGame.fen());
-        isUserTurnRef.current = true;
         setError('');
+        setMoveHistory([]);
+        setGameStatus('');
+        console.log('Board reset, FEN:', newGame.fen(), 'Turn:', newGame.turn());
         if (stockfishRef.current) {
             stockfishRef.current.postMessage('ucinewgame');
         }
     };
 
+    const particlesInit = async (main) => {
+        await loadFull(main);
+    };
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 py-20 px-4 sm:px-6 lg:px-8">
-            <motion.div
-                className="max-w-4xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-            >
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white text-center mb-8">
-                    AI Learning: Chess Mastery
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 text-center mb-12">
-                    Play against an AI bot and improve your chess skills!
-                </p>
+        <div className="flex min-h-screen bg-black text-white relative overflow-hidden">
+            <Particles
+                id="tsparticles"
+                init={particlesInit}
+                options={{
+                    background: {
+                        color: {
+                            value: "transparent",
+                        },
+                    },
+                    fpsLimit: 60,
+                    particles: {
+                        number: {
+                            value: 50,
+                            density: {
+                                enable: true,
+                                value_area: 800,
+                            },
+                        },
+                        color: {
+                            value: ["#00ffcc", "#ff00cc", "#00ccff"],
+                        },
+                        shape: {
+                            type: "circle",
+                        },
+                        opacity: {
+                            value: 0.5,
+                            random: true,
+                        },
+                        size: {
+                            value: 3,
+                            random: true,
+                        },
+                        move: {
+                            enable: true,
+                            speed: 2,
+                            direction: "none",
+                            random: true,
+                            straight: false,
+                            out_mode: "out",
+                        },
+                    },
+                    interactivity: {
+                        events: {
+                            onhover: {
+                                enable: true,
+                                mode: "repulse",
+                            },
+                        },
+                        modes: {
+                            repulse: {
+                                distance: 100,
+                                duration: 0.4,
+                            },
+                        },
+                    },
+                    detectRetina: true,
+                }}
+                className="absolute inset-0 z-0"
+            />
 
-                <div className="flex flex-col md:flex-row gap-8">
-                    {/* Chessboard */}
-                    <div className="flex-1">
-                        <Chessboard
-                            position={fen}
-                            onPieceDrop={onDrop}
-                            boardWidth={400}
-                        />
-                        <button
-                            onClick={resetBoard}
-                            className="mt-4 w-full px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all duration-300"
+            <ChessSidebar />
+
+            <div className="flex-1 ml-64 p-6 relative z-10">
+                <motion.div
+                    className="max-w-5xl mx-auto"
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1 }}
+                >
+                    <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-pink-500">
+                        AI Learning: Battle the Master
+                    </h1>
+                    <p className="text-lg text-gray-300 mb-12">
+                        Challenge the AI at Expert level (Elo 3190) and elevate your chess skills!
+                    </p>
+
+                    <div className="flex justify-center gap-4 items-start">
+                        <motion.div
+                            className={`relative ${game.turn() === 'b' ? 'animate-glow' : ''}`}
+                            whileHover={{ scale: 1.02 }}
+                            transition={{ duration: 0.3 }}
                         >
-                            Reset Board
-                        </button>
+                            <Chessboard
+                                position={fen}
+                                onPieceDrop={onDrop}
+                                boardWidth={450}
+                                showCapturedPieces={false} // Disable captured pieces display
+                                customBoardStyle={{
+                                    borderRadius: '10px',
+                                    boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
+                                }}
+                                customDarkSquareStyle={{ backgroundColor: '#2b2b2b' }}
+                                customLightSquareStyle={{ backgroundColor: '#e0e0e0' }}
+                            />
+                            <button
+                                onClick={resetBoard}
+                                className="mt-4 w-full px-6 py-2 rounded text-white bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-600 hover:to-pink-600 shadow-glow"
+                            >
+                                Reset Board
+                            </button>
+                        </motion.div>
+
+                        <div className="flex-1 max-w-xs">
+                            <h3 className="text-xl mb-2 text-cyan-400">Current Turn</h3>
+                            <div
+                                className={`p-2 rounded-lg text-white text-center mb-4 ${
+                                    game.turn() === 'w' ? 'bg-gray-200 text-black' : 'bg-gray-800'
+                                }`}
+                            >
+                                {game.turn() === 'w' ? 'White' : 'Black'}'s Turn
+                            </div>
+
+                            <h3 className="text-xl mb-2 text-cyan-400">Move History</h3>
+                            <div className="bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                                {moveHistory.length === 0 ? (
+                                    <p className="text-gray-400">No moves yet.</p>
+                                ) : (
+                                    <ol className="list-decimal list-inside text-gray-300">
+                                        {moveHistory.map((move, index) => {
+                                            const isLastMove = index === moveHistory.length - 1;
+                                            const displayMove = isLastMove && game.isCheckmate() ? `${move.san}#` : move.san;
+                                            return (
+                                                <li key={index} className="text-left">
+                                                    {Math.floor(index / 2) + 1}. {index % 2 === 0 ? 'White: ' : 'Black: '}{' '}
+                                                    {displayMove}
+                                                </li>
+                                            );
+                                        })}
+                                    </ol>
+                                )}
+                            </div>
+
+                            <div className="mt-4">
+                                <h3 className="text-xl mb-2 text-cyan-400">Game Status</h3>
+                                <p className="text-gray-300">
+                                    {gameStatus || (game.turn() === 'w' ? 'Your turn!' : 'AI is thinking...')}
+                                </p>
+                            </div>
+
+                            {error && (
+                                <div className="mt-4 p-4 bg-red-900 bg-opacity-80 text-red-300 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Controls */}
-                    <div className="flex-1 space-y-6">
-                        <p className="text-gray-600 dark:text-gray-300">
-                            {isUserTurnRef.current ? "Your turn!" : "AI is thinking..."}
-                        </p>
-                        {error && (
-                            <div className="p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg">
-                                {error}
-                            </div>
+                    <AnimatePresence>
+                        {gameStatus.includes('Checkmate') && (
+                            <motion.div
+                                className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <motion.div
+                                    className="bg-gradient-to-r from-cyan-500 to-pink-500 p-8 rounded-lg shadow-lg text-center"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 100 }}
+                                >
+                                    <h2 className="text-4xl font-bold text-white mb-4">Checkmate!</h2>
+                                    <p className="text-lg text-gray-200 mb-6">
+                                        {game.turn() === 'w' ? 'The AI has won!' : 'You have won!'}
+                                    </p>
+                                    <button
+                                        onClick={resetBoard}
+                                        className="px-6 py-3 bg-white text-cyan-600 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-300"
+                                    >
+                                        Play Again
+                                    </button>
+                                </motion.div>
+                            </motion.div>
                         )}
-                    </div>
-                </div>
-            </motion.div>
+                    </AnimatePresence>
+                </motion.div>
+            </div>
+
+            <style jsx>{`
+                .animate-glow {
+                    animation: glow 1.5s infinite alternate;
+                }
+
+                @keyframes glow {
+                    from {
+                        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3), 0 0 20px rgba(0, 255, 255, 0.2);
+                    }
+                    to {
+                        box-shadow: 0 0 20px rgba(0, 255, 255, 0.7), 0 0 40px rgba(0, 255, 255, 0.5);
+                    }
+                }
+
+                .shadow-glow {
+                    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+                }
+            `}</style>
         </div>
     );
 };
