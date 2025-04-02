@@ -4,8 +4,8 @@ import { Chessboard } from 'react-chessboard';
 import * as ChessModule from 'chess.js';
 import ChessSidebar from '../../../components/Chess/ChessSidebar';
 import { Howl } from 'howler';
-import Particles from 'react-tsparticles';
-import { loadFull } from 'tsparticles';
+import Particles from '@tsparticles/react';
+import { loadSlim } from '@tsparticles/slim';
 
 const AILearningView = () => {
     const [game, setGame] = useState(new ChessModule.Chess());
@@ -13,10 +13,10 @@ const AILearningView = () => {
     const [error, setError] = useState('');
     const [moveHistory, setMoveHistory] = useState([]);
     const [gameStatus, setGameStatus] = useState('');
-    const [whiteTime, setWhiteTime] = useState(0); // Timer for White in seconds
-    const [blackTime, setBlackTime] = useState(0); // Timer for Black in seconds
+    const [whiteTime, setWhiteTime] = useState(0);
+    const [blackTime, setBlackTime] = useState(0);
     const stockfishRef = useRef(null);
-    const timerRef = useRef(null); // Ref to store the timer interval
+    const timerRef = useRef(null);
 
     const moveSound = new Howl({ src: ['/sounds/move.mp3'] });
     const checkSound = new Howl({ src: ['/sounds/check.mp3'] });
@@ -24,29 +24,59 @@ const AILearningView = () => {
 
     // Timer logic
     useEffect(() => {
-        // Start the timer when the game begins
         const startTimer = () => {
             timerRef.current = setInterval(() => {
                 if (gameStatus.includes('Game Over')) {
-                    clearInterval(timerRef.current); // Stop the timer if the game is over
+                    clearInterval(timerRef.current);
                     return;
                 }
                 if (game.turn() === 'w') {
-                    setWhiteTime((prev) => prev + 1); // Increment White's timer
+                    setWhiteTime((prev) => prev + 1);
                 } else {
-                    setBlackTime((prev) => prev + 1); // Increment Black's timer
+                    setBlackTime((prev) => prev + 1);
                 }
-            }, 1000); // Update every second
+            }, 1000);
         };
 
         startTimer();
 
         return () => {
             if (timerRef.current) {
-                clearInterval(timerRef.current); // Clean up the timer on unmount
+                clearInterval(timerRef.current);
             }
         };
-    }, [game, gameStatus]); // Re-run when game or gameStatus changes
+    }, [game, gameStatus]);
+
+    // Save game to local storage when it ends
+    const saveGameToHistory = (result) => {
+        console.log('saveGameToHistory called with result:', result);
+
+        try {
+            const games = JSON.parse(localStorage.getItem('chessGames')) || [];
+            console.log('Current games in local storage before saving:', games);
+
+            const gameData = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                moveHistory: game.history({ verbose: true }),
+                whiteTime,
+                blackTime,
+                result,
+            };
+
+            console.log('New game data to save:', gameData);
+
+            games.push(gameData);
+            localStorage.setItem('chessGames', JSON.stringify(games));
+            console.log('Game saved to local storage. New local storage content:', localStorage.getItem('chessGames'));
+
+            // Dispatch a custom event to notify other components
+            window.dispatchEvent(new Event('gameSaved'));
+            console.log('Dispatched gameSaved event');
+        } catch (err) {
+            console.error('Error saving game to local storage:', err);
+        }
+    };
 
     useEffect(() => {
         const initStockfish = () => {
@@ -136,10 +166,13 @@ const AILearningView = () => {
             }
 
             if (game.isCheckmate()) {
-                setGameStatus('Checkmate! Game Over.');
+                const result = game.turn() === 'w' ? 'Black Wins' : 'White Wins';
+                setGameStatus(`Game Over - Result: ${result}`);
                 checkmateSound.play();
+                saveGameToHistory(result);
             } else if (game.isDraw()) {
-                setGameStatus('Draw! Game Over.');
+                setGameStatus('Game Over - Result: Draw');
+                saveGameToHistory('Draw');
             }
         } catch (e) {
             console.error('Error making AI move:', e, 'Current FEN:', game.fen(), 'Turn:', game.turn());
@@ -177,11 +210,14 @@ const AILearningView = () => {
             }
 
             if (game.isCheckmate()) {
-                setGameStatus('Checkmate! Game Over.');
+                const result = game.turn() === 'w' ? 'Black Wins' : 'White Wins';
+                setGameStatus(`Game Over - Result: ${result}`);
                 checkmateSound.play();
+                saveGameToHistory(result);
                 return true;
             } else if (game.isDraw()) {
-                setGameStatus('Draw! Game Over.');
+                setGameStatus('Game Over - Result: Draw');
+                saveGameToHistory('Draw');
                 return true;
             }
 
@@ -208,23 +244,22 @@ const AILearningView = () => {
         setError('');
         setMoveHistory([]);
         setGameStatus('');
-        setWhiteTime(0); // Reset White's timer
-        setBlackTime(0); // Reset Black's timer
+        setWhiteTime(0);
+        setBlackTime(0);
         console.log('Board reset, FEN:', newGame.fen(), 'Turn:', newGame.turn());
         if (stockfishRef.current) {
             stockfishRef.current.postMessage('ucinewgame');
         }
     };
 
-    // Format time as MM:SS
     const formatTime = (seconds) => {
         const minutes = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const particlesInit = async (main) => {
-        await loadFull(main);
+    const particlesInit = async (engine) => {
+        await loadSlim(engine);
     };
 
     return (
@@ -311,7 +346,6 @@ const AILearningView = () => {
                             whileHover={{ scale: 1.02 }}
                             transition={{ duration: 0.3 }}
                         >
-                            {/* Timer Display */}
                             <div className="flex justify-between mb-4">
                                 <div className="text-center">
                                     <h3 className="text-lg text-cyan-400">White</h3>
@@ -379,9 +413,19 @@ const AILearningView = () => {
 
                             <div className="mt-4">
                                 <h3 className="text-xl mb-2 text-cyan-400">Game Status</h3>
-                                <p className="text-gray-300">
-                                    {gameStatus || (game.turn() === 'w' ? 'Your turn!' : 'AI is thinking...')}
-                                </p>
+                                <div className="bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-lg">
+                                    <p className="text-gray-300">
+                                        {gameStatus || (game.turn() === 'w' ? 'Your turn!' : 'AI is thinking...')}
+                                    </p>
+                                    {gameStatus.includes('Game Over') && (
+                                        <div className="mt-2">
+                                            <p className="text-gray-300">
+                                                Time: White {formatTime(whiteTime)} | Black {formatTime(blackTime)}
+                                            </p>
+                                            <p className="text-gray-300">Moves: {moveHistory.length}</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {error && (
@@ -393,7 +437,7 @@ const AILearningView = () => {
                     </div>
 
                     <AnimatePresence>
-                        {gameStatus.includes('Checkmate') && (
+                        {gameStatus.includes('Game Over') && (
                             <motion.div
                                 className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50"
                                 initial={{ opacity: 0 }}
@@ -407,9 +451,16 @@ const AILearningView = () => {
                                     animate={{ scale: 1 }}
                                     transition={{ type: 'spring', stiffness: 100 }}
                                 >
-                                    <h2 className="text-4xl font-bold text-white mb-4">Checkmate!</h2>
-                                    <p className="text-lg text-gray-200 mb-6">
-                                        {game.turn() === 'w' ? 'The AI has won!' : 'You have won!'}
+                                    <h2 className="text-4xl font-bold text-white mb-4">
+                                        {gameStatus.includes('Checkmate')
+                                            ? 'Checkmate!'
+                                            : 'Game Over!'}
+                                    </h2>
+                                    <p className="text-lg text-gray-200 mb-2">
+                                        {gameStatus.includes('Result') ? gameStatus.split('Result: ')[1] : 'Draw'}
+                                    </p>
+                                    <p className="text-gray-200 mb-6">
+                                        Time: White {formatTime(whiteTime)} | Black {formatTime(blackTime)} | Moves: {moveHistory.length}
                                     </p>
                                     <button
                                         onClick={resetBoard}
