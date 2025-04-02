@@ -49,6 +49,7 @@ const ChessAnalyticsView = () => {
                 const worker = new Worker('/stockfish/stockfish-nnue-16-single.js', { type: 'module' });
                 worker.onmessage = (event) => {
                     const message = event.data;
+                    console.log('Stockfish message:', message); // Debug: Log all Stockfish messages
                     if (message.startsWith('info')) {
                         const match = message.match(/score (cp|mate) (-?\d+)/);
                         if (match) {
@@ -85,7 +86,11 @@ const ChessAnalyticsView = () => {
     }, []);
 
     const analyzeGame = async (game) => {
-        if (!stockfishRef.current) return;
+        if (!stockfishRef.current) {
+            console.error('Stockfish is not initialized.');
+            setAnalysis([]); // Clear analysis to avoid infinite "Analyzing game..." message
+            return;
+        }
 
         const chess = new ChessModule.Chess();
         const analysisResults = [];
@@ -98,28 +103,45 @@ const ChessAnalyticsView = () => {
             stockfishRef.current.evaluation = null;
             stockfishRef.current.bestMove = null;
 
+            // Send position to Stockfish
             stockfishRef.current.postMessage(`position fen ${chess.fen()}`);
             stockfishRef.current.postMessage('go movetime 1000');
 
-            // Wait for evaluation
-            await new Promise((resolve) => {
+            // Wait for evaluation with a timeout
+            const evaluationPromise = new Promise((resolve) => {
+                const startTime = Date.now();
                 const checkEvaluation = setInterval(() => {
                     if (stockfishRef.current.evaluation !== null && stockfishRef.current.bestMove !== null) {
                         clearInterval(checkEvaluation);
+                        resolve();
+                    } else if (Date.now() - startTime > 5000) { // Timeout after 5 seconds
+                        clearInterval(checkEvaluation);
+                        console.warn(`Timeout waiting for evaluation for move ${move.san}`);
+                        stockfishRef.current.evaluation = 0; // Default to 0 if no evaluation
+                        stockfishRef.current.bestMove = move.san; // Fallback to the played move
                         resolve();
                     }
                 }, 100);
             });
 
-            const currentEval = stockfishRef.current.evaluation;
-            const bestMove = stockfishRef.current.bestMove;
-            const bestMoveSan = chess.move({
-                from: bestMove.substring(0, 2),
-                to: bestMove.substring(2, 4),
-                promotion: bestMove.length > 4 ? bestMove[4] : undefined,
-            })?.san;
-            chess.undo(); // Undo the best move to restore the position
-            chess.move(move.san); // Reapply the actual move
+            await evaluationPromise;
+
+            const currentEval = stockfishRef.current.evaluation || 0;
+            const bestMove = stockfishRef.current.bestMove || move.san;
+
+            // Convert best move to SAN notation
+            let bestMoveSan = bestMove;
+            try {
+                const tempChess = new ChessModule.Chess(chess.fen());
+                const moveResult = tempChess.move({
+                    from: bestMove.substring(0, 2),
+                    to: bestMove.substring(2, 4),
+                    promotion: bestMove.length > 4 ? bestMove[4] : undefined,
+                });
+                bestMoveSan = moveResult ? moveResult.san : bestMove;
+            } catch (err) {
+                console.error(`Error converting best move ${bestMove} to SAN:`, err);
+            }
 
             let annotation = '';
             if (i > 0) {
@@ -130,11 +152,16 @@ const ChessAnalyticsView = () => {
                     annotation = `Mistake: You played ${move.san}, better was ${bestMoveSan}`;
                 }
             }
+
             analysisResults.push({ move: move.san, evaluation: currentEval, annotation });
             previousEval = currentEval;
+
+            // Update the analysis state incrementally to show progress
+            setAnalysis([...analysisResults]);
         }
 
-        setAnalysis(analysisResults);
+        // Final update to ensure the UI reflects the complete analysis
+        setAnalysis([...analysisResults]);
     };
 
     const handleReviewGame = (game) => {

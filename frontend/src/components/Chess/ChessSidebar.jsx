@@ -6,7 +6,7 @@ const ChessSidebar = () => {
 
   const chessOptions = [
     {
-      title: 'Chess Mentor (AI Learning)',
+      title: 'Play Against yourself !',
       link: '/chess/mentor'
     },
     {
