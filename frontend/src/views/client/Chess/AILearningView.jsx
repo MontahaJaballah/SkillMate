@@ -15,6 +15,7 @@ const AILearningView = () => {
     const [gameStatus, setGameStatus] = useState('');
     const [whiteTime, setWhiteTime] = useState(0);
     const [blackTime, setBlackTime] = useState(0);
+    const [suggestedMove, setSuggestedMove] = useState(''); // New state for suggested move
     const stockfishRef = useRef(null);
     const timerRef = useRef(null);
 
@@ -99,8 +100,20 @@ const AILearningView = () => {
                         if (bestMove && game.turn() === 'b') {
                             console.log('Calling makeAIMove with bestMove:', bestMove);
                             makeAIMove(bestMove);
-                        } else {
-                            console.log('makeAIMove not called. bestMove:', bestMove, 'game.turn():', game.turn());
+                        } else if (bestMove && game.turn() === 'w') {
+                            // Handle move suggestion for White
+                            console.log('Received move suggestion for White:', bestMove);
+                            const chess = new ChessModule.Chess(game.fen());
+                            const move = chess.move({
+                                from: bestMove.substring(0, 2),
+                                to: bestMove.substring(2, 4),
+                                promotion: bestMove.length > 4 ? bestMove[4] : undefined,
+                            });
+                            if (move) {
+                                setSuggestedMove(move.san);
+                            } else {
+                                setSuggestedMove('Invalid suggestion');
+                            }
                         }
                     } else if (message === 'readyok') {
                         console.log('Stockfish is ready');
@@ -230,10 +243,32 @@ const AILearningView = () => {
                 console.log('Not Black\'s turn after user move, or Stockfish not initialized. Current turn:', game.turn());
             }
 
+            // Clear suggested move after user makes a move
+            setSuggestedMove('');
             return true;
         } catch (e) {
             console.error('Error making user move:', e, 'Current FEN:', game.fen(), 'Turn:', game.turn());
             return false;
+        }
+    };
+
+    const getMoveSuggestion = () => {
+        if (game.turn() !== 'w') {
+            setSuggestedMove('Not your turn!');
+            return;
+        }
+        if (gameStatus.includes('Game Over')) {
+            setSuggestedMove('Game is over!');
+            return;
+        }
+        if (stockfishRef.current) {
+            setSuggestedMove('Thinking...');
+            const fenToSend = game.fen();
+            console.log('Requesting move suggestion for White. Sending position to Stockfish:', fenToSend);
+            stockfishRef.current.postMessage(`position fen ${fenToSend}`);
+            stockfishRef.current.postMessage('go movetime 1000');
+        } else {
+            setSuggestedMove('Stockfish not initialized');
         }
     };
 
@@ -246,6 +281,7 @@ const AILearningView = () => {
         setGameStatus('');
         setWhiteTime(0);
         setBlackTime(0);
+        setSuggestedMove(''); // Clear suggested move on reset
         console.log('Board reset, FEN:', newGame.fen(), 'Turn:', newGame.turn());
         if (stockfishRef.current) {
             stockfishRef.current.postMessage('ucinewgame');
@@ -373,12 +409,27 @@ const AILearningView = () => {
                                 customDarkSquareStyle={{ backgroundColor: '#2b2b2b' }}
                                 customLightSquareStyle={{ backgroundColor: '#e0e0e0' }}
                             />
-                            <button
-                                onClick={resetBoard}
-                                className="mt-4 w-full px-6 py-2 rounded text-white bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-600 hover:to-pink-600 shadow-glow"
-                            >
-                                Reset Board
-                            </button>
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={resetBoard}
+                                    className="flex-1 px-6 py-2 rounded text-white bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-600 hover:to-pink-600 shadow-glow"
+                                >
+                                    Reset Board
+                                </button>
+                                <button
+                                    onClick={getMoveSuggestion}
+                                    className="flex-1 px-6 py-2 rounded text-white bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 shadow-glow"
+                                >
+                                    Get Move Suggestion
+                                </button>
+                            </div>
+                            {suggestedMove && (
+                                <div className="mt-2 p-2 bg-gray-900 bg-opacity-80 rounded-lg text-center">
+                                    <p className="text-gray-300">
+                                        Suggested Move: <span className="text-cyan-400">{suggestedMove}</span>
+                                    </p>
+                                </div>
+                            )}
                         </motion.div>
 
                         <div className="flex-1 max-w-xs">
