@@ -24,6 +24,10 @@ const ChessSidebar = () => {
     {
       title: 'AI Learning',
       link: '/chess/ai-learning'
+    },
+    {
+      title: 'Puzzle Mode',
+      link: '/chess/puzzles' 
     }
   ];
 

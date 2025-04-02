@@ -8,6 +8,7 @@ import LiveChessBattlesView from './views/client/Chess/LiveChessBattlesView';
 import ChessChallengesView from './views/client/Chess/ChessChallengesView';
 import ChessAnalyticsView from './views/client/Chess/ChessAnalyticsView';
 import AILearningView from './views/client/Chess/AILearningView';
+import ChessPuzzleView from './views/client/Chess/ChessPuzzleView';
 // Layouts
 import Auth from "./layouts/Auth.jsx";
 import Client from "./layouts/Client.jsx";
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/chess/challenges" element={<ChessChallengesView />} />
           <Route path="/chess/analytics" element={<ChessAnalyticsView />} />
           <Route path="/chess/ai-learning" element={<AILearningView />} />
+          <Route path="/chess/puzzles" element={<ChessPuzzleView />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
