@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { pianoController } from '../../../../backend/controllers/pianoController';
 import './Piano.css';
 
 const notes = [
-    // Octave 0 (A0 à B0) - Notes graves extrêmes
+    // Octave 0 (A0 à B0)
     { name: 'A0', frequency: 27.50, type: 'white', key: 'z' },
     { name: 'A#0', frequency: 29.14, type: 'black', key: 's' },
     { name: 'B0', frequency: 30.87, type: 'white', key: 'x' },
@@ -36,7 +36,7 @@ const notes = [
     { name: 'A#2', frequency: 116.54, type: 'black', key: '7' },
     { name: 'B2', frequency: 123.47, type: 'white', key: 'u' },
 
-    // Octave 3 (C3 à B3) - Début du clavier principal
+    // Octave 3 (C3 à B3)
     { name: 'C3', frequency: 130.81, type: 'white', key: 'a' },
     { name: 'C#3', frequency: 138.59, type: 'black', key: 'w' },
     { name: 'D3', frequency: 146.83, type: 'white', key: 's' },
@@ -50,7 +50,7 @@ const notes = [
     { name: 'A#3', frequency: 233.08, type: 'black', key: 'u' },
     { name: 'B3', frequency: 246.94, type: 'white', key: 'j' },
 
-    // Octave 4 (C4 à B4) - "La 440Hz" ici (A4)
+    // Octave 4 (C4 à B4)
     { name: 'C4', frequency: 261.63, type: 'white', key: 'k' },
     { name: 'C#4', frequency: 277.18, type: 'black', key: 'o' },
     { name: 'D4', frequency: 293.66, type: 'white', key: 'l' },
@@ -60,7 +60,7 @@ const notes = [
     { name: 'F#4', frequency: 369.99, type: 'black', key: '[' },
     { name: 'G4', frequency: 392.00, type: 'white', key: 'Enter' },
     { name: 'G#4', frequency: 415.30, type: 'black', key: ']' },
-    { name: 'A4', frequency: 440.00, type: 'white', key: '' }, // La 440Hz
+    { name: 'A4', frequency: 440.00, type: 'white', key: '' },
     { name: 'A#4', frequency: 466.16, type: 'black', key: '' },
     { name: 'B4', frequency: 493.88, type: 'white', key: '' },
 
@@ -92,7 +92,7 @@ const notes = [
     { name: 'A#6', frequency: 1864.66, type: 'black', key: '' },
     { name: 'B6', frequency: 1975.53, type: 'white', key: '' },
 
-    // Octave 7 (C7 à C8) - Notes aiguës extrêmes
+    // Octave 7 (C7 à C8)
     { name: 'C7', frequency: 2093.00, type: 'white', key: '' },
     { name: 'C#7', frequency: 2217.46, type: 'black', key: '' },
     { name: 'D7', frequency: 2349.32, type: 'white', key: '' },
@@ -105,14 +105,17 @@ const notes = [
     { name: 'A7', frequency: 3520.00, type: 'white', key: '' },
     { name: 'A#7', frequency: 3729.31, type: 'black', key: '' },
     { name: 'B7', frequency: 3951.07, type: 'white', key: '' },
-    { name: 'C8', frequency: 4186.01, type: 'white', key: '' } // Note la plus aiguë
+    { name: 'C8', frequency: 4186.01, type: 'white', key: '' }
 ];
 
 const Piano = () => {
     const [activeNotes, setActiveNotes] = useState({});
+    const [sequenceNotes, setSequenceNotes] = useState({});
     const [currentSequence, setCurrentSequence] = useState([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const animationRef = useRef();
+    const timeoutRef = useRef();
 
     const handleKeyDown = (note) => {
         if (!activeNotes[note.name]) {
@@ -146,37 +149,77 @@ const Piano = () => {
         setIsAnalyzing(false);
     };
 
-    const playDetectedSequence = () => {
-        if (currentSequence.length === 0) return;
-
-        setIsPlaying(true);
-        pianoController.playSequence(currentSequence, (frequency) => {
-            const note = notes.find(n => Math.abs(n.frequency - frequency) < 1);
-            if (note) {
-                setActiveNotes(prev => ({ ...prev, [note.name]: true }));
-                setTimeout(() => {
-                    setActiveNotes(prev => {
-                        const newActive = { ...prev };
-                        delete newActive[note.name];
-                        return newActive;
-                    });
-                }, 500);
+    const detectActiveNotes = (frequencies) => {
+        const active = {};
+        frequencies.forEach(freq => {
+            const note = notes.reduce((closest, current) => {
+                const currentDiff = Math.abs(current.frequency - freq);
+                const closestDiff = Math.abs(closest.frequency - freq);
+                return currentDiff < closestDiff ? current : closest;
+            });
+            if (Math.abs(note.frequency - freq) < 15) {
+                active[note.name] = true;
             }
         });
+        return active;
+    };
 
-        const totalDuration = Math.max(...currentSequence.map(n => n.time + n.duration)) * 1000;
-        setTimeout(() => setIsPlaying(false), totalDuration);
+    const playDetectedSequence = async () => {
+        if (!currentSequence.length) return;
+
+        setIsPlaying(true);
+        setSequenceNotes({});
+
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+
+        const startTime = performance.now();
+        const noteEvents = currentSequence.map(note => ({
+            ...note,
+            start: note.time * 1000,
+            end: (note.time + note.duration) * 1000
+        }));
+
+        const audioPromise = new Promise(resolve => {
+            pianoController.playSequence(currentSequence, frequencies => {
+                setSequenceNotes(detectActiveNotes(frequencies));
+            }, resolve);
+        });
+
+        const visualLoop = () => {
+            const elapsed = performance.now() - startTime;
+            const active = {};
+
+            noteEvents.forEach(event => {
+                if (elapsed >= event.start && elapsed <= event.end) {
+                    active[event.name] = true;
+                }
+            });
+
+            setSequenceNotes(prev => ({ ...prev, ...active }));
+            animationRef.current = requestAnimationFrame(visualLoop);
+        };
+
+        animationRef.current = requestAnimationFrame(visualLoop);
+        await audioPromise;
+        cancelAnimationFrame(animationRef.current);
+        setIsPlaying(false);
     };
 
     const stopPlaying = () => {
         pianoController.stopSequence();
         setIsPlaying(false);
         setActiveNotes({});
+        setSequenceNotes({});
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
 
     useEffect(() => {
         return () => {
             pianoController.stopSequence();
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
     }, []);
 
@@ -224,7 +267,9 @@ const Piano = () => {
                 {notes.map((note) => (
                     <button
                         key={note.name}
-                        className={`piano-key ${note.type} ${activeNotes[note.name] ? 'active' : ''}`}
+                        className={`piano-key ${note.type} ${activeNotes[note.name] ? 'active' : ''
+                            } ${sequenceNotes[note.name] ? 'sequence-active' : ''
+                            }`}
                         onMouseDown={() => handleKeyDown(note)}
                         onMouseUp={() => handleKeyUp(note)}
                         onMouseLeave={() => handleKeyUp(note)}

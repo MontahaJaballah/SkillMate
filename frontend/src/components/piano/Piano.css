@@ -21,6 +21,10 @@
     user-select: none;
     position: relative;
     outline: none;
+    transition:
+        background 0.15s ease,
+        transform 0.1s ease,
+        box-shadow 0.2s ease;
 }
 
 .piano-key.white {
@@ -52,6 +56,59 @@
     background: linear-gradient(to bottom, #111 0%, #000 100%);
 }
 
+.piano-key.sequence-active {
+    animation: noteGlow 0.3s ease-out forwards;
+    transform: translateY(3px);
+    z-index: 100;
+}
+
+@keyframes noteGlow {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(255, 100, 0, 0.8);
+    }
+
+    100% {
+        box-shadow: 0 0 10px rgba(255, 140, 0, 0.6);
+    }
+}
+
+.piano-key.white.sequence-active {
+    background: linear-gradient(to bottom, #FFA500 0%, #FF8C00 100%) !important;
+}
+
+.piano-key.black.sequence-active {
+    background: linear-gradient(to bottom, #FF8C00 0%, #E67E00 100%) !important;
+    height: 155px;
+    margin-top: -5px;
+}
+
+.piano-key.sequence-active::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 2px;
+    animation: durationBar linear forwards;
+}
+
+@keyframes durationBar {
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
+}
+
 .note-label {
     position: absolute;
     bottom: 10px;
@@ -59,6 +116,11 @@
     text-align: center;
     font-size: 12px;
     color: #333;
+}
+
+.piano-key.white.sequence-active .note-label {
+    color: #000;
+    font-weight: bold;
 }
 
 .piano-display {

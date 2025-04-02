@@ -1,10 +1,12 @@
 export class PianoController {
     constructor() {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 8192;
+        this.frequencyData = new Float32Array(this.analyser.frequencyBinCount);
         this.oscillators = {};
         this.audioBuffer = null;
         this.playingSequence = false;
-        this.currentSequence = [];
     }
 
     async loadAudioFile(file) {
@@ -16,7 +18,7 @@ export class PianoController {
     analyzeAudio() {
         return new Promise((resolve) => {
             const analyser = this.audioContext.createAnalyser();
-            analyser.fftSize = 4096;
+            analyser.fftSize = 8192;
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Float32Array(bufferLength);
             const timeDomainArray = new Float32Array(bufferLength);
@@ -28,7 +30,7 @@ export class PianoController {
 
             const detectedNotes = [];
             let lastAnalysisTime = 0;
-            const analysisInterval = 0.1;
+            const analysisInterval = 0.05;
 
             const frequencyToNote = (freq) => {
                 if (freq < 27.5 || freq > 4186) return null;
@@ -38,31 +40,40 @@ export class PianoController {
                 const semitonesFromA4 = Math.round(12 * Math.log2(freq / A4));
 
                 const notes = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'];
+                const noteIndex = (semitonesFromA4 % 12 + 12) % 12;
                 const octave = 4 + Math.floor(semitonesFromA4 / 12);
-                const noteName = notes[(semitonesFromA4 % 12 + 12) % 12];
+
+                const cents = 1200 * Math.log2(freq / (A4 * Math.pow(semitoneRatio, semitonesFromA4)));
+                if (Math.abs(cents) > 50) return null;
 
                 return {
-                    name: `${noteName}${octave}`,
+                    name: `${notes[noteIndex]}${octave}`,
                     frequency: freq,
-                    cents: Math.round(1200 * Math.log2(freq / (A4 * Math.pow(semitoneRatio, semitonesFromA4))))
+                    cents: Math.round(cents)
                 };
             };
 
-            const getFundamentalFrequency = () => {
+            const getFundamentalFrequencies = () => {
                 analyser.getFloatFrequencyData(dataArray);
+                const peaks = [];
+                const threshold = -50;
+                const peakDistance = 5;
 
-                let maxVolume = -Infinity;
-                let peakIndex = 0;
-
-                for (let i = 0; i < bufferLength; i++) {
-                    if (dataArray[i] > maxVolume) {
-                        maxVolume = dataArray[i];
-                        peakIndex = i;
+                for (let i = 3; i < bufferLength - 3; i++) {
+                    if (dataArray[i] > threshold &&
+                        dataArray[i] > dataArray[i - 1] &&
+                        dataArray[i] > dataArray[i + 1]) {
+                        peaks.push({
+                            index: i,
+                            value: dataArray[i]
+                        });
                     }
                 }
 
-                if (maxVolume < -60) return null;
-                return peakIndex * this.audioContext.sampleRate / analyser.fftSize;
+                peaks.sort((a, b) => b.value - a.value);
+                return peaks.slice(0, 6).map(peak =>
+                    peak.index * this.audioContext.sampleRate / analyser.fftSize
+                );
             };
 
             const isSoundActive = () => {
@@ -74,7 +85,7 @@ export class PianoController {
                 return sum / bufferLength > 0.01;
             };
 
-            let currentNote = null;
+            let currentNotes = [];
             let noteStartTime = 0;
 
             const processAudio = () => {
@@ -82,46 +93,52 @@ export class PianoController {
 
                 if (now - lastAnalysisTime >= analysisInterval) {
                     lastAnalysisTime = now;
-
-                    const freq = getFundamentalFrequency();
                     const active = isSoundActive();
 
-                    if (freq && active) {
-                        const noteInfo = frequencyToNote(freq);
+                    if (active) {
+                        const frequencies = getFundamentalFrequencies();
+                        const newNotes = frequencies
+                            .map(frequencyToNote)
+                            .filter(Boolean);
 
-                        if (!currentNote || Math.abs(currentNote.frequency - freq) > 10) {
-                            if (currentNote) {
-                                detectedNotes.push({
-                                    ...currentNote,
-                                    time: noteStartTime,
-                                    duration: now - noteStartTime
+                        if (JSON.stringify(newNotes) !== JSON.stringify(currentNotes)) {
+                            if (currentNotes.length > 0) {
+                                currentNotes.forEach(note => {
+                                    detectedNotes.push({
+                                        ...note,
+                                        time: noteStartTime,
+                                        duration: now - noteStartTime
+                                    });
                                 });
                             }
-                            currentNote = noteInfo;
+                            currentNotes = newNotes;
                             noteStartTime = now;
                         }
-                    } else if (currentNote) {
-                        detectedNotes.push({
-                            ...currentNote,
-                            time: noteStartTime,
-                            duration: now - noteStartTime
+                    } else if (currentNotes.length > 0) {
+                        currentNotes.forEach(note => {
+                            detectedNotes.push({
+                                ...note,
+                                time: noteStartTime,
+                                duration: now - noteStartTime
+                            });
                         });
-                        currentNote = null;
+                        currentNotes = [];
                     }
                 }
 
                 if (now < source.buffer.duration) {
                     requestAnimationFrame(processAudio);
                 } else {
-                    if (currentNote) {
-                        detectedNotes.push({
-                            ...currentNote,
-                            time: noteStartTime,
-                            duration: now - noteStartTime
+                    if (currentNotes.length > 0) {
+                        currentNotes.forEach(note => {
+                            detectedNotes.push({
+                                ...note,
+                                time: noteStartTime,
+                                duration: now - noteStartTime
+                            });
                         });
                     }
                     source.disconnect();
-                    this.currentSequence = detectedNotes;
                     resolve(detectedNotes);
                 }
             };
@@ -135,14 +152,18 @@ export class PianoController {
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
 
-        oscillator.type = 'sine';
+        oscillator.type = 'triangle';
         oscillator.frequency.value = frequency;
         oscillator.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
 
+        const now = this.audioContext.currentTime;
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.3, now + 0.03);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
         oscillator.start();
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + duration);
-        oscillator.stop(this.audioContext.currentTime + duration);
+        oscillator.stop(now + duration + 0.1);
 
         const noteId = `${frequency}-${Date.now()}`;
         this.oscillators[noteId] = { oscillator, gainNode };
@@ -156,19 +177,48 @@ export class PianoController {
         }
     }
 
-    playSequence(notes, callback) {
+    playSequence(notes, onNotePlay, callback) {
         this.playingSequence = true;
-        notes.forEach((note, index) => {
+        const currentTime = this.audioContext.currentTime;
+
+        notes.forEach(note => {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.value = note.frequency;
+            gain.gain.value = 0;
+
+            gain.gain.setValueAtTime(0, currentTime + note.time);
+            gain.gain.linearRampToValueAtTime(0.3, currentTime + note.time + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, currentTime + note.time + note.duration);
+
+            osc.connect(gain);
+            gain.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+
+            osc.start(currentTime + note.time);
+            osc.stop(currentTime + note.time + note.duration + 0.1);
+
             setTimeout(() => {
-                if (!this.playingSequence) return;
-                this.playNote(note.frequency, note.duration);
-                callback?.(note.frequency);
+                if (this.playingSequence) {
+                    onNotePlay?.([note.frequency]);
+                }
             }, note.time * 1000);
         });
+
+        setTimeout(() => {
+            callback?.();
+            this.playingSequence = false;
+        }, Math.max(...notes.map(n => n.time + n.duration)) * 1000);
     }
 
     stopSequence() {
         this.playingSequence = false;
+        Object.values(this.oscillators).forEach(({ oscillator }) => {
+            oscillator.stop();
+        });
+        this.oscillators = {};
     }
 }
 
