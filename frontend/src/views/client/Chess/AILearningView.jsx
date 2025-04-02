@@ -13,11 +13,40 @@ const AILearningView = () => {
     const [error, setError] = useState('');
     const [moveHistory, setMoveHistory] = useState([]);
     const [gameStatus, setGameStatus] = useState('');
+    const [whiteTime, setWhiteTime] = useState(0); // Timer for White in seconds
+    const [blackTime, setBlackTime] = useState(0); // Timer for Black in seconds
     const stockfishRef = useRef(null);
+    const timerRef = useRef(null); // Ref to store the timer interval
 
     const moveSound = new Howl({ src: ['/sounds/move.mp3'] });
     const checkSound = new Howl({ src: ['/sounds/check.mp3'] });
     const checkmateSound = new Howl({ src: ['/sounds/checkmate.mp3'] });
+
+    // Timer logic
+    useEffect(() => {
+        // Start the timer when the game begins
+        const startTimer = () => {
+            timerRef.current = setInterval(() => {
+                if (gameStatus.includes('Game Over')) {
+                    clearInterval(timerRef.current); // Stop the timer if the game is over
+                    return;
+                }
+                if (game.turn() === 'w') {
+                    setWhiteTime((prev) => prev + 1); // Increment White's timer
+                } else {
+                    setBlackTime((prev) => prev + 1); // Increment Black's timer
+                }
+            }, 1000); // Update every second
+        };
+
+        startTimer();
+
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current); // Clean up the timer on unmount
+            }
+        };
+    }, [game, gameStatus]); // Re-run when game or gameStatus changes
 
     useEffect(() => {
         const initStockfish = () => {
@@ -179,10 +208,19 @@ const AILearningView = () => {
         setError('');
         setMoveHistory([]);
         setGameStatus('');
+        setWhiteTime(0); // Reset White's timer
+        setBlackTime(0); // Reset Black's timer
         console.log('Board reset, FEN:', newGame.fen(), 'Turn:', newGame.turn());
         if (stockfishRef.current) {
             stockfishRef.current.postMessage('ucinewgame');
         }
+    };
+
+    // Format time as MM:SS
+    const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     const particlesInit = async (main) => {
@@ -273,11 +311,27 @@ const AILearningView = () => {
                             whileHover={{ scale: 1.02 }}
                             transition={{ duration: 0.3 }}
                         >
+                            {/* Timer Display */}
+                            <div className="flex justify-between mb-4">
+                                <div className="text-center">
+                                    <h3 className="text-lg text-cyan-400">White</h3>
+                                    <div className={`text-2xl font-mono ${game.turn() === 'w' ? 'text-white animate-pulse' : 'text-gray-400'}`}>
+                                        {formatTime(whiteTime)}
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-lg text-pink-400">Black</h3>
+                                    <div className={`text-2xl font-mono ${game.turn() === 'b' ? 'text-white animate-pulse' : 'text-gray-400'}`}>
+                                        {formatTime(blackTime)}
+                                    </div>
+                                </div>
+                            </div>
+
                             <Chessboard
                                 position={fen}
                                 onPieceDrop={onDrop}
                                 boardWidth={450}
-                                showCapturedPieces={false} // Disable captured pieces display
+                                showCapturedPieces={false}
                                 customBoardStyle={{
                                     borderRadius: '10px',
                                     boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
@@ -386,6 +440,22 @@ const AILearningView = () => {
 
                 .shadow-glow {
                     box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+                }
+
+                .animate-pulse {
+                    animation: pulse 1.5s infinite;
+                }
+
+                @keyframes pulse {
+                    0% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.7;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
                 }
             `}</style>
         </div>
