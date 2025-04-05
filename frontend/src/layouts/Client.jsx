@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route } from "react-router-dom";
 
 // Components
 import Navbar from "../components/Navbars/Navbar.jsx";
@@ -17,11 +17,10 @@ import CodeCollaborationPage from "../views/client/CodeCollaborationPage/CodeCol
 import Courses from "../views/client/Courses/Courses.jsx";
 import CourseDetail from "../views/client/CourseDetail/CourseDetail";
 import CreateCourseView from "../views/client/CreateCourseView/CreateCourseView";
+import RecipeGenerator from "../components/RecipeGenerator";
+import CookingAssistant from "../components/CookingAssistant";
 
 export default function Client() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   return (
     <>
       <Navbar />
@@ -35,6 +34,8 @@ export default function Client() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="settings" element={<AccountSettings />} />
           <Route path="code-compiler" element={<CodeCompilerPage />} />
+          <Route path="recipes" element={<RecipeGenerator />} />
+        <Route path="cooking-assistant" element={<CookingAssistant />} />
           <Route path="code-collaboration" element={<CodeCollaborationPage />} />
           <Route path="code-collaboration/:roomId" element={<CodeCollaborationPage />} />
           <Route path="courses" element={<Courses />} />

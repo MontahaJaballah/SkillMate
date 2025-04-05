@@ -16,8 +16,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Parse JSON bodies
 app.use(express.json());
 
-// Your other routes will go here...
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

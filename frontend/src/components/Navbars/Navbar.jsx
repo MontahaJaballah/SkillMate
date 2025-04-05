@@ -1,9 +1,19 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Context } from "../AuthProvider/AuthProvider";
-import { useEffect, useState } from "react";
 import UserMenu from "../UserMenu/UserMenu";
 import { FaSun, FaMoon, FaSearch } from "react-icons/fa";
+
+const getTabLabel = (tab) => {
+  switch (tab) {
+    case "landing":
+      return "Home";
+    case "courses":
+      return "Courses";
+    default:
+      return tab;
+  }
+};
 
 const Navbar = () => {
   const { user, signOut } = useContext(Context);
@@ -64,7 +74,7 @@ const Navbar = () => {
                     : "hover:bg-white/10"
                     }`}
                 >
-                  {tab === "landing" ? "Home" : "Courses"}
+                  {getTabLabel(tab)}
                 </button>
               ))}
             </div>

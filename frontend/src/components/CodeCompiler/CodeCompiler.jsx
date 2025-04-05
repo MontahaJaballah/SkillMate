@@ -98,22 +98,180 @@ const CodeCompiler = ({ expectedOutput, testCases }) => {
     };
 
     saveState();
+  }, [activeTab, language, backendCode, frontendCode, output, error, score, feedback]);
 
-    // Add event listener for visibility change
+  // Anti-cheat system: Prevent copy, paste, cut, and right-click
+  useEffect(() => {
+    const disableCopyPaste = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const disableKeyboardShortcuts = (e) => {
+      if (
+        (e.ctrlKey && (e.key === 'c' || e.key === 'C' || 
+                      e.key === 'v' || e.key === 'V' || 
+                      e.key === 'x' || e.key === 'X'))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+    
+    // Disable context menu and copy/paste events
+    document.addEventListener("contextmenu", disableCopyPaste, true);
+    document.addEventListener("copy", disableCopyPaste, true);
+    document.addEventListener("paste", disableCopyPaste, true);
+    document.addEventListener("cut", disableCopyPaste, true);
+    
+    // Disable keyboard shortcuts
+    document.addEventListener("keydown", disableKeyboardShortcuts, true);
+
+    // Disable selection
+    document.addEventListener("selectstart", disableCopyPaste, true);
+    
+    // Clear clipboard on focus
+    window.addEventListener("focus", () => {
+      try {
+        navigator.clipboard.writeText('');
+      } catch (error) {
+        console.error('Failed to clear clipboard');
+      }
+    }, true);
+
+    return () => {
+      document.removeEventListener("contextmenu", disableCopyPaste, true);
+      document.removeEventListener("copy", disableCopyPaste, true);
+      document.removeEventListener("paste", disableCopyPaste, true);
+      document.removeEventListener("cut", disableCopyPaste, true);
+      document.removeEventListener("keydown", disableKeyboardShortcuts, true);
+      document.removeEventListener("selectstart", disableCopyPaste, true);
+      window.removeEventListener("focus", () => {}, true);
+    };
+  }, []);
+
+  // Fullscreen mode management
+  useEffect(() => {
+    let fullscreenExitCount = 0;
+
+    const enterFullscreen = async () => {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch (error) {
+        console.error('Failed to enter fullscreen:', error);
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        fullscreenExitCount++;
+        alert("⚠️ Fullscreen exited! Please stay in fullscreen mode.");
+        console.log(`Fullscreen exit detected - Count: ${fullscreenExitCount}`);
+        
+        // Save the fullscreen exit event to localStorage
+        const fullscreenExits = JSON.parse(localStorage.getItem('fullscreenExits') || '[]');
+        fullscreenExits.push({
+          timestamp: new Date().toISOString(),
+          count: fullscreenExitCount
+        });
+        localStorage.setItem('fullscreenExits', JSON.stringify(fullscreenExits));
+        
+        // Try to re-enter fullscreen
+        enterFullscreen();
+      }
+    };
+
+    // Enter fullscreen when component mounts
+    enterFullscreen();
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Add event listener for visibility change and tab switch detection
+  useEffect(() => {
+    let tabSwitchCount = 0;
+    
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (document.hidden) {
+        tabSwitchCount++;
+        alert("⚠️ Tab switch detected! Stay on this page.");
+        console.log(`Tab switch detected - Count: ${tabSwitchCount}`);
+        
+        // Save the tab switch event to localStorage for tracking
+        const tabSwitches = JSON.parse(localStorage.getItem('tabSwitches') || '[]');
+        tabSwitches.push({
+          timestamp: new Date().toISOString(),
+          count: tabSwitchCount
+        });
+        localStorage.setItem('tabSwitches', JSON.stringify(tabSwitches));
+      } else {
         // Reload state when tab becomes visible again
-        const newState = loadSavedState();
-        setOutput(newState.output);
-        setError(newState.error);
-        setScore(newState.score);
-        setFeedback(newState.feedback);
+        const savedState = loadSavedState();
+        setActiveTab(savedState.activeTab);
+        setLanguage(savedState.language);
+        setBackendCode(savedState.backendCode);
+        setFrontendCode(savedState.frontendCode);
+        setOutput(savedState.output);
+        setError(savedState.error);
+        setScore(savedState.score);
+        setFeedback(savedState.feedback);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [activeTab, language, backendCode, frontendCode, output, error, score, feedback]);
+  }, []);
+
+  // Idle time detection
+  useEffect(() => {
+    let idleTimer;
+    let idleCount = 0;
+    const IDLE_TIMEOUT = 10000; // 10 seconds in milliseconds
+
+    const logIdleEvent = () => {
+      idleCount++;
+      console.log(`Idle time detected - Count: ${idleCount}`);
+      
+      // Save the idle event to localStorage
+      const idleEvents = JSON.parse(localStorage.getItem('idleEvents') || '[]');
+      idleEvents.push({
+        timestamp: new Date().toISOString(),
+        count: idleCount,
+        duration: IDLE_TIMEOUT
+      });
+      localStorage.setItem('idleEvents', JSON.stringify(idleEvents));
+    };
+
+    const resetIdleTimer = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        alert("⚠️ You've been inactive for 5 minutes! Please stay engaged with the exam.");
+        logIdleEvent();
+      }, IDLE_TIMEOUT);
+    };
+
+    // Reset timer on various user activities
+    const activityEvents = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, resetIdleTimer);
+    });
+
+    // Initialize timer
+    resetIdleTimer();
+
+    return () => {
+      clearTimeout(idleTimer);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, resetIdleTimer);
+      });
+    };
+  }, []);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;

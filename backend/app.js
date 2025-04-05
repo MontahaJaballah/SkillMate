@@ -20,6 +20,8 @@ const statsRoutes = require('./routes/statsRoutes');
 const compilerRoutes = require('./routes/compilerRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const skillRoutes = require('./routes/skillRoutes');
+const recipeRoutes = require('./routes/recipeRoutes');
+const cohereChatRoute = require('./routes/cohereChat');
 const dbConfig = require('./config/db.json');
 
 require('./config/passport');
@@ -106,6 +108,8 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/compiler', compilerRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/chatrecipe', cohereChatRoute);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
