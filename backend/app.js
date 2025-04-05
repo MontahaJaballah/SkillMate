@@ -22,6 +22,7 @@ const courseRoutes = require('./routes/courseRoutes');
 const skillRoutes = require('./routes/skillRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const cohereChatRoute = require('./routes/cohereChat');
+const clarifaiRoutes = require('./routes/clarifaiRoutes');
 const dbConfig = require('./config/db.json');
 
 require('./config/passport');
@@ -43,8 +44,9 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 
 // Parse JSON and URL-encoded bodies (needed for form data)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase payload size limit for image uploads (50MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Add pre-flight OPTIONS handling
 app.use(express.static(path.join(__dirname, 'uploads')));
@@ -110,6 +112,7 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/chatrecipe', cohereChatRoute);
+app.use('/api/clarifai', clarifaiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
