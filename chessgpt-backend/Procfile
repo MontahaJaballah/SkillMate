@@ -1,1 +1,0 @@
-web: gunicorn chessgpt_api:app
