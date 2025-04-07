@@ -1,7 +1,24 @@
 import React, { useState } from "react";
 import CookingSession from "./CookingSession";
+import FoodImageRecognition from "./FoodImageRecognition";
 import useAxios from "../hooks/useAxios";
-import { TextField, Button, CircularProgress, Container, Grid, Card, CardContent, CardMedia, CardActions, Typography } from "@mui/material";
+import { 
+    TextField, 
+    Button, 
+    CircularProgress, 
+    Container, 
+    Grid, 
+    Card, 
+    CardContent, 
+    CardMedia, 
+    CardActions, 
+    Typography,
+    Box,
+    Tabs,
+    Tab,
+    Divider
+} from "@mui/material";
+import { Search as SearchIcon, Image as ImageIcon } from "@mui/icons-material";
 
 const RecipeGenerator = () => {
     const axios = useAxios();
@@ -10,6 +27,7 @@ const RecipeGenerator = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [selectedRecipe, setSelectedRecipe] = useState(null);
+    const [activeTab, setActiveTab] = useState(0);
 
     const handleFetchRecipes = async (e) => {
         e.preventDefault();
@@ -34,52 +52,77 @@ const RecipeGenerator = () => {
         setSelectedRecipe(recipe);
     };
 
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
+    };
+
+    const handleIngredientsDetected = (detectedIngredients) => {
+        setIngredients(detectedIngredients.join(', '));
+        setActiveTab(0); // Switch to text input tab after detection
+    };
+
     if (selectedRecipe) {
         return <CookingSession recipe={selectedRecipe} onBack={() => setSelectedRecipe(null)} />;
     }
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Typography variant="h4" component="h1" className="text-center mb-6">
+            <Typography variant="h4" component="h1" align="center" sx={{ mb: 4 }}>
                 AI Recipe Generator
             </Typography>
 
-            <form onSubmit={handleFetchRecipes} className="mb-8 max-w-xl mx-auto">
-                <div className="space-y-4">
-                    <TextField
-                        fullWidth
-                        label="Enter your ingredients"
-                        placeholder="e.g., chicken, rice, tomatoes"
-                        value={ingredients}
-                        onChange={(e) => setIngredients(e.target.value)}
-                        required
-                        helperText="Separate ingredients with commas"
-                        variant="outlined"
-                    />
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        disabled={loading}
-                        className="h-12"
-                    >
-                        {loading ? (
-                            <>
-                                <CircularProgress size={24} className="mr-2" />
-                                Generating Recipes...
-                            </>
-                        ) : (
-                            "Get Recipes"
-                        )}
-                    </Button>
-                </div>
-            </form>
+            <Tabs 
+                value={activeTab} 
+                onChange={handleTabChange} 
+                centered 
+                sx={{ mb: 3 }}
+            >
+                <Tab icon={<SearchIcon />} label="TEXT SEARCH" />
+                <Tab icon={<ImageIcon />} label="IMAGE RECOGNITION" />
+            </Tabs>
+
+            {activeTab === 0 ? (
+                <form onSubmit={handleFetchRecipes} style={{ marginBottom: '2rem' }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                        <TextField
+                            fullWidth
+                            label="Enter ingredients (comma separated)"
+                            variant="outlined"
+                            value={ingredients}
+                            onChange={(e) => setIngredients(e.target.value)}
+                            placeholder="e.g. chicken, rice, tomatoes"
+                            required
+                        />
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            disabled={loading}
+                            sx={{ minWidth: { xs: '100%', md: '180px' } }}
+                        >
+                            {loading ? <CircularProgress size={24} /> : "Find Recipes"}
+                        </Button>
+                    </Box>
+                </form>
+            ) : (
+                <FoodImageRecognition onIngredientsDetected={handleIngredientsDetected} />
+            )}
+            
+            {ingredients && (
+                <Box sx={{ mb: 3, mt: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                        Current ingredients: 
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {ingredients}
+                    </Typography>
+                </Box>
+            )}
 
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <Alert severity="error" sx={{ mb: 2 }}>
                     {error}
-                </div>
+                </Alert>
             )}
 
             <Grid container spacing={4}>
