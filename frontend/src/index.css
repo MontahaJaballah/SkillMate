@@ -1,68 +1,104 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  html {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
-  a:hover {
-    color: #747bff;
+
+  html.dark {
+    @apply bg-[#0f1729] text-white;
   }
-  button {
-    background-color: #f9f9f9;
+
+  html.light {
+    @apply bg-white text-black;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-main text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-main focus:ring-opacity-75;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-gray-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
+}
+
+/* Dark mode styles */
+.dark {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.dark input,
+.dark textarea {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+.dark .bg-white {
+    background-color: #1a1a1a !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+    color: #ffffff !important;
+}
+
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+    background-color: #2d2d2d !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+    border-color: #404040 !important;
+}
+
+/* Ensure dropdown text is visible in dark mode */
+.dark .dropdown-content {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+.dark .dropdown-item:hover {
+    background-color: #404040;
+}
+
+/* Dark mode transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Media queries */
+@media (min-width: 768px) {
+  .md\:left-0 {
+    left: 0;
+  }
+  .md\:block {
+    display: block;
+  }
+  .md\:hidden {
+    display: none;
+  }
+  .md\:flex {
+    display: flex;
   }
 }

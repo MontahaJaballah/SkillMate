@@ -1,0 +1,221 @@
+.rubik-learn {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+}
+
+.learn-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: #2c3e50;
+}
+
+.learn-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+
+.learn-header p {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.tutorial-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.steps-navigation {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-right: 1px solid #eee;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.step-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.step-item.active {
+    background: #3498db;
+    color: white;
+}
+
+.step-number {
+    width: 30px;
+    height: 30px;
+    background: #e1e8ed;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+
+.step-item.active .step-number {
+    background: white;
+    color: #3498db;
+}
+
+.step-content h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.step-content p {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.tutorial-content {
+    padding: 2rem;
+}
+
+.content-section {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.content-section h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    margin-bottom: 2rem;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+}
+
+.steps-list {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.steps-list h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.steps-list ol {
+    padding-left: 1.5rem;
+}
+
+.steps-list li {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: #444;
+}
+
+.tips-section {
+    background: #fff3cd;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #ffc107;
+}
+
+.tips-section h3 {
+    color: #856404;
+    margin-bottom: 0.5rem;
+}
+
+.tips-section p {
+    color: #666;
+    margin: 0;
+}
+
+.navigation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.navigation-buttons button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.navigation-buttons button:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.navigation-buttons button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .tutorial-container {
+        grid-template-columns: 1fr;
+    }
+
+    .steps-navigation {
+        border-right: none;
+        border-bottom: 1px solid #eee;
+    }
+}
+
+@media (max-width: 768px) {
+    .rubik-learn {
+        padding: 1rem;
+    }
+
+    .learn-header h1 {
+        font-size: 2rem;
+    }
+
+    .step-item {
+        padding: 0.8rem;
+    }
+
+    .tutorial-content {
+        padding: 1rem;
+    }
+}

@@ -1,0 +1,35 @@
+Stash your changes (this will temporarily save them):
+
+git stash
+
+Pull the latest changes:
+
+git pull origin develop
+
+Reapply your stashed changes:
+
+git stash pop
+--------------------------
+Then You merge 
+--------------------------
+git push origin develop 
+
+----In case we want to revert commit ----------------
+git revert <commit-hash>
+git push origin your-branch
+--------------------------
+delete : http://localhost:5000/api/users/67b0867b3851e3f40c0d8191
+
+test login
+add: http://localhost:5000/api/users/adduser
+{
+  "username": "testUser",
+  "email": "test@example.com",
+  "password": "securePassword123"
+}
+http://localhost:5000/api/users/login
+Login User POST 
+{
+  "email": "test@example.com",
+  "password": "securePassword123"
+}

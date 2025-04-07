@@ -1,0 +1,138 @@
+.rubik-leaderboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.leaderboard-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.leaderboard-header h2 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.timeframe-selector {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.timeframe-button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.timeframe-button.active {
+    background-color: #3498db;
+    color: white;
+}
+
+.leaderboard-table {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-header,
+.table-row {
+    display: grid;
+    grid-template-columns: 0.5fr 2fr 1fr 1fr 1.5fr;
+    padding: 1rem;
+    align-items: center;
+}
+
+.table-header {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.table-row {
+    border-top: 1px solid #eee;
+    transition: background-color 0.3s ease;
+}
+
+.table-row:hover {
+    background-color: #f8f9fa;
+}
+
+.rank {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+}
+
+.trophy {
+    font-size: 1.2rem;
+}
+
+.username {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.best-time {
+    color: #e74c3c;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.games {
+    color: #7f8c8d;
+}
+
+.last-played {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.error-message {
+    text-align: center;
+    padding: 2rem;
+    color: #e74c3c;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeframe-selector {
+        flex-wrap: wrap;
+    }
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 0.5fr 1.5fr 1fr 1fr;
+    }
+
+    .last-played {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-header,
+    .table-row {
+        grid-template-columns: 0.5fr 1.5fr 1fr;
+    }
+
+    .games {
+        display: none;
+    }
+}
