@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Users, ChefHat, Code } from 'lucide-react';
 
 const categories = [
     { name: 'All', count: 0 }, // This will be updated dynamically
@@ -7,6 +9,7 @@ const categories = [
     { name: 'Chess Mastery', count: 0 },
     { name: 'Fitness and Training', count: 0 },
     { name: 'Rubik\'s Cube', count: 0 },
+    { name: 'Kitchen', count: 0 },
 ];
 
 const Sidebar = ({
@@ -18,6 +21,7 @@ const Sidebar = ({
     setSelectedSkillLevel,
     courses = []
 }) => {
+    const navigate = useNavigate();
     const handleCategoryChange = (category) => {
         if (category === 'All') {
             setSelectedCategories([]);
@@ -73,6 +77,31 @@ const Sidebar = ({
                             <span className="text-sm text-gray-500 dark:text-gray-400">({category.count})</span>
                         </div>
                     ))}
+                </div>
+                
+                {/* Special buttons section */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                    {/* Code with a Friend button - only shows when IT and Programming is selected */}
+                    {selectedCategories.includes('IT and Programming') && (
+                        <button
+                            onClick={() => navigate('/client/code-collaboration')}
+                            className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                            <Code size={18} />
+                            Code with a Friend
+                        </button>
+                    )}
+                    
+                    {/* Generate a Recipe button - only shows when Kitchen is selected */}
+                    {selectedCategories.includes('Kitchen') && (
+                        <button
+                            onClick={() => navigate('/client/recipes')}
+                            className="w-full py-3 px-4 bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                            <ChefHat size={18} />
+                            Generate a Recipe
+                        </button>
+                    )}
                 </div>
             </div>
 
