@@ -1,13 +1,70 @@
-import React from 'react';
-import { Play, Clock, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Clock, Star, CheckCircle } from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import useAuth from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const CourseInfo = ({ course }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrolled, setEnrolled] = useState(course?.students?.includes(user?._id));
+  
   if (!course) return null;
 
   const hasDiscount = course.originalPrice && course.originalPrice > course.price;
   const discountPercentage = hasDiscount
     ? Math.floor(((course.originalPrice - course.price) / course.originalPrice) * 100)
     : 0;
+    
+  const handleEnroll = async () => {
+    if (!user) {
+      toast.error('Please log in to enroll in this course');
+      return;
+    }
+    
+    if (enrolled) {
+      toast.success('You are already enrolled in this course');
+      return;
+    }
+    
+    try {
+      setEnrolling(true);
+      const response = await axios.post(`/courses/enroll/${course._id}`, {
+        userId: user._id
+      });
+      
+      setEnrolled(true);
+      toast.success(response.data.message || 'Successfully enrolled in course');
+      
+      // Log enrolled users to the terminal
+      console.log('User enrolled in course:', {
+        courseId: course._id,
+        courseTitle: course.title,
+        userId: user._id,
+        userName: user.firstName + ' ' + user.lastName,
+        enrollmentDate: new Date().toISOString()
+      });
+      
+      // Fetch and log all enrolled users
+      try {
+        const courseResponse = await axios.get(`/courses/${course._id}`);
+        const enrolledUsers = courseResponse.data.students || [];
+        console.log(`All users enrolled in course "${course.title}" (${course._id}):`, enrolledUsers);
+        
+        // Don't auto-navigate after enrollment, let the user click Continue Learning
+      } catch (error) {
+        console.error('Error fetching enrolled users:', error);
+      }
+      
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+      toast.error(error.response?.data?.message || 'Failed to enroll in course');
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -49,12 +106,42 @@ const CourseInfo = ({ course }) => {
             </p>
           )}
           <div className="space-y-3">
-            <button className="w-full bg-violet-600 text-white py-2 rounded-lg hover:bg-violet-700 dark:hover:bg-violet-500 transition-colors">
-              Buy Now
-            </button>
-            <button className="w-full border border-violet-600 text-violet-600 py-2 rounded-lg hover:bg-violet-50 dark:border-violet-400 dark:text-violet-400 dark:hover:bg-violet-900 transition-colors">
+            {!enrolled ? (
+              <button 
+                onClick={handleEnroll}
+                disabled={enrolling}
+                className="w-full py-2 rounded-lg transition-colors flex items-center justify-center bg-violet-600 hover:bg-violet-700 dark:hover:bg-violet-500 text-white"
+              >
+                {enrolling ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enrolling...
+                  </>
+                ) : (
+                  'Enroll Now'
+                )}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center py-1 text-green-600 dark:text-green-400">
+                  <CheckCircle className="mr-2 h-5 w-5" />
+                  <span>Enrolled</span>
+                </div>
+                <button 
+                  onClick={() => navigate(`/course-player/${course._id}`)}
+                  className="w-full py-2 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white flex items-center justify-center"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Continue Learning
+                </button>
+              </div>
+            )}
+            {/* <button className="w-full border border-violet-600 text-violet-600 py-2 rounded-lg hover:bg-violet-50 dark:border-violet-400 dark:text-violet-400 dark:hover:bg-violet-900 transition-colors">
               Add to Cart
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

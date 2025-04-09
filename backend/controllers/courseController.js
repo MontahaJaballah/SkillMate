@@ -258,9 +258,121 @@ const getCourseById = async (req, res) => {
         res.status(500).json({ message: 'Error fetching course', error: error.message });
     }
 };
+// Enroll a user in a course
+const enrollInCourse = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const { userId } = req.body;
+
+        // Validate required fields
+        if (!courseId || !userId) {
+            return res.status(400).json({
+                message: 'Missing required fields',
+                required: ['courseId', 'userId']
+            });
+        }
+
+        // Validate that the course exists
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Check if user is already enrolled
+        if (course.students.includes(userId)) {
+            return res.status(400).json({ message: 'User is already enrolled in this course' });
+        }
+
+        // Add user to course students array
+        course.students.push(userId);
+        await course.save();
+
+        res.status(200).json({
+            message: 'Successfully enrolled in course',
+            course: {
+                _id: course._id,
+                title: course.title,
+                thumbnail: course.thumbnail,
+                enrollmentDate: new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Error enrolling in course:', error);
+        res.status(500).json({
+            message: 'Error enrolling in course',
+            error: error.message
+        });
+    }
+};
+
+// Get all courses a user is enrolled in
+const getEnrolledCourses = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find all courses where the user is in the students array
+        const enrolledCourses = await Course.find({ students: userId })
+            .populate({
+                path: 'skill',
+                select: 'name categorie proficiency'
+            })
+            .populate({
+                path: 'teacher_id',
+                select: 'firstName lastName email avatar bio phoneNumber role rating reviews courses totalStudents'
+            })
+            .select('title description thumbnail createdate price teacher_id duration level language type sections');
+
+        // Format courses with additional information
+        const formattedCourses = enrolledCourses.map(course => {
+            const courseData = course.toObject();
+            const instructor = course.teacher_id;
+
+            // Format instructor data
+            if (instructor) {
+                courseData.teacher_id = {
+                    name: instructor.firstName && instructor.lastName
+                        ? `${instructor.firstName} ${instructor.lastName}`
+                        : 'Unknown Instructor',
+                    email: instructor.email || '',
+                    bio: instructor.bio || 'No bio available',
+                    avatar: instructor.avatar || 'https://ui-avatars.com/api/?background=random',
+                    rating: instructor.rating || 0,
+                    reviews: instructor.reviews || 0,
+                    courses: instructor.courses || [],
+                    totalStudents: instructor.totalStudents || 0,
+                    role: instructor.role || 'teacher'
+                };
+            }
+
+            // Calculate lecture count and total duration
+            courseData.lectureCount = course.sections?.reduce((total, section) =>
+                total + (section.content?.length || 0), 0
+            ) || 0;
+            
+            const totalDuration = course.sections?.reduce((total, section) => {
+                const sectionDuration = section.content?.reduce((acc, content) => acc + (content.duration || 0), 0) || 0;
+                return total + sectionDuration;
+            }, 0) || 0;
+            
+            courseData.duration = totalDuration;
+            
+            return courseData;
+        });
+
+        res.status(200).json(formattedCourses);
+    } catch (error) {
+        console.error('Error fetching enrolled courses:', error);
+        res.status(500).json({
+            message: 'Error fetching enrolled courses',
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     getCourses,
     createCourse,
-    getCourseById
+    getCourseById,
+    enrollInCourse,
+    getEnrolledCourses
 };

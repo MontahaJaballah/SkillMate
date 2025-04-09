@@ -9,6 +9,7 @@ import useAuth from "./hooks/useAuth";
 import CourseDetail from "./views/client/CourseDetail/CourseDetail";
 import Courses from "./views/client/Courses/Courses"; // Import Courses
 import CreateCourseView from "./views/client/CreateCourseView/CreateCourseView"; // Import CreateCourseView
+import CoursePlayer from "./views/client/CoursePlayer"; // Import CoursePlayer
 
 // Layouts
 import Auth from "./layouts/Auth.jsx";
@@ -62,7 +63,6 @@ const RootRedirect = () => {
 
 // Main App component
 const AppContent = () => {
-  const { user } = useAuth();
 
   return (
     <Routes>
@@ -86,6 +86,17 @@ const AppContent = () => {
         <Route path="courses/:id" element={<CourseDetail />} />
         <Route path="create-course" element={<CreateCourseView />} />
       </Route>
+      
+      {/* Course Player Route */}
+      <Route
+        path="/course-player/:courseId"
+        element={
+          <PrivateRoute
+            component={CoursePlayer}
+            roles={["user", "student", "teacher"]}
+          />
+        }
+      />
 
       {/* Protected admin routes */}
       <Route
