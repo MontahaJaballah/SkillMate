@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, Layout, Heart } from 'lucide-react';
+import { Search, Clock, Layout, Heart, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import useAuth from '../../../hooks/useAuth';
 import CourseCard from '../../../components/AddCourse/CourseCard';
 import Sidebar from '../../../components/AddCourse/Sidebar';
 
 function App() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,6 +89,15 @@ function App() {
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="lg:w-3/4">
                 <div className="flex flex-wrap gap-4 mb-8">
+                  {user?.role === 'teacher' && (
+                    <button
+                      onClick={() => navigate('/client/create-course')}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                    >
+                      <Plus size={20} />
+                      Add Course
+                    </button>
+                  )}
                   <div className="flex-1">
                     <div className="relative">
                       <input
@@ -120,7 +133,7 @@ function App() {
                       description={course.description}
                       rating={course.averageRating || 0}
                       duration={`${course.duration} mins`}
-                      lectures={course.lectures || 0}
+                      lectures={course.lectureCount || 0}
                       isFavorite={course.isFavorite || false}
                       _id={course._id}
                       {...course}

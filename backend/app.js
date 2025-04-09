@@ -6,6 +6,7 @@ const passport = require('passport');
 require('dotenv').config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const fs = require('fs'); // Added fs module
 
 const jwt = require('jsonwebtoken');
 const http = require('http');
@@ -20,6 +21,7 @@ const statsRoutes = require('./routes/statsRoutes');
 const compilerRoutes = require('./routes/compilerRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const skillRoutes = require('./routes/skillRoutes');
+const uploadRoutes = require('./routes/uploadRoutes'); // Added upload routes
 const recipeRoutes = require('./routes/recipeRoutes');
 const cohereChatRoute = require('./routes/cohereChat');
 const clarifaiRoutes = require('./routes/clarifaiRoutes');
@@ -31,11 +33,13 @@ const app = express();
 
 // Middleware
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept', 'Origin', 'X-File-Name'],
+  exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
@@ -43,13 +47,25 @@ app.use(cors(corsOptions));
 // Parse cookies before session middleware
 app.use(cookieParser());
 
+// Parse JSON and URL-encoded bodies
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 // Parse JSON and URL-encoded bodies (needed for form data)
 // Increase payload size limit for image uploads (50MB)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Add pre-flight OPTIONS handling
-app.use(express.static(path.join(__dirname, 'uploads')));
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// File upload route (before auth middleware)
+app.use('/api/upload', uploadRoutes);
 
 // Session middleware with secure configuration
 app.use(session({
@@ -64,7 +80,8 @@ app.use(session({
     httpOnly: true,
     sameSite: 'lax',
     path: '/'
-  }
+  },
+  store: new session.MemoryStore() // Add explicit memory store
 }));
 
 // Initialize Passport and restore authentication state from session
@@ -89,16 +106,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Set up Dialogflow credentials path
-const dialogflowCredentialsPath = path.resolve(__dirname, 'config', 'skillmateBot.json');
-
-// Always set the environment variable to use our skillmateBot.json
-process.env.GOOGLE_APPLICATION_CREDENTIALS = dialogflowCredentialsPath;
-console.log('Setting Dialogflow credentials path:', dialogflowCredentialsPath);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -190,10 +197,10 @@ io.on('connection', (socket) => {
       // Load previous messages if storage is enabled
       if (process.env.STORE_CODE_ROOM_MESSAGES === 'true') {
         const Message = require('./models/Message');
-        const messages = await Message.find({ 
-          'metadata.roomId': roomId 
+        const messages = await Message.find({
+          'metadata.roomId': roomId
         }).sort({ createdAt: 1 }).limit(100);
-        
+
         // Send previous messages to the joining user
         socket.emit('previousMessages', messages);
       }
@@ -213,11 +220,11 @@ io.on('connection', (socket) => {
       const room = codeRooms.get(roomId);
       room.code = { code, language };
     }
-    
+
     // Broadcast code changes to all users in the room except sender
     socket.to(roomId).emit('codeUpdate', { code, language });
   });
-  
+
   socket.on('cursorMove', ({ roomId, username, position }) => {
     // Broadcast cursor position to all users in the room except sender
     socket.to(roomId).emit('cursorUpdate', { username, position });
@@ -227,28 +234,28 @@ io.on('connection', (socket) => {
     // Broadcast typing status to all users in the room except sender
     socket.to(roomId).emit('userTyping', { username, isTyping });
   });
-  
+
   // Handle chat messages in code rooms
   socket.on('sendCodeRoomMessage', ({ roomId, sender, message, isCodeSnippet = false }) => {
     // Create a timestamp for the message
     const timestamp = new Date().toISOString();
-    
+
     // Broadcast the message to all users in the room (including sender)
-    io.to(roomId).emit('codeRoomMessage', { 
-      sender, 
-      message, 
-      timestamp, 
-      isCodeSnippet 
+    io.to(roomId).emit('codeRoomMessage', {
+      sender,
+      message,
+      timestamp,
+      isCodeSnippet
     });
-    
+
     // If we want to store messages in the database for persistence
     // We can use the existing Message model
     if (process.env.STORE_CODE_ROOM_MESSAGES === 'true') {
       try {
         const Message = require('./models/Message');
-        const newMessage = new Message({ 
-          sender, 
-          receiver: `code-room-${roomId}`, 
+        const newMessage = new Message({
+          sender,
+          receiver: `code-room-${roomId}`,
           message,
           metadata: { isCodeSnippet, roomId }
         });
@@ -258,24 +265,24 @@ io.on('connection', (socket) => {
       }
     }
   });
-  
+
   socket.on('leaveCodeRoom', ({ roomId }) => {
     if (codeRooms.has(roomId)) {
       const room = codeRooms.get(roomId);
-      
+
       // Remove user from the room
       const username = room.users.get(socket.id);
       room.users.delete(socket.id);
-      
+
       // Notify remaining users
       io.to(roomId).emit('codeRoomUserList', Array.from(room.users.values()));
-      
+
       // Clean up empty rooms
       if (room.users.size === 0) {
         codeRooms.delete(roomId);
         console.log(`Code room ${roomId} deleted (empty)`);
       }
-      
+
       socket.leave(roomId);
       console.log(`User ${username} left code room ${roomId}`);
     }
@@ -289,26 +296,26 @@ io.on('connection', (socket) => {
         break;
       }
     }
-    
+
     // Remove user from any code rooms they were in
     for (const [roomId, room] of codeRooms.entries()) {
       if (room.users.has(socket.id)) {
         const username = room.users.get(socket.id);
         room.users.delete(socket.id);
-        
+
         // Notify remaining users
         io.to(roomId).emit('codeRoomUserList', Array.from(room.users.values()));
-        
+
         // Clean up empty rooms
         if (room.users.size === 0) {
           codeRooms.delete(roomId);
           console.log(`Code room ${roomId} deleted (empty)`);
         }
-        
+
         console.log(`User ${username} disconnected from code room ${roomId}`);
       }
     }
-    
+
     console.log('User disconnected');
   });
 });

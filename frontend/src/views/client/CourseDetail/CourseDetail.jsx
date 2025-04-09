@@ -14,12 +14,24 @@ const CourseDetail = () => {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
+        console.log('Fetching course with ID:', id);
         const response = await fetch(`http://localhost:5000/api/courses/${id}`);
         const data = await response.json();
 
         if (!response.ok) {
           throw new Error(data.message || 'Failed to fetch course');
         }
+
+        console.log('Received course data:', {
+          ...data,
+          skill: {
+            id: data.skill?._id,
+            name: data.skill?.name,
+            categorie: data.skill?.categorie,
+            proficiency: data.skill?.proficiency
+          },
+          instructor: data.teacher_id
+        });
 
         setCourse(data);
       } catch (err) {
@@ -79,7 +91,7 @@ const CourseDetail = () => {
         </div>
 
         <div className="container mx-auto px-4">
-          <TopCourses title="Related Courses" />
+          <TopCourses currentCourse={course} />
         </div>
       </main>
     </div>

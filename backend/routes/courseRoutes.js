@@ -1,5 +1,5 @@
 const express = require('express');
-const { getCourses, addCourse, createItCourse, getCourseById } = require('../controllers/courseController');
+const { getCourses, createCourse, getCourseById } = require('../controllers/courseController');
 
 const router = express.Router();
 
@@ -9,8 +9,7 @@ router.get('/browsecourses', getCourses);
 // Get a single course
 router.get('/:id', getCourseById);
 
-// Add new courses
-router.post('/addcourse', addCourse);
-router.post('/createItCourse', createItCourse);
+// Create a new course
+router.post('/create', createCourse);
 
 module.exports = router;

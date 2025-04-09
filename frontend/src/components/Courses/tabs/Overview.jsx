@@ -4,6 +4,18 @@ import { Check } from 'lucide-react';
 const Overview = ({ course }) => {
   if (!course) return null;
 
+  const formatDuration = (duration) => {
+    if (!duration) return '0 minutes';
+    if (typeof duration === 'object') {
+      const { hours, minutes } = duration;
+      if (hours && minutes) return `${hours} hours ${minutes} minutes`;
+      if (hours) return `${hours} hours`;
+      if (minutes) return `${minutes} minutes`;
+      return '0 minutes';
+    }
+    return `${duration} minutes`; // Handle legacy format
+  };
+
   return (
     <div className="container mx-auto px-4">
       <div className="space-y-8">
@@ -35,24 +47,6 @@ const Overview = ({ course }) => {
                 <span className="text-gray-600">{requirement}</span>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div>
-          <h5 className="text-xl font-semibold mb-4">About the course</h5>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Duration:</span>
-              <span className="text-gray-600">{course.duration} minutes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Price:</span>
-              <span className="text-gray-600">${course.price}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Created by:</span>
-              <span className="text-gray-600">{course.teacher_id?.name}</span>
-            </div>
           </div>
         </div>
       </div>

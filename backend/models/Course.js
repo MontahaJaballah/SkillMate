@@ -19,11 +19,30 @@ const sectionSchema = new mongoose.Schema({
         },
         duration: {
             type: Number,
-            min: 0
+            min: 0,
+            required: true
         },
         resources: [String],
         description: String,
-        videoUrl: String,
+        videoUrl: {
+            type: String,
+            required: function () {
+                return this.type === 'video';
+            }
+        },
+        videoType: {
+            type: String,
+            enum: ['youtube', 'upload'],
+            default: 'youtube',
+            validate: {
+                validator: function (v) {
+                    // If type is video, videoType must be set
+                    // For other types, videoType is optional
+                    return this.type !== 'video' || (v && ['youtube', 'upload'].includes(v));
+                },
+                message: 'videoType is required for video content'
+            }
+        },
         questions: [{
             question: String,
             options: [String],
@@ -43,6 +62,10 @@ const courseSchema = new mongoose.Schema({
         required: [true, 'Description is required'],
         trim: true
     },
+    shortDescription: {
+        type: String,
+        trim: true
+    },
     type: {
         type: String,
         enum: ['regular', 'IT'],
@@ -50,7 +73,12 @@ const courseSchema = new mongoose.Schema({
     },
     thumbnail: {
         type: String,
-        required: [true, 'Course thumbnail is required']
+        required: [true, 'Thumbnail is required']
+    },
+    teacher_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
     skill: {
         type: mongoose.Schema.Types.ObjectId,
@@ -59,11 +87,6 @@ const courseSchema = new mongoose.Schema({
             return this.type === 'regular';
         }
     },
-    teacher_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
     students: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -71,13 +94,26 @@ const courseSchema = new mongoose.Schema({
     schedule: {
         type: String,
         required: function () {
-            return this.type === 'regular';
+            return this.type === 'flexible';
         }
     },
     duration: {
-        type: Number,
-        required: [true, 'Duration is required'],
-        min: [1, 'Duration must be at least 1 minute']
+        hours: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
+        minutes: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 59
+        },
+        totalMinutes: {
+            type: Number,
+            default: 0,
+            min: 0
+        }
     },
     price: {
         type: Number,
@@ -131,9 +167,21 @@ const courseSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['draft', 'published', 'archived'],
-        default: 'draft'
+        default: 'published'
     },
     tags: [String],
+    faqs: [{
+        question: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        answer: {
+            type: String,
+            required: true,
+            trim: true
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -159,6 +207,27 @@ courseSchema.pre('save', function (next) {
         this.numberOfRatings = ratings.length;
         this.totalRating = ratings.reduce((sum, item) => sum + item.rating, 0);
     }
+    next();
+});
+
+// Pre-save middleware to calculate total duration
+courseSchema.pre('save', function (next) {
+    let totalMinutes = 0;
+
+    // Sum up durations from all sections and their content
+    this.sections.forEach(section => {
+        section.content.forEach(item => {
+            totalMinutes += item.duration || 0;
+        });
+    });
+
+    // Calculate hours and remaining minutes
+    this.duration = {
+        hours: Math.floor(totalMinutes / 60),
+        minutes: totalMinutes % 60,
+        totalMinutes: totalMinutes
+    };
+
     next();
 });
 

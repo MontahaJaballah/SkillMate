@@ -16,6 +16,20 @@ const CourseCard = ({
 }) => {
     const [favorite, setFavorite] = useState(isFavorite);
 
+    // Format duration for display
+    const formatDuration = (duration) => {
+        if (!duration) return '0h 0m';
+        if (typeof duration === 'object') {
+            const { hours, minutes } = duration;
+            if (hours && minutes) return `${hours}h ${minutes}m`;
+            if (hours) return `${hours}h`;
+            if (minutes) return `${minutes}m`;
+            return '0h 0m';
+        }
+        // Handle legacy duration format
+        return duration;
+    };
+
     return (
         <Link to={`/client/course/${_id}`} className="group">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
@@ -61,7 +75,7 @@ const CourseCard = ({
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                         <span className="flex items-center">
                             <Clock className="w-4 h-4 text-red-500 mr-1" />
-                            {duration}
+                            {formatDuration(duration)}
                         </span>
                         <span className="flex items-center">
                             <Layout className="w-4 h-4 text-orange-500 mr-1" />

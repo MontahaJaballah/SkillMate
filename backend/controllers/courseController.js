@@ -8,97 +8,198 @@ const getCourses = async (req, res) => {
         const courses = await Course.find()
             .populate({
                 path: 'skill',
-                select: 'name category proficiency'
+                select: 'name categorie proficiency'
             })
-            .populate({ path: 'teacher_id', select: 'name email' })
-            .select('title description thumbnail createdate price teacher_id duration');
+            .populate({
+                path: 'teacher_id',
+                select: 'firstName lastName email avatar bio phoneNumber role rating reviews courses totalStudents'
+            })
+            .select('title description thumbnail createdate price teacher_id duration level language type sections');
 
-        res.status(200).json(courses);
+        // Add lecture count to each course and format instructor data
+        const coursesWithLectureCount = courses.map(course => {
+            const courseData = course.toObject();
+            const instructor = course.teacher_id;
+
+            // Format instructor data
+            if (instructor) {
+                courseData.teacher_id = {
+                    name: instructor.firstName && instructor.lastName
+                        ? `${instructor.firstName} ${instructor.lastName}`
+                        : 'Unknown Instructor',
+                    email: instructor.email || '',
+                    bio: instructor.bio || 'No bio available',
+                    avatar: instructor.avatar || 'https://ui-avatars.com/api/?background=random',
+                    rating: instructor.rating || 0,
+                    reviews: instructor.reviews || 0,
+                    courses: instructor.courses || [],
+                    totalStudents: instructor.totalStudents || 0,
+                    role: instructor.role || 'teacher'
+                };
+            } else {
+                courseData.teacher_id = {
+                    name: 'Unknown Instructor',
+                    email: '',
+                    bio: 'No bio available',
+                    avatar: 'https://ui-avatars.com/api/?background=random',
+                    rating: 0,
+                    reviews: 0,
+                    courses: [],
+                    totalStudents: 0,
+                    role: 'teacher'
+                };
+            }
+
+            // Calculate total duration
+            const totalDuration = courseData.sections?.reduce((total, section) => {
+                const sectionDuration = section.content?.reduce((acc, content) => acc + (content.duration || 0), 0) || 0;
+                return total + sectionDuration;
+            }, 0) || 0;
+
+            courseData.lectureCount = course.sections?.reduce((total, section) =>
+                total + (section.content?.length || 0), 0
+            ) || 0;
+            courseData.duration = totalDuration;
+            return courseData;
+        });
+
+        res.status(200).json(coursesWithLectureCount);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching courses', error });
+        res.status(500).json({ message: 'Error fetching courses', error: error.message });
     }
 };
 
-const addCourse = async (req, res) => {
+const createCourse = async (req, res) => {
     try {
-        const { title, description, skill, teacher_id, students, schedule, duration, price, ratings, status, createdate, thumbnail } = req.body;
-
-        // Ensure skill exists before creating the course
-        const existingSkill = await Skill.findById(skill);
-        if (!existingSkill) {
-            return res.status(400).json({ message: 'Skill not found' });
-        }
-
-        const newCourse = new Course({
+        const {
             title,
             description,
+            shortDescription,
+            type,
+            thumbnail,
             skill,
             teacher_id,
-            students,
             schedule,
             duration,
             price,
-            ratings,
-            status,
-            createdate,
-            thumbnail
-        });
+            originalPrice,
+            level,
+            language,
+            prerequisites,
+            sections,
+            tags,
+            faqs
+        } = req.body;
 
-        await newCourse.save();
-        res.status(201).json({ message: 'Course added successfully', course: newCourse });
-    } catch (error) {
-        res.status(500).json({ message: 'Error adding course', error: error.message });
-    }
-};
+        // Validate required fields
+        if (!title || !description || !thumbnail || !teacher_id || !duration || !level || !language) {
+            return res.status(400).json({
+                message: 'Missing required fields',
+                required: ['title', 'description', 'thumbnail', 'teacher_id', 'duration', 'level', 'language']
+            });
+        }
 
-// Create IT Course
-const createItCourse = async (req, res) => {
-    try {
-        const { title, description, lessons, quiz, finalExam, teacher_id } = req.body;
+        // Validate skill for regular courses
+        if (type === 'regular' && !skill) {
+            return res.status(400).json({ message: 'Skill is required for regular courses' });
+        }
 
-        // Calculate total duration from lessons
-        const totalDuration = lessons.reduce((sum, lesson) => sum + (parseInt(lesson.duration) || 0), 0);
+        // Validate skill exists if provided
+        if (skill) {
+            const existingSkill = await Skill.findById(skill);
+            if (!existingSkill) {
+                return res.status(400).json({ message: 'Skill not found' });
+            }
+        }
+
+        // Validate prerequisites if provided
+        if (prerequisites && prerequisites.length > 0) {
+            const prereqIds = prerequisites.map(id => mongoose.Types.ObjectId(id));
+            const existingPrereqs = await Course.find({ _id: { $in: prereqIds } });
+            if (existingPrereqs.length !== prerequisites.length) {
+                return res.status(400).json({ message: 'One or more prerequisites courses not found' });
+            }
+        }
+
+        // Process sections and their content
+        const processedSections = sections.map(section => ({
+            title: section.title,
+            content: section.content.map(content => {
+                const baseContent = {
+                    type: content.type,
+                    title: content.title,
+                    duration: content.duration || 0,
+                    description: content.description,
+                    resources: content.resources || []
+                };
+
+                // Add type-specific fields
+                switch (content.type) {
+                    case 'video':
+                        return {
+                            ...baseContent,
+                            videoUrl: content.videoUrl
+                        };
+                    case 'quiz':
+                        return {
+                            ...baseContent,
+                            questions: content.questions.map(q => ({
+                                question: q.question,
+                                options: q.options,
+                                correctAnswer: q.correctAnswer
+                            }))
+                        };
+                    case 'assignment':
+                        return {
+                            ...baseContent,
+                            instructions: content.instructions,
+                            submissionType: content.submissionType
+                        };
+                    default:
+                        return baseContent;
+                }
+            })
+        }));
 
         const newCourse = new Course({
             title,
             description,
+            shortDescription,
+            type: type || 'regular',
+            thumbnail,
+            skill: type === 'regular' ? skill : undefined,
             teacher_id,
-            type: 'IT',
-            duration: totalDuration,
-            lessons: lessons.map(lesson => ({
-                title: lesson.title,
-                content: lesson.content,
-                duration: parseInt(lesson.duration) || 30,
-                codeChallenge: lesson.codeChallenge ? {
-                    description: lesson.codeChallenge.description,
-                    testCases: lesson.codeChallenge.testCases || [],
-                    solution: lesson.codeChallenge.solution
-                } : null
-            })),
-            quiz: quiz ? {
-                questions: quiz.questions.map(q => ({
-                    description: q.description,
-                    testCases: q.testCases || [],
-                    solution: q.solution
-                }))
-            } : null,
-            finalExam: finalExam ? {
-                description: finalExam.description,
-                testCases: finalExam.testCases || [],
-                solution: finalExam.solution
-            } : null,
-            status: 'active',
+            schedule: type === 'regular' ? schedule : undefined,
+            duration,
+            price: price || 0,
+            originalPrice: originalPrice || price || 0,
+            level,
+            language,
+            prerequisites: prerequisites || [],
+            sections: processedSections,
+            tags: tags || [],
+            faqs: faqs || [],
+            status: 'draft',
             createdate: new Date(),
-            price: 0,
             students: [],
             ratings: []
         });
 
         await newCourse.save();
-        res.status(201).json({ message: 'IT Course created successfully', course: newCourse });
+
+        res.status(201).json({
+            message: 'Course created successfully',
+            course: await Course.findById(newCourse._id)
+                .populate({ path: 'skill', select: 'name categorie proficiency' })
+                .populate({ path: 'teacher_id', select: 'name email' })
+        });
     } catch (error) {
-        console.error('Error creating IT course:', error);
-        res.status(500).json({ message: 'Error creating IT course', error: error.message });
+        console.error('Error creating course:', error);
+        res.status(500).json({
+            message: 'Error creating course',
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
@@ -107,68 +208,59 @@ const getCourseById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'Invalid course ID' });
-        }
-
         const course = await Course.findById(id)
             .populate({
                 path: 'skill',
-                select: 'name category proficiency'
+                select: 'name categorie proficiency'
             })
             .populate({
                 path: 'teacher_id',
-                select: 'username firstName lastName email avatar bio rating reviews courses students',
-                transform: doc => ({
-                    _id: doc._id, // Make sure we include the instructor's ID
-                    username: doc.username,
-                    name: `${doc.firstName} ${doc.lastName}`,
-                    email: doc.email,
-                    avatar: doc.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
-                    bio: doc.bio || 'Experienced instructor passionate about teaching',
-                    rating: doc.rating || 4.5,
-                    reviews: doc.reviews || 0,
-                    courses: doc.courses || 1,
-                    students: doc.students?.length || 0
-                })
+                select: 'firstName lastName email avatar bio phoneNumber role rating reviews courses totalStudents'
             })
-            .lean();
+            .populate({
+                path: 'prerequisites',
+                select: 'title thumbnail'
+            });
 
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
 
-        console.log('Teacher ID:', course.teacher_id._id);
+        const instructor = course.teacher_id;
 
-        // Fetch other courses by the same instructor (excluding the current course)
-        const instructorCourses = await Course.find({
-            teacher_id: course.teacher_id._id,
-            _id: { $ne: id } // Use the course id from params
-        })
-            .select('title description thumbnail price')
-            .limit(3)
-            .lean();
+        // Calculate total duration
+        const totalDuration = course.sections?.reduce((total, section) => {
+            const sectionDuration = section.content?.reduce((acc, content) => acc + (content.duration || 0), 0) || 0;
+            return total + sectionDuration;
+        }, 0) || 0;
 
-        console.log('Found instructor courses:', instructorCourses);
-
-        // Format the instructor data for the frontend
-        course.instructor = {
-            ...course.teacher_id,
-            instructorCourses: instructorCourses.map(c => ({
-                _id: c._id,
-                title: c.title,
-                description: c.description,
-                thumbnail: c.thumbnail || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f',
-                price: c.price
-            }))
+        // Format course data
+        const formattedCourse = {
+            ...course.toObject(),
+            duration: totalDuration,
+            teacher_id: {
+                name: instructor.firstName && instructor.lastName
+                    ? `${instructor.firstName} ${instructor.lastName}`
+                    : 'Unknown Instructor',
+                email: instructor.email || '',
+                bio: instructor.bio || 'No bio available',
+                avatar: instructor.avatar || 'https://ui-avatars.com/api/?background=random',
+                rating: instructor.rating || 0,
+                reviews: instructor.reviews || 0,
+                courses: instructor.courses || [],
+                totalStudents: instructor.totalStudents || 0,
+                role: instructor.role || 'teacher'
+            }
         };
-        delete course.teacher_id;
 
-        res.status(200).json(course);
+        res.status(200).json(formattedCourse);
     } catch (error) {
-        console.error('Error in getCourseById:', error);
         res.status(500).json({ message: 'Error fetching course', error: error.message });
     }
 };
 
-module.exports = { getCourses, addCourse, createItCourse, getCourseById };
+module.exports = {
+    getCourses,
+    createCourse,
+    getCourseById
+};

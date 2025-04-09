@@ -61,7 +61,7 @@ const CourseInfo = ({ course }) => {
 
       {/* Course Stats */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Course Stats</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">About the course</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <h4 className="text-sm text-gray-600 dark:text-gray-300">Total Enrollments</h4>
@@ -86,10 +86,11 @@ const CourseInfo = ({ course }) => {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {course.duration ? (
                 <>
-                  {course.duration >= 60 ? `${Math.floor(course.duration / 60)}h ` : ''}
-                  {course.duration % 60 > 0 ? `${course.duration % 60}m` : ''}
+                  {course.duration >= 60 && `${Math.floor(course.duration / 60)}h`}
+                  {course.duration % 60 > 0 && ` ${course.duration % 60}m`}
+                  {course.duration === 0 && '0m'}
                 </>
-              ) : 'N/A'}
+              ) : '0m'}
             </p>
           </div>
           <div>
