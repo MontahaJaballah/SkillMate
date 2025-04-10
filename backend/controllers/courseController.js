@@ -1,6 +1,9 @@
 const Course = require('../models/Course');
 const Skill = require('../models/Skill');
-const mongoose = require('mongoose'); // mongoose is required for ObjectId validation
+const mongoose = require('mongoose');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 // Get all courses
 const getCourses = async (req, res) => {
@@ -369,10 +372,111 @@ const getEnrolledCourses = async (req, res) => {
     }
 };
 
+// Generate a certificate for course completion
+const generateCertificate = async (req, res) => {
+    try {
+        const { courseId, userId } = req.params;
+
+        // Verify course completion
+        const course = await Course.findById(courseId)
+            .populate('teacher_id', 'firstName lastName')
+            .populate('students.user_id', 'firstName lastName');
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Find the student's enrollment
+        const enrollment = course.students.find(
+            student => student.user_id._id.toString() === userId
+        );
+
+        if (!enrollment) {
+            return res.status(404).json({ message: 'Student not enrolled in this course' });
+        }
+
+        // Check if the course is completed
+        if (!enrollment.completed) {
+            return res.status(400).json({ message: 'Course not completed yet' });
+        }
+
+        // Create certificates directory if it doesn't exist
+        const certDir = path.join(__dirname, '../certificates');
+        if (!fs.existsSync(certDir)) {
+            fs.mkdirSync(certDir);
+        }
+
+        // Generate certificate filename
+        const studentName = `${enrollment.user_id.firstName}-${enrollment.user_id.lastName}`;
+        const fileName = `${studentName}-${course.title}-${courseId}.pdf`.replace(/\s+/g, '_');
+        const filePath = path.join(certDir, fileName);
+
+        // Create PDF document
+        const doc = new PDFDocument({
+            layout: 'landscape',
+            size: 'A4'
+        });
+
+        // Pipe PDF to file
+        const writeStream = fs.createWriteStream(filePath);
+        doc.pipe(writeStream);
+
+        // Add certificate content
+        doc
+            .font('Helvetica-Bold')
+            .fontSize(30)
+            .text('Certificate of Completion', { align: 'center' })
+            .moveDown()
+            .fontSize(20)
+            .text('This is to certify that', { align: 'center' })
+            .moveDown()
+            .fontSize(25)
+            .text(`${enrollment.user_id.firstName} ${enrollment.user_id.lastName}`, { align: 'center' })
+            .moveDown()
+            .fontSize(20)
+            .text('has successfully completed the course', { align: 'center' })
+            .moveDown()
+            .fontSize(25)
+            .text(course.title, { align: 'center' })
+            .moveDown(2)
+            .fontSize(15)
+            .text(`Instructor: ${course.teacher_id.firstName} ${course.teacher_id.lastName}`, { align: 'center' })
+            .moveDown()
+            .text(`Completion Date: ${new Date(enrollment.completionDate).toLocaleDateString()}`, { align: 'center' })
+            .moveDown()
+            .text(`Certificate ID: ${courseId}-${userId}`, { align: 'center' });
+
+        // Finalize PDF
+        doc.end();
+
+        // Wait for write stream to finish
+        writeStream.on('finish', () => {
+            // Update enrollment with certificate path
+            enrollment.certificatePath = `/certificates/${fileName}`;
+            course.save();
+
+            res.json({
+                success: true,
+                message: 'Certificate generated successfully',
+                certificatePath: `/certificates/${fileName}`
+            });
+        });
+
+    } catch (error) {
+        console.error('Certificate generation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error generating certificate',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getCourses,
     createCourse,
     getCourseById,
     enrollInCourse,
-    getEnrolledCourses
+    getEnrolledCourses,
+    generateCertificate
 };

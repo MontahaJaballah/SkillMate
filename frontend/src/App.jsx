@@ -10,6 +10,7 @@ import CourseDetail from "./views/client/CourseDetail/CourseDetail";
 import Courses from "./views/client/Courses/Courses"; // Import Courses
 import CreateCourseView from "./views/client/CreateCourseView/CreateCourseView"; // Import CreateCourseView
 import CoursePlayer from "./views/client/CoursePlayer"; // Import CoursePlayer
+import CourseCompletion from "./components/Courses/CourseCompletion"; // Import CourseCompletion
 
 // Layouts
 import Auth from "./layouts/Auth.jsx";
@@ -84,6 +85,7 @@ const AppContent = () => {
       >
         <Route path="courses" element={<Courses />} />
         <Route path="courses/:id" element={<CourseDetail />} />
+        <Route path="courses/:courseId/completion" element={<CourseCompletion />} />
         <Route path="create-course" element={<CreateCourseView />} />
       </Route>
       

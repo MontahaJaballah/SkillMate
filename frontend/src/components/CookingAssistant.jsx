@@ -11,8 +11,18 @@ import {
     CircularProgress,
     Card,
     CardContent,
+    Alert,
+    IconButton,
+    Switch,
+    FormControlLabel
 } from '@mui/material';
-import { Send as SendIcon, Mic as MicIcon } from '@mui/icons-material';
+import { 
+    Send as SendIcon, 
+    Mic as MicIcon,
+    VolumeUp as SpeakerIcon,
+    VolumeOff as MuteIcon,
+    Close as CloseIcon 
+} from '@mui/icons-material';
 
 // Initialize speech recognition
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -126,83 +136,127 @@ function CookingAssistant({ recipeContext }) {
 
     return (
         <Container maxWidth="md" sx={{ py: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom align="center" color="primary">
-                AI Cooking Assistant
-            </Typography>
-            
-            <Typography variant="body1" gutterBottom align="center" sx={{ mb: 4 }}>
-                Ask me anything about cooking, recipes, or ingredient substitutions!
-            </Typography>
+            <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography variant="h5" component="h2" sx={{ fontWeight: 'medium' }}>
+                            Ask the AI Cooking Assistant
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Get help with recipes, techniques, substitutions, and more!
+                        </Typography>
+                    </Box>
 
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={2}
-                        variant="outlined"
-                        value={question}
-                        onChange={(e) => setQuestion(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                        placeholder="E.g., Can I replace butter with olive oil in chocolate chip cookies?"
-                        disabled={loading}
-                    />
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                            variant="contained"
-                            color={isListening ? 'error' : 'secondary'}
-                            onClick={startListening}
-                            disabled={loading}
-                            sx={{ minWidth: '140px' }}
-                        >
-                            <MicIcon sx={{ mr: 1 }} />
-                            {isListening ? 'Listening...' : 'Voice Input'}
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => handleAsk()}
-                            disabled={loading || !question.trim()}
-                            sx={{ minWidth: '120px' }}
-                        >
-                            {loading ? (
-                                <CircularProgress size={24} color="inherit" />
-                            ) : (
-                                <>
-                                    <SendIcon sx={{ mr: 1 }} />
-                                    Ask
-                                </>
-                            )}
-                        </Button>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={3}
+                                variant="outlined"
+                                value={question}
+                                onChange={(e) => setQuestion(e.target.value)}
+                                onKeyDown={handleKeyPress}
+                                placeholder="E.g., Can I replace butter with olive oil in chocolate chip cookies?"
+                                disabled={loading}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+                            />
+                        </Box>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: { xs: 'row', sm: 'column' }, 
+                            gap: 1,
+                            minWidth: { sm: '120px' }
+                        }}>
+                            <Button
+                                variant="outlined"
+                                color={isListening ? 'error' : 'primary'}
+                                onClick={startListening}
+                                disabled={loading || !SpeechRecognition}
+                                fullWidth
+                                sx={{ height: { xs: '40px', sm: '50%' } }}
+                            >
+                                <MicIcon sx={{ mr: { xs: 0, sm: 1 } }} />
+                                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                    {isListening ? 'Listening...' : 'Voice'}
+                                </Box>
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => handleAsk()}
+                                disabled={loading || !question.trim()}
+                                fullWidth
+                                sx={{ height: { xs: '40px', sm: '50%' } }}
+                            >
+                                {loading ? (
+                                    <CircularProgress size={24} />
+                                ) : (
+                                    <>
+                                        <SendIcon sx={{ mr: { xs: 0, sm: 1 } }} />
+                                        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Ask</Box>
+                                    </>
+                                )}
+                            </Button>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <FormControlLabel
+                            control={
+                                <Switch 
+                                    checked={autoSpeak} 
+                                    onChange={(e) => setAutoSpeak(e.target.checked)}
+                                    icon={<MuteIcon />}
+                                    checkedIcon={<SpeakerIcon />}
+                                />
+                            }
+                            label={
+                                <Typography variant="body2" color="text.secondary">
+                                    Text-to-Speech {autoSpeak ? 'enabled' : 'disabled'}
+                                </Typography>
+                            }
+                        />
                     </Box>
                 </Box>
             </Paper>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, mt: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🔊 Text-to-Speech:
-                </Typography>
-                <Button
-                    size="small"
-                    variant={autoSpeak ? "contained" : "outlined"}
-                    onClick={() => setAutoSpeak(!autoSpeak)}
-                    sx={{ minWidth: '100px' }}
-                >
-                    {autoSpeak ? 'On' : 'Off'}
-                </Button>
-            </Box>
-
             {reply && (
-                <Card variant="outlined">
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom color="primary">
-                            Assistant's Response:
-                        </Typography>
-                        <Typography variant="body1" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+                <Card 
+                    variant="outlined" 
+                    sx={{ 
+                        borderRadius: 2,
+                        position: 'relative',
+                        borderColor: 'primary.main',
+                        borderWidth: '2px'
+                    }}
+                >
+                    <IconButton 
+                        size="small" 
+                        onClick={() => setReply('')}
+                        sx={{ position: 'absolute', right: 8, top: 8 }}
+                    >
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                    <CardContent sx={{ p: 3, pt: 4 }}>
+                        <Typography 
+                            variant="body1" 
+                            component="div" 
+                            sx={{ 
+                                whiteSpace: 'pre-wrap',
+                                lineHeight: 1.6
+                            }}
+                        >
                             {reply}
                         </Typography>
                     </CardContent>
                 </Card>
+            )}
+
+            {!SpeechRecognition && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                    Voice input is not supported in your browser. Try using Chrome for the best experience.
+                </Alert>
             )}
         </Container>
     );

@@ -61,8 +61,17 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Create certificates directory if it doesn't exist
+const certificatesDir = path.join(__dirname, 'certificates');
+if (!fs.existsSync(certificatesDir)) {
+  fs.mkdirSync(certificatesDir, { recursive: true });
+}
+
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static files from the certificates directory
+app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
 
 // File upload route (before auth middleware)
 app.use('/api/upload', uploadRoutes);

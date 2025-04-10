@@ -1,5 +1,12 @@
 const express = require('express');
-const { getCourses, createCourse, getCourseById, enrollInCourse, getEnrolledCourses } = require('../controllers/courseController');
+const {
+    getCourses,
+    createCourse,
+    getCourseById,
+    enrollInCourse,
+    getEnrolledCourses,
+    generateCertificate
+} = require('../controllers/courseController');
 
 const router = express.Router();
 
@@ -17,5 +24,8 @@ router.post('/enroll/:courseId', enrollInCourse);
 
 // Get all courses a user is enrolled in
 router.get('/enrolled/:userId', getEnrolledCourses);
+
+// Generate course completion certificate
+router.get('/certificate/:courseId/:userId', generateCertificate);
 
 module.exports = router;

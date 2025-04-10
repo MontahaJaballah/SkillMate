@@ -13,6 +13,9 @@ app.use(cors({
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve static files from the certificates directory
+app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
+
 // Parse JSON bodies
 app.use(express.json());
 
